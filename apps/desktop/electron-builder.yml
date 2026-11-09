@@ -1,0 +1,105 @@
+# electron-builder configuration for deUrge (desktop).
+#
+# App identity is stable across platforms: appId app.deurge.DeUrge, name deUrge.
+# The packaged app must stay fully offline: the web build is shipped as an
+# extraResource (resources/web) and served by the app:// protocol handler.
+#
+# Output: apps/desktop/release/
+#   linux-unpacked/deUrge          (used by the Flatpak build)
+#   deUrge-<version>.AppImage      (`pnpm --filter @deurge/desktop dist:linux`)
+#   deUrge Setup <version>.exe     (`pnpm --filter @deurge/desktop dist:win`, on Windows)
+#   deUrge-<version>.dmg           (`pnpm --filter @deurge/desktop dist:mac`, on macOS)
+appId: app.deurge.DeUrge
+productName: deUrge
+copyright: Copyright © 2026 deUrge contributors
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - src/**/*
+  - package.json
+  - '!**/*.map'
+
+# The built PWA is embedded read-only; the protocol handler serves it.
+extraResources:
+  - from: ../../apps/web/dist
+    to: web
+    filter:
+      - '**/*'
+
+asar: true
+npmRebuild: false
+buildDependenciesFromSource: false
+
+# No publish/auto-update: deUrge is distributed as signed-by-release artifacts.
+publish: null
+
+linux:
+  target:
+    - dir
+    - AppImage
+  category: Utility
+  synopsis: Local-first addiction & habit recovery tracker
+  description: >-
+    deUrge is a local-first, offline recovery tracker. All data stays on this
+    device — no accounts, no analytics, no network access.
+  icon: build/icons
+  executableName: deurge
+  desktop:
+    entry:
+      Name: deUrge
+      Comment: Local-first addiction & habit recovery tracker
+      Categories: Utility;Health;Office;
+      Keywords: habit;recovery;addiction;tracker;offline;
+      StartupWMClass: deUrge
+      X-GNOME-UsesNotifications: 'true'
+
+appImage:
+  artifactName: deUrge-${version}-${arch}.AppImage
+  license: LICENSE
+
+win:
+  target:
+    - nsis
+  icon: build/icon.ico
+  artifactName: deUrge-Setup-${version}-${arch}.${ext}
+  legalTrademarks: deUrge
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: deUrge
+  deleteAppDataOnUninstall: false
+
+mac:
+  target:
+    - dmg
+  category: public.app-category.healthcare-fitness
+  icon: build/icon.icns
+  artifactName: deUrge-${version}-${arch}.${ext}
+  darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+dmg:
+  title: deUrge ${version}
+  artifactName: deUrge-${version}-${arch}.dmg
+  backgroundColor: '#0b0b0f'
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 140
+      y: 190
+      type: file
+    - x: 400
+      y: 190
+      type: link
+      path: /Applications

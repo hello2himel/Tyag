@@ -1,0 +1,57 @@
+# deUrge — Flatpak manifest.
+#
+# Builds the Electron linux-unpacked bundle (built outside the sandbox by
+# flatpak/build.sh, because the web + Electron toolchain is Node/pnpm based)
+# into a sandboxed Flatpak application.
+#
+#   runtime : org.freedesktop.Platform   //24.08
+#   base    : org.electronjs.Electron2.BaseApp //24.08  (provides zypak-wrapper)
+#   command : deurge-wrapper  -> /app/bin/deurge-wrapper -> /app/deurge/deurge
+#
+# Sandbox policy (deliberately minimal — deUrge is fully offline):
+#   * no --share=network: the app can never reach the network
+#   * no --filesystem=home: the database stays inside the app sandbox
+#   * xdg-download is the only filesystem grant, so user-initiated backup
+#     exports/imports can reach the real Downloads folder
+#   * notifications via the session bus notification service
+#
+# Build: `bash flatpak/build.sh`   Bundle: flatpak/dist/deUrge-<version>-<arch>.flatpak
+app-id: org.deurge.DeUrge
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '24.08'
+command: deurge-wrapper
+separate-locales: false
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Only for user-initiated backup/export files; nothing else on the host.
+  - --filesystem=xdg-download:rw
+  # Local reminders need the desktop notification service.
+  - --talk-name=org.freedesktop.Notifications
+
+modules:
+  - name: deurge
+    buildsystem: simple
+    # The Electron bundle is prebuilt and byte-identical to the tested build;
+    # do not strip its binaries here.
+    build-options:
+      strip: false
+      no-debuginfo: true
+    build-commands:
+      - install -d /app/deurge
+      - cp -a deurge-app/. /app/deurge/
+      - install -Dm755 deurge-wrapper.sh /app/bin/deurge-wrapper
+      - install -Dm644 org.deurge.DeUrge.desktop /app/share/applications/org.deurge.DeUrge.desktop
+      - install -Dm644 org.deurge.DeUrge.metainfo.xml /app/share/metainfo/org.deurge.DeUrge.metainfo.xml
+      - install -Dm644 icon-128.png /app/share/icons/hicolor/128x128/apps/org.deurge.DeUrge.png
+      - install -Dm644 icon-256.png /app/share/icons/hicolor/256x256/apps/org.deurge.DeUrge.png
+      - install -Dm644 icon-512.png /app/share/icons/hicolor/512x512/apps/org.deurge.DeUrge.png
+    sources:
+      - type: dir
+        path: build/stage

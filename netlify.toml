@@ -1,0 +1,33 @@
+# deUrge — Netlify configuration
+#
+# The whole product is a static, local-first PWA: the build produces a folder
+# of files that can be hosted anywhere. Nothing on this site talks to a
+# backend — all data lives in the visitor's browser (SQLite-WASM snapshot in
+# IndexedDB).
+#
+# Netlify build image: Node 22 + pnpm discovered from pnpm-lock.yaml.
+
+[build]
+  command = "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @deurge/web build"
+  publish = "apps/web/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  PNPM_VERSION = "10.15.0"
+
+# The app uses hash-based routing, so a single-page fallback is enough.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Local-only application: lock it down so it can never load third-party code.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "geolocation=(), camera=(), microphone=(), payment=(), usb=()"
+    Cross-Origin-Opener-Policy = "same-origin"

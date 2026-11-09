@@ -1,0 +1,31 @@
+{
+  "name": "@deurge/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "deUrge mobile shell (Capacitor) for Android and iOS — offline, local-only.",
+  "license": "MIT",
+  "scripts": {
+    "build:web": "pnpm --filter @deurge/web build",
+    "sync": "pnpm build:web && cap sync",
+    "sync:android": "pnpm build:web && cap sync android",
+    "sync:ios": "pnpm build:web && cap sync ios",
+    "open:android": "cap open android",
+    "open:ios": "cap open ios",
+    "build:android": "bash scripts/build-android.sh auto",
+    "build:android:debug": "bash scripts/build-android.sh debug",
+    "build:android:release": "bash scripts/build-android.sh release",
+    "build:ios": "bash scripts/build-ios.sh",
+    "icons": "node ../../scripts/gen-icons.mjs android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/filesystem": "8.0.0",
+    "@capacitor/ios": "8.6.0",
+    "@capacitor/local-notifications": "8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.0"
+  }
+}

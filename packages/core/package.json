@@ -1,0 +1,26 @@
+{
+  "name": "@deurge/core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "deUrge domain, persistence, streak engine, analytics, insights and backup engines.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
+    "sql.js": "^1.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/sql.js": "^1.4.9",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

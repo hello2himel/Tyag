@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata for deUrge.
+  Kept fully offline: no remote screenshots or asset URLs are referenced; the
+  icon and desktop entry are installed by the Flatpak manifest itself.
+-->
+<component type="desktop-application">
+  <id>org.deurge.DeUrge</id>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <name>deUrge</name>
+  <summary>Local-first addiction and habit recovery tracker</summary>
+
+  <developer id="org.deurge">
+    <name>deUrge contributors</name>
+  </developer>
+
+  <description>
+    <p>
+      deUrge is a private, offline recovery tracker. Log urges, habits and
+      sessions, watch your streaks grow and understand your patterns — without
+      ever creating an account or sending data anywhere.
+    </p>
+    <ul>
+      <li>Everything is stored locally in a single SQLite database on this device.</li>
+      <li>No account, no sign-in, no analytics and no network access at all.</li>
+      <li>Streak engine, journal, analytics and insights are all computed on-device.</li>
+      <li>Backup, restore and JSON export use plain local files.</li>
+    </ul>
+    <p>
+      Because the app is fully offline, it works on a plane, in a clinic and in
+      airplane mode — and there is no server that could ever see your data.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">org.deurge.DeUrge.desktop</launchable>
+
+  <provides>
+    <binary>deurge-wrapper</binary>
+  </provides>
+
+  <categories>
+    <category>Utility</category>
+  </categories>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release version="1.0.0" date="2026-11-10">
+      <description>
+        <p>First release: offline tracking, streaks, journal, insights and local backup/export.</p>
+      </description>
+    </release>
+  </releases>
+</component>

@@ -1,0 +1,33 @@
+{
+  "name": "deurge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "deUrge \u2014 a local-first, offline addiction & habit recovery tracker.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hello2himel/deUrge.git"
+  },
+  "homepage": "https://github.com/hello2himel/deUrge",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @deurge/web dev",
+    "build": "pnpm --filter @deurge/web build",
+    "preview": "pnpm --filter @deurge/web preview",
+    "test": "pnpm --filter @deurge/core test",
+    "test:watch": "pnpm --filter @deurge/core test:watch",
+    "typecheck": "pnpm -r typecheck",
+    "audit:privacy": "node scripts/audit-privacy.mjs",
+    "build:android": "pnpm --filter @deurge/mobile build:android",
+    "build:desktop": "pnpm --filter @deurge/desktop build",
+    "build:flatpak": "bash flatpak/build.sh"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

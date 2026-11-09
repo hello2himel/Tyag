@@ -1,0 +1,100 @@
+apply plugin: 'com.android.application'
+
+// ---------------------------------------------------------------------------
+// deUrge Android app module.
+//
+// Release signing is driven entirely by environment variables so that no
+// keystore or password is ever committed (see docs/BUILDING.md § Android
+// signing):
+//   DEURGE_KEYSTORE           absolute path to the .jks/.keystore
+//   DEURGE_KEYSTORE_PASSWORD  store password
+//   DEURGE_KEY_ALIAS          key alias
+//   DEURGE_KEY_PASSWORD       key password
+//
+// When those are absent (debug builds, local `build:android`) the release
+// variant falls back to the standard debug signing config so builds still
+// succeed; store-ready artifacts therefore require the env vars.
+// ---------------------------------------------------------------------------
+def deurgeKeystore = System.getenv('DEURGE_KEYSTORE')
+def hasReleaseSigning =
+    deurgeKeystore != null && !deurgeKeystore.trim().isEmpty() && file(deurgeKeystore).exists()
+
+android {
+    namespace = "app.deurge.DeUrge"
+    compileSdk = rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId "app.deurge.DeUrge"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // Bump both together for every published release (docs/RELEASING.md).
+        versionCode 1
+        versionName "1.0.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(deurgeKeystore)
+                storePassword System.getenv('DEURGE_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('DEURGE_KEY_ALIAS')
+                keyPassword System.getenv('DEURGE_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            // Debug builds are for local device testing only; never distributed.
+            versionNameSuffix "-debug"
+        }
+        release {
+            // Keep the web bundle byte-identical to the tested build: no
+            // shrinking/minification of the SQLite-WASM asset pipeline.
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

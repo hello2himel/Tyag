@@ -1,0 +1,23 @@
+{
+  "name": "@deurge/desktop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "deUrge desktop shell (Electron) — offline, local-only recovery tracker.",
+  "author": "deUrge contributors",
+  "license": "MIT",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "icons": "node ../../scripts/gen-icons.mjs desktop",
+    "build": "electron-builder --config electron-builder.yml --linux dir",
+    "dist:linux": "electron-builder --config electron-builder.yml --linux AppImage",
+    "dist:win": "electron-builder --config electron-builder.yml --win nsis",
+    "dist:mac": "electron-builder --config electron-builder.yml --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "44.9.0",
+    "electron-builder": "26.18.0"
+  }
+}

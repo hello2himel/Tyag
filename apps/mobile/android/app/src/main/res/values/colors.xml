@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- deUrge brand + design tokens (mirrors the web app's CSS variables). -->
+    <color name="colorPrimary">#0071E3</color>
+    <color name="colorPrimaryDark">#05060A</color>
+    <color name="colorAccent">#5AB0FF</color>
+
+    <color name="deurge_brand">#0071E3</color>
+    <color name="deurge_canvas">#000000</color>
+    <color name="deurge_ink">#FFFFFF</color>
+</resources>
