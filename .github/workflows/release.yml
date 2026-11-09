@@ -325,19 +325,33 @@ jobs:
           echo "Release files:"
           ls -lh
 
-      - name: Create draft release
+      - name: Create or update draft release (idempotent)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: v${{ needs.version.outputs.version }}
           VERSION: ${{ needs.version.outputs.version }}
         run: |
           set -euo pipefail
-          gh release create "$TAG" \
-            --draft \
-            --title "deUrge $VERSION" \
-            --generate-notes \
-            --notes "Local-first, offline deUrge $VERSION. All artifacts are built from this tag; see SHA256SUMS.txt for checksums and docs/RELEASING.md for verification steps." \
-            dist/*
+          # A tag can be re-pushed or a release may already be published (for
+          # example, a locally built release uploaded by a maintainer). Never
+          # fail the workflow and never overwrite a published release with
+          # CI-built, unsigned variants.
+          if gh release view "$TAG" --json isDraft --jq '.isDraft' >/tmp/release-state 2>/dev/null; then
+            if [ "$(cat /tmp/release-state)" = "true" ]; then
+              echo "Draft release $TAG exists — uploading rebuilt artifacts."
+              gh release upload "$TAG" dist/* --clobber
+            else
+              echo "Published release $TAG already exists — leaving its assets untouched."
+              echo "The rebuilt artifacts are available as this workflow's artifacts."
+            fi
+          else
+            gh release create "$TAG" \
+              --draft \
+              --title "deUrge $VERSION" \
+              --generate-notes \
+              --notes "Local-first, offline deUrge $VERSION. All artifacts are built from this tag; see SHA256SUMS.txt for checksums and docs/RELEASING.md for verification steps." \
+              dist/*
+          fi
 
       - name: Summary
         run: |
