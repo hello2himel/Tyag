@@ -65,6 +65,10 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The `tools` package was removed from the modern SDK; install only
+          # what the build needs (the action also accepts the SDK licenses).
+          packages: 'platform-tools'
 
       - name: Install Android SDK packages
         run: |

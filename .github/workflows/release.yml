@@ -89,6 +89,10 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '21' }
       - uses: android-actions/setup-android@v3
+        with:
+          # The `tools` package was removed from the modern SDK; install only
+          # what the build needs (the action also accepts the SDK licenses).
+          packages: 'platform-tools'
       - name: Install Android SDK packages
         run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
       - uses: gradle/actions/setup-gradle@v4
