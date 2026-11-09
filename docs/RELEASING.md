@@ -249,3 +249,8 @@ downloads (`~/.cache/electron*`, `~/Library/Caches/electron*`,
   version; never replace an already-published file with different bytes.
 * Keep `SHA256SUMS.txt` attached to old releases so users can verify what they
   downloaded.
+
+
+## Published releases
+
+Publishing is idempotent: re-running this workflow uploads rebuilt artifacts to an existing *draft* release, and leaves an already-published release's assets untouched (the rebuilt files remain available as workflow artifacts). A maintainer can therefore publish locally built, signed artifacts first (as done for `v1.0.0`) and still validate the pipeline.
