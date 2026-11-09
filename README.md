@@ -109,9 +109,18 @@ No environment variables, accounts or network services are needed.
 - **Windows/macOS/iOS**: Electron/Capacitor projects build on their native
   runners; CI configuration is in [`.github/workflows`](.github/workflows).
 
-Releases are published on the repository's **Releases** page with the Android
-APK/AAB and Linux Flatpak attached, built from the tag. Details in
-[RELEASING.md](docs/RELEASING.md).
+Releases are published on the **[Releases page](https://github.com/hello2himel/deUrge/releases/latest)**
+with the signed Android APK/AAB, Linux Flatpak, Linux AppImage and a
+Netlify-ready web zip attached. Details in [RELEASING.md](docs/RELEASING.md).
+
+```bash
+# Android (sideload)
+adb install deUrge-1.0.0-release.apk
+# Linux
+flatpak install --user deUrge-1.0.0-x86_64.flatpak && flatpak run app.deurge.DeUrge
+# Web (any static host)
+unzip deUrge-1.0.0-web.zip -d deurge-site
+```
 
 ## Testing
 
