@@ -6,12 +6,7 @@
  * unsuitable because object key order is insertion order; `canonicalJson`
  * sorts keys recursively, so the same data always hashes to the same digest.
  */
-import type {
-  ApplicationSettingRow,
-  DeUrgeExport,
-  DeUrgeExportData,
-  ExportCounts,
-} from '../domain';
+import type { DeUrgeExport, DeUrgeExportData, ExportCounts } from '../domain';
 import { EXPORT_FORMAT, EXPORT_FORMAT_VERSION } from '../domain';
 import { SCHEMA_VERSION } from '../db/migrations';
 import { zonedAt } from '../time/temporal';
@@ -130,9 +125,4 @@ export function summariseCounts(counts: Record<string, number>): string {
     .filter(([key]) => (counts[key] ?? 0) > 0)
     .map(([key, label]) => `${counts[key]} ${label}`);
   return parts.length > 0 ? parts.join(', ') : 'no records';
-}
-
-/** Guard settings rows so callers can rely on their JSON string values. */
-export function settingsRowFrom(key: string, value: unknown, updatedAt: number): ApplicationSettingRow {
-  return { key, value: JSON.stringify(value), updatedAt };
 }

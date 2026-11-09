@@ -1,0 +1,87 @@
+name: Desktop Linux (AppImage)
+
+# electron-builder Linux artifacts: AppImage + unpacked dir.
+# The Flatpak is built separately in flatpak.yml.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'packages/core/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/desktop-linux.yml'
+  pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - '.github/workflows/desktop-linux.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-linux-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.15.0'
+
+jobs:
+  linux:
+    name: AppImage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Cache Electron / electron-builder downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter @deurge/web build
+
+      - name: Package AppImage
+        run: pnpm --filter @deurge/desktop dist:linux
+
+      - name: Verify + checksums
+        run: |
+          set -euo pipefail
+          ls -lh apps/desktop/release
+          test -d apps/desktop/release/linux-unpacked
+          shopt -s nullglob
+          appimages=(apps/desktop/release/*.AppImage)
+          test ${#appimages[@]} -gt 0
+          cd apps/desktop/release
+          sha256sum *.AppImage > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux-${{ github.ref_name }}-${{ github.sha }}
+          path: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14

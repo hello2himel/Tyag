@@ -105,10 +105,11 @@ export function bytesToBase64(bytes: Uint8Array): string {
  * valid base64 so a corrupt envelope produces a clear message.
  */
 export function base64ToBytes(value: string): Uint8Array {
-  if (typeof value !== 'string' || value.length === 0) {
+  if (typeof value !== 'string') {
     failInvalid('The backup file is missing encrypted data.');
   }
   const clean = value.replace(/\s+/g, '');
+  if (clean.length === 0) return new Uint8Array(0);
   if (clean.length % 4 !== 0) failInvalid('The backup file contains invalid encrypted data.');
   const padding = clean.endsWith('==') ? 2 : clean.endsWith('=') ? 1 : 0;
   const body = padding > 0 ? clean.slice(0, -padding) : clean;
@@ -125,8 +126,12 @@ export function base64ToBytes(value: string): Uint8Array {
     if (values.length > 2) bytes.push((triple >> 8) & 0xff);
     if (values.length > 3) bytes.push(triple & 0xff);
   }
-  if (padding === 2) bytes.pop();
-  if (padding === 1) bytes.pop();
+  if (padding === 2) {
+    bytes.pop();
+    bytes.pop();
+  } else if (padding === 1) {
+    bytes.pop();
+  }
   return new Uint8Array(bytes);
 }
 

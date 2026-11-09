@@ -1,0 +1,138 @@
+/* Settings screen: grouped preference lists. */
+
+.settings-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.settings-section-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mut);
+  padding: 0 4px 8px;
+}
+
+.setting-note {
+  font-size: 13px;
+  color: var(--mut);
+  line-height: 1.45;
+  padding: 8px 4px 0;
+}
+
+.setting-block {
+  padding: 13px 16px;
+  position: relative;
+}
+.setting-block + .setting-block::before,
+.setting-block + .list-row::before,
+.list-row + .setting-block::before,
+.toggle + .setting-block::before,
+.setting-block + .toggle::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 0;
+  top: 0;
+  border-top: 0.5px solid var(--sep);
+}
+
+.setting-block-label {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.setting-hint {
+  font-size: 12.5px;
+  color: var(--mut);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.setting-preview-value {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.setting-wrap-value {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+/* -------------------------------- categories ----------------------------- */
+
+.category-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 16px;
+  position: relative;
+}
+.category-row + .category-row::before,
+.category-row + .list-row::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 0;
+  top: 0;
+  border-top: 0.5px solid var(--sep);
+}
+.category-row.archived {
+  opacity: 0.72;
+}
+
+.category-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.category-name {
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-meta {
+  font-size: 12.5px;
+  color: var(--mut);
+  margin-top: 2px;
+}
+
+.category-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.category-actions .icon-btn {
+  width: 34px;
+  height: 34px;
+}
+
+.category-add {
+  color: var(--b);
+  font-weight: 500;
+}
+.category-add:disabled {
+  opacity: 0.5;
+}
+
+/* --------------------------------- footer -------------------------------- */
+
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 26px;
+  padding: 0 4px;
+}
+.settings-footer .btn-plain {
+  font-size: 14px;
+}

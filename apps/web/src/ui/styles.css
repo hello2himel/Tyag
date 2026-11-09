@@ -712,7 +712,8 @@ p {
 }
 @media (min-width: 980px) {
   .screen {
-    max-width: 860px;
+    max-width: 1000px;
+    margin: 0;
     padding: 40px 40px 64px;
   }
   .app-shell.has-tabs .screen {
@@ -744,6 +745,11 @@ p {
     font-weight: 700;
     letter-spacing: -0.03em;
     padding: 0 10px 10px;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    text-align: left;
+    width: 100%;
   }
   .sidebar-label {
     font-size: 11px;
@@ -973,8 +979,17 @@ p {
   display: flex;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
+}
+.timeline-title > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .timeline-detail {
+  display: block;
+  min-width: 0;
   font-size: 13px;
   color: var(--mut);
   overflow: hidden;

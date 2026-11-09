@@ -1,0 +1,135 @@
+/* Journal screen + journal entry/detail sheets. */
+
+.journal-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.journal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 2px;
+}
+
+.journal-filter-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.journal-filter-row .field {
+  min-width: 0;
+}
+.journal-filter-row .input {
+  min-width: 0;
+}
+.journal-filter-row > :first-child {
+  grid-column: 1 / -1;
+}
+@media (min-width: 700px) {
+  .journal-filter-row {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .journal-filter-row > :first-child {
+    grid-column: auto;
+  }
+}
+
+.journal-day {
+  margin-bottom: 18px;
+}
+
+.journal-day-heading {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mut);
+  padding: 0 4px 8px;
+}
+
+.journal-day-card {
+  padding: 0 16px;
+  border-radius: 16px;
+}
+
+.journal-day-card .timeline-item {
+  cursor: pointer;
+}
+.journal-day-card .timeline-item:hover {
+  background: var(--fill);
+}
+
+.journal-tracker-tag {
+  color: var(--mut);
+  font-weight: 500;
+}
+
+/* ------------------------------ entry editor ----------------------------- */
+
+.journal-when {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+.journal-when .input {
+  min-width: 0;
+}
+
+/* ------------------------------ detail sheet ----------------------------- */
+
+.journal-detail-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--mut);
+  font-size: 13.5px;
+}
+
+.journal-detail-title {
+  margin-bottom: 2px;
+}
+
+.journal-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.journal-detail-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 0.5px solid var(--sep);
+}
+.journal-detail-row:first-child {
+  border-top: 0;
+}
+.journal-detail-row:last-child {
+  border-bottom: 0;
+}
+
+.journal-detail-label {
+  color: var(--mut);
+  font-size: 14px;
+  flex: 0 0 auto;
+}
+
+.journal-detail-value {
+  font-size: 14.5px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.journal-detail-actions {
+  margin-top: 2px;
+}

@@ -1,0 +1,136 @@
+name: CI
+
+# Quality gates for the local-first deUrge app:
+#   - typecheck all workspaces
+#   - unit tests (packages/core)
+#   - production web build
+#   - privacy audit (bundle must be fully offline)
+#   - Electron packaging smoke test (linux unpacked dir)
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.design/**'
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.15.0'
+
+jobs:
+  quality:
+    name: Typecheck · Test · Build · Privacy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build web app
+        run: pnpm --filter @deurge/web build
+
+      - name: Privacy audit (offline-only bundle)
+        run: pnpm audit:privacy
+
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+          retention-days: 7
+
+  electron-package:
+    name: Electron packaging (linux dir)
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Cache Electron / electron-builder downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm --filter @deurge/web build
+
+      - name: Package Electron (linux, unpacked)
+        run: pnpm --filter @deurge/desktop build
+
+      - name: Verify packaged app
+        run: |
+          set -euo pipefail
+          test -x apps/desktop/release/linux-unpacked/deurge
+          test -d apps/desktop/release/linux-unpacked/resources/web
+          test -f apps/desktop/release/linux-unpacked/resources/web/index.html
+          echo "Electron bundle OK:"
+          du -sh apps/desktop/release/linux-unpacked
+
+      - name: Install Electron runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libnss3 libasound2t64 libgbm1 libxss1
+
+      - name: Electron end-to-end smoke test (headless)
+        # Boots the packaged app under Ozone headless and verifies app:// loading,
+        # the SQLite-WASM asset, the deurgeDesktop bridge and atomic persistence.
+        run: node scripts/electron-smoke.mjs
+        timeout-minutes: 5
+
+      - name: Upload electron bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-linux-dir
+          path: apps/desktop/release/linux-unpacked
+          retention-days: 7
+
+# Web deployment notes:
+#   * Production web hosting is Netlify via netlify.toml (publish apps/web/dist).
+#   * GitHub Pages is optional; if you enable it, add a deploy job using
+#     actions/configure-pages + actions/upload-pages-artifact + actions/deploy-pages
+#     with `permissions: pages: write, id-token: write` and publish apps/web/dist.
+#   * Netlify's build command is `pnpm --filter @deurge/web build`; no environment
+#     variables or secrets are required (the app is static and local-only).

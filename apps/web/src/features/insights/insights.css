@@ -1,0 +1,120 @@
+/* Insights screen: stats grid, period charts and insight rules. */
+
+.insights-window {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--mut);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.insights-section-label {
+  padding: 0 4px 8px;
+}
+
+.insights-note {
+  line-height: 1.5;
+  margin-top: 10px;
+  padding: 0 4px;
+}
+
+.insights-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+@media (min-width: 700px) {
+  .insights-charts {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.insights-charts .chart-card {
+  height: 100%;
+}
+
+.insights-chart-note {
+  margin-top: 10px;
+  line-height: 1.45;
+}
+
+.insights-kicker {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mut);
+  margin-bottom: 10px;
+}
+
+.insights-window-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  color: var(--mut);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.insights-window-counts strong {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.insights-window-card .tiny,
+.insights-records .tiny {
+  line-height: 1.45;
+}
+
+.insight-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.insight {
+  padding: 12px 0;
+  border-top: 0.5px solid var(--sep);
+}
+.insight:first-child {
+  padding-top: 2px;
+  border-top: 0;
+}
+.insight:last-child {
+  padding-bottom: 2px;
+}
+
+.insight-text {
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.insight.insufficient .insight-text {
+  color: var(--mut);
+}
+
+.insight-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--mut);
+}
+
+.insight-tag {
+  background: var(--fill);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.insight-caveat {
+  margin-top: 6px;
+  line-height: 1.45;
+}

@@ -1,0 +1,94 @@
+name: Linux Flatpak
+
+# Builds the Flatpak bundle from the Electron linux-unpacked payload.
+# The finished .flatpak is self-contained and only references the Flathub
+# runtime repository for the shared 24.08 runtime.
+#
+# Local equivalent: bash flatpak/build.sh
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'flatpak/**'
+      - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'packages/core/**'
+      - 'scripts/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/flatpak.yml'
+  pull_request:
+    paths:
+      - 'flatpak/**'
+      - 'apps/desktop/**'
+      - '.github/workflows/flatpak.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: flatpak-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.15.0'
+
+jobs:
+  flatpak:
+    name: Flatpak bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install flatpak tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder
+          flatpak --version
+          flatpak-builder --version
+
+      - name: Add Flathub remote (user installation)
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - name: Cache Electron downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Flatpak bundle
+        run: BUILD=direct bash flatpak/build.sh
+
+      - name: Show bundle
+        run: |
+          ls -lh flatpak/dist
+          cat flatpak/dist/SHA256SUMS.txt
+
+      - name: Upload Flatpak bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-${{ github.ref_name }}-${{ github.sha }}
+          path: |
+            flatpak/dist/*.flatpak
+            flatpak/dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,84 @@
+/* Record sheet — local styles on top of the shared design system. */
+
+.record-form {
+  gap: 14px;
+}
+
+.record-type.seg {
+  height: 44px;
+  border-radius: 12px;
+  padding: 3px;
+}
+.record-type.seg button {
+  height: 38px;
+  border-radius: 9px;
+  font-size: 15px;
+}
+
+.record-helper {
+  font-size: 13.5px;
+  color: var(--mut);
+  line-height: 1.45;
+  padding: 0 2px;
+}
+
+.record-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.record-trigger-list .list-row .check {
+  margin-left: 6px;
+}
+
+/* Keep Cancel/Save visible while a long sheet body scrolls. Scoped to the
+   forms in this feature so shared sheets elsewhere are unaffected. */
+.sheet:has(.sheet-form) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sheet:has(.sheet-form) .sheet-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+
+.intensity-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 6px;
+}
+.intensity-grid button {
+  height: 40px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 0.5px var(--sep);
+}
+.intensity-grid button.on {
+  background: var(--u);
+  color: #fff;
+  box-shadow: none;
+}
+@media (max-width: 380px) {
+  .intensity-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.record-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--sep);
+}
+.record-actions .btn {
+  width: 100%;
+}

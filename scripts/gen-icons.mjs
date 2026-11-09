@@ -17,8 +17,9 @@
  *   apps/desktop/build/icon.ico                    Windows
  *   apps/desktop/build/icon.icns                   macOS (PNG-in-ICNS container)
  *   apps/mobile/android/app/src/main/res/**        adaptive + legacy launcher icons
+ *   apps/mobile/ios/App/App/Assets.xcassets/**     iOS app icon + launch splash
  *
- * Usage: node scripts/gen-icons.mjs [web|desktop|android|all]   (default: all)
+ * Usage: node scripts/gen-icons.mjs [web|desktop|android|ios|all]   (default: all)
  *
  * Tooling: librsvg (`rsvg-convert`) is preferred; ImageMagick (`magick`) is a
  * fallback. Both are only needed to *regenerate* icons — the generated PNGs
@@ -37,6 +38,7 @@ const WEB_PUBLIC = join(ROOT, 'apps/web/public');
 const WEB_ICONS = join(WEB_PUBLIC, 'icons');
 const DESKTOP_BUILD = join(ROOT, 'apps/desktop/build');
 const ANDROID_RES = join(ROOT, 'apps/mobile/android/app/src/main/res');
+const IOS_ASSETS = join(ROOT, 'apps/mobile/ios/App/App/Assets.xcassets');
 const TMP = join(tmpdir(), `deurge-icons-${process.pid}`);
 mkdirSync(TMP, { recursive: true });
 
@@ -134,7 +136,7 @@ function writeIcns(outPath, entries) {
 
 const targets = new Set(
   (process.argv[2] ?? 'all') === 'all'
-    ? ['web', 'desktop', 'android']
+    ? ['web', 'desktop', 'android', 'ios']
     : [process.argv[2]].filter(Boolean),
 );
 
@@ -254,6 +256,25 @@ if (targets.has('android')) {
     const splashFallback = join(ANDROID_RES, 'drawable', 'splash_icon.png');
     render(transparentMark(1), 240, splashFallback);
     record(splashFallback);
+  }
+}
+
+/* ios — AppIcon + launch screen splash (SPM project, no CocoaPods) */
+if (targets.has('ios')) {
+  if (!existsSync(IOS_ASSETS)) {
+    console.warn('gen-icons: apps/mobile/ios missing — run `npx cap add ios` first; skipped.');
+  } else {
+    // iOS masks the icon itself; use a full-bleed brand field with the mark inset.
+    const icon = join(IOS_ASSETS, 'AppIcon.appiconset/AppIcon-512@2x.png');
+    render(fullBleed(0.82), 1024, icon);
+    record(icon);
+
+    // LaunchScreen.storyboard scales Splash aspect-fill to the whole screen.
+    for (const name of ['splash-2732x2732.png', 'splash-2732x2732-1.png', 'splash-2732x2732-2.png']) {
+      const splash = join(IOS_ASSETS, 'Splash.imageset', name);
+      render(fullBleed(0.22), 2732, splash);
+      record(splash);
+    }
   }
 }
 

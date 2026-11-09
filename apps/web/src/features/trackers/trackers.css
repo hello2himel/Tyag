@@ -1,0 +1,300 @@
+/* Trackers list and tracker detail — local styles on the shared design system. */
+
+/* ------------------------------- list header ------------------------------ */
+.trackers-header {
+  margin-bottom: 20px;
+}
+.trackers-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+}
+.trackers-edit {
+  padding-left: 0;
+  padding-right: 10px;
+}
+.trackers-header .screen-title {
+  margin-top: 6px;
+}
+
+/* ------------------------------ tracker cards ----------------------------- */
+.tracker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tracker-card {
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tracker-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  text-align: left;
+  border-radius: 12px;
+}
+.tracker-card-main:focus-visible {
+  outline: 2px solid var(--bf);
+  outline-offset: 4px;
+}
+
+.tracker-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tracker-name {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tracker-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mut);
+  font-size: 15px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.tracker-streak {
+  font-size: clamp(38px, 11vw, 48px);
+  color: var(--ink);
+}
+.tracker-streak.paused,
+.tracker-streak.archived {
+  color: var(--mut);
+}
+
+.tracker-since {
+  color: var(--mut);
+  font-size: 14.5px;
+  line-height: 1.4;
+}
+
+@media (min-width: 980px) {
+  .tracker-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    align-items: start;
+    gap: 16px;
+  }
+}
+
+/* --------------------------- lifecycle actions ---------------------------- */
+.tracker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.tracker-actions .btn {
+  flex: 0 0 auto;
+}
+.detail-actions {
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+/* ------------------------------ detail header ----------------------------- */
+@media (min-width: 980px) {
+  .screen.detail-screen {
+    max-width: 1240px;
+  }
+}
+
+.detail-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+}
+.detail-topbar .btn-plain {
+  height: 40px;
+  padding-left: 0;
+}
+
+.detail-sub {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  color: var(--mut);
+  font-size: 15px;
+  margin-top: 2px;
+}
+
+.detail-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+}
+.detail-description {
+  font-size: 15px;
+  line-height: 1.45;
+}
+.detail-reasons {
+  font-size: 14px;
+  color: var(--mut);
+  line-height: 1.45;
+}
+.detail-reasons strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* --------------------------------- layout --------------------------------- */
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  margin-top: 16px;
+}
+.detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* ------------------------------- streak card ------------------------------ */
+.detail-hero {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.detail-streak {
+  font-size: clamp(52px, 17vw, 88px);
+  overflow-wrap: anywhere;
+}
+.detail-recognition {
+  font-size: 16.5px;
+  line-height: 1.45;
+}
+.detail-record-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+.detail-record-actions .btn {
+  flex: 1;
+  min-width: 0;
+}
+.detail-streakbar {
+  margin-top: 2px;
+}
+
+/* --------------------------------- stats ---------------------------------- */
+.detail-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.detail-note {
+  line-height: 1.45;
+  padding: 0 2px;
+}
+@media (min-width: 700px) {
+  .detail-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* --------------------------- charts (desktop) ----------------------------- */
+.detail-charts {
+  display: none;
+}
+.detail-charts .chart-card {
+  box-shadow: var(--shadow);
+}
+@media (min-width: 1200px) {
+  .detail-charts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .detail-charts .bars {
+    height: 130px;
+  }
+}
+
+/* -------------------------------- activity -------------------------------- */
+.activity-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.activity-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.activity-empty {
+  color: var(--mut);
+  font-size: 14px;
+  line-height: 1.45;
+  padding: 14px 2px 4px;
+}
+.activity-note {
+  color: var(--mut);
+  font-size: 12px;
+  line-height: 1.45;
+  padding-top: 2px;
+}
+.activity-panel .timeline-detail {
+  display: block;
+}
+.timeline-item.editable {
+  padding-left: 6px;
+  padding-right: 6px;
+  margin-left: -6px;
+  margin-right: -6px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.timeline-item.editable:hover {
+  background: var(--fill);
+}
+.timeline-item.editable:focus-visible {
+  outline-offset: 0;
+}
+
+@media (min-width: 1200px) {
+  .detail-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 28px;
+  }
+  .activity-panel {
+    border-left: 0.5px solid var(--sep);
+    padding-left: 24px;
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}

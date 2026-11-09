@@ -88,6 +88,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const result = await openDeUrgeCore();
       const settings = result.core.settings.get();
       applyTheme(resolveTheme(settings));
+      if (import.meta.env.DEV) {
+        // Development-only handle for automated UI verification. Tree-shaken
+        // from production builds; never exposed to users.
+        (window as unknown as { __deurgeCore?: unknown }).__deurgeCore = result.core;
+      }
       setBoot({
         status: 'ready',
         core: result.core,

@@ -1,0 +1,347 @@
+name: Release
+
+# Tag-driven release: builds every distributable platform artifact, writes
+# SHA256SUMS.txt for all of them and creates a DRAFT GitHub release.
+#
+#   git tag v1.0.0 && git push origin v1.0.0
+#
+# The tag must match the version in the root package.json (vX.Y.Z). Review the
+# draft, then publish it. See docs/RELEASING.md.
+#
+# Platform workflows (ci.yml, android.yml, flatpak.yml, desktop-*.yml, ios.yml)
+# remain the per-PR/per-push CI; this workflow is the single release entrypoint.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.15.0'
+
+jobs:
+  version:
+    name: Validate version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Tag matches package.json
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            test "v$VERSION" = "${GITHUB_REF_NAME}" || {
+              echo "Tag ${GITHUB_REF_NAME} does not match package.json version $VERSION" >&2
+              exit 1
+            }
+          fi
+          echo "Releasing deUrge $VERSION"
+
+  web:
+    name: Web PWA
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '10.15.0' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @deurge/web build
+      - run: pnpm audit:privacy
+      - name: Zip web build
+        run: |
+          set -euo pipefail
+          cd apps/web/dist
+          zip -qr "$RUNNER_TEMP/deUrge-${{ needs.version.outputs.version }}-web.zip" .
+          cp "$RUNNER_TEMP/deUrge-${{ needs.version.outputs.version }}-web.zip" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: apps/web/dist/deUrge-*-web.zip
+          retention-days: 7
+
+  android:
+    name: Android APK/AAB
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '10.15.0' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: pnpm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: pnpm install --frozen-lockfile
+      - name: Resolve signing
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "${KEYSTORE_BASE64}" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/deurge-release.jks"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is not configured — release build will be debug-signed."
+          fi
+      - name: Build signed release
+        if: steps.signing.outputs.available == 'true'
+        env:
+          DEURGE_KEYSTORE: ${{ runner.temp }}/deurge-release.jks
+          DEURGE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          DEURGE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          DEURGE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: pnpm --filter @deurge/mobile build:android:release
+      - name: Build debug APK (fallback)
+        if: steps.signing.outputs.available != 'true'
+        run: pnpm --filter @deurge/mobile build:android:debug
+      - name: Remove keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deurge-release.jks"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: apps/mobile/dist
+          retention-days: 7
+
+  linux-appimage:
+    name: Linux AppImage
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '10.15.0' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: pnpm }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-linux-${{ hashFiles('apps/desktop/package.json') }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @deurge/web build
+      - run: pnpm --filter @deurge/desktop dist:linux
+      - name: Checksums
+        run: |
+          set -euo pipefail
+          cd apps/desktop/release
+          shopt -s nullglob
+          sha256sum *.AppImage > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/SHA256SUMS.txt
+          retention-days: 7
+
+  flatpak:
+    name: Linux Flatpak
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '10.15.0' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: pnpm }
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-linux-${{ hashFiles('apps/desktop/package.json') }}
+      - run: pnpm install --frozen-lockfile
+      - run: BUILD=direct bash flatpak/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatpak
+          path: |
+            flatpak/dist/*.flatpak
+            flatpak/dist/SHA256SUMS.txt
+          retention-days: 7
+
+  windows:
+    name: Windows installer
+    needs: version
+    runs-on: windows-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '10.15.0' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: pnpm }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-windows-${{ hashFiles('apps/desktop/package.json') }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @deurge/web build
+      - run: pnpm --filter @deurge/desktop dist:win
+      - name: Checksums
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exes = Get-ChildItem apps/desktop/release/*.exe
+          if ($exes.Count -eq 0) { throw 'No installer produced' }
+          $lines = $exes | ForEach-Object {
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
+          }
+          Set-Content apps/desktop/release/SHA256SUMS.txt $lines
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/SHA256SUMS.txt
+          retention-days: 7
+
+  macos:
+    name: macOS DMG
+    needs: version
+    runs-on: macos-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '10.15.0' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: pnpm }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: electron-macos-${{ hashFiles('apps/desktop/package.json') }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @deurge/web build
+      - run: pnpm --filter @deurge/desktop dist:mac
+      - name: Checksums
+        run: |
+          set -euo pipefail
+          cd apps/desktop/release
+          shopt -s nullglob
+          shasum -a 256 *.dmg > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/SHA256SUMS.txt
+          retention-days: 7
+
+  ios:
+    name: iOS unsigned build
+    needs: version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '10.15.0' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: bash apps/mobile/scripts/build-ios.sh archive
+      - name: Package unsigned archive
+        run: |
+          set -euo pipefail
+          mkdir -p apps/mobile/dist/ios
+          ditto -c -k --sequesterRsrc --keepParent \
+            apps/mobile/dist/ios/deUrge.xcarchive \
+            "apps/mobile/dist/ios/deUrge-${{ needs.version.outputs.version }}-unsigned.xcarchive.zip"
+          cd apps/mobile/dist/ios
+          shasum -a 256 *.zip > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: |
+            apps/mobile/dist/ios/*.zip
+            apps/mobile/dist/ios/SHA256SUMS.txt
+          retention-days: 7
+
+  publish:
+    name: Publish draft GitHub release
+    needs: [version, web, android, linux-appimage, flatpak, windows, macos, ios]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collect artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten + checksums
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          VERSION="${{ needs.version.outputs.version }}"
+          find artifacts -type f ! -name 'SHA256SUMS.txt' -print0 \
+            | while IFS= read -r -d '' f; do cp -n "$f" dist/; done
+          cd dist
+          shasum -a 256 * > SHA256SUMS.txt
+          echo "Release files:"
+          ls -lh
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ needs.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            --draft \
+            --title "deUrge $VERSION" \
+            --generate-notes \
+            --notes "Local-first, offline deUrge $VERSION. All artifacts are built from this tag; see SHA256SUMS.txt for checksums and docs/RELEASING.md for verification steps." \
+            dist/*
+
+      - name: Summary
+        run: |
+          {
+            echo "## deUrge ${{ needs.version.outputs.version }} draft release"
+            echo
+            echo "Artifacts uploaded to release \`v${{ needs.version.outputs.version }}\`:"
+            echo '```'
+            cat dist/SHA256SUMS.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,130 @@
+/* First-run onboarding — local styles on the shared design system. */
+
+.onboarding {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px calc(28px + env(safe-area-inset-bottom));
+  background: var(--bg);
+}
+
+.onboarding-inner {
+  width: 100%;
+  max-width: 520px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.onboarding-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.onboarding-brand {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.onboarding-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.onboarding-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fill-strong);
+  transition: background 0.15s ease;
+}
+.onboarding-dots i.on {
+  background: var(--bf);
+}
+
+.onboarding-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.onboarding-mark {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: var(--bf);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.onboarding-mark-ready {
+  background: var(--g);
+}
+
+.onboarding-title {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+}
+
+.onboarding-lead {
+  font-size: 16.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.onboarding-privacy {
+  color: var(--mut);
+  font-size: 14px;
+}
+
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.onboarding-actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.onboarding-actions .btn {
+  width: 100%;
+}
+.onboarding-actions .btn-plain {
+  height: 42px;
+  color: var(--b);
+}
+
+.onboarding-footnote {
+  text-align: center;
+  color: var(--mut);
+  font-size: 12.5px;
+  padding-top: 4px;
+}
+
+@media (min-width: 700px) {
+  .onboarding {
+    justify-content: center;
+  }
+  .onboarding-card {
+    padding: 30px;
+  }
+  .onboarding-actions {
+    margin-top: 0;
+  }
+}

@@ -32,17 +32,25 @@ say "Building web assets"
 say "Syncing Capacitor iOS project"
 (cd "$MOBILE_DIR" && pnpm exec cap sync ios)
 
-say "Installing CocoaPods"
-(cd "$IOS_APP_DIR" && pod install --repo-update)
-
 SCHEME="App"
 DERIVED="$MOBILE_DIR/build/ios"
+
+# Capacitor 8 uses Swift Package Manager (CapApp-SPM) instead of CocoaPods;
+# only resolve/install Pods when the project still has a Podfile.
+if [[ -f "$IOS_APP_DIR/Podfile" ]]; then
+  say "Installing CocoaPods"
+  command -v pod >/dev/null || die "Podfile present but CocoaPods is not installed"
+  (cd "$IOS_APP_DIR" && pod install --repo-update)
+fi
+
+say "Resolving Swift packages"
+(cd "$IOS_APP_DIR" && xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme "$SCHEME" -derivedDataPath "$DERIVED")
 
 case "$MODE" in
   simulator)
     say "xcodebuild (iphonesimulator, unsigned)"
     (cd "$IOS_APP_DIR" && xcodebuild \
-      -workspace App.xcworkspace \
+      -project App.xcodeproj \
       -scheme "$SCHEME" \
       -configuration Debug \
       -sdk iphonesimulator \
@@ -54,7 +62,7 @@ case "$MODE" in
   archive)
     say "xcodebuild archive (unsigned)"
     (cd "$IOS_APP_DIR" && xcodebuild \
-      -workspace App.xcworkspace \
+      -project App.xcodeproj \
       -scheme "$SCHEME" \
       -configuration Release \
       -sdk iphoneos \

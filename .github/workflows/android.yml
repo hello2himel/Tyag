@@ -1,0 +1,122 @@
+name: Android
+
+# Builds the Capacitor Android app:
+#   * debug APK on every push/PR that touches the app (installable for testing)
+#   * release APK + AAB when the signing secrets are configured (tags/main)
+#
+# Required secrets for store-ready builds (see docs/BUILDING.md § Android signing):
+#   ANDROID_KEYSTORE_BASE64     base64 of the release .jks
+#   ANDROID_KEYSTORE_PASSWORD   store password
+#   ANDROID_KEY_ALIAS           key alias
+#   ANDROID_KEY_PASSWORD        key password
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'apps/mobile/**'
+      - 'apps/web/**'
+      - 'packages/core/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/android.yml'
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - 'apps/web/**'
+      - 'packages/core/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.15.0'
+  JAVA_VERSION: '21'
+
+jobs:
+  android:
+    name: APK / AAB
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve signing configuration
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "${KEYSTORE_BASE64}" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/deurge-release.jks"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "No ANDROID_KEYSTORE_BASE64 secret — building a debug APK only."
+          fi
+
+      - name: Build debug APK
+        if: steps.signing.outputs.available != 'true'
+        run: pnpm --filter @deurge/mobile build:android:debug
+
+      - name: Build signed release APK + AAB
+        if: steps.signing.outputs.available == 'true'
+        env:
+          DEURGE_KEYSTORE: ${{ runner.temp }}/deurge-release.jks
+          DEURGE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          DEURGE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          DEURGE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: pnpm --filter @deurge/mobile build:android:release
+
+      - name: Remove keystore from runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deurge-release.jks"
+
+      - name: Show artifacts
+        run: |
+          find apps/mobile/dist -type f 2>/dev/null | sort
+          cat apps/mobile/dist/SHA256SUMS.txt 2>/dev/null || true
+
+      - name: Upload APK/AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ github.ref_name }}-${{ github.sha }}
+          path: apps/mobile/dist
+          if-no-files-found: error
+          retention-days: 14

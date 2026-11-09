@@ -23,7 +23,7 @@ import type {
 } from '../domain';
 import type { AllData } from '../services/data';
 import { isValidTimeZone, toIsoUtc, zonedAt } from '../time/temporal';
-import { formatDate, formatDateTime, formatTimeOfDay, formatWeekdayLong } from '../time/format';
+import { formatDateTime, formatWeekdayLong } from '../time/format';
 import { exportFilename } from './serialize';
 import { DeUrgeError } from '../util/errors';
 
@@ -399,9 +399,9 @@ function buildStatisticsRows(context: CsvContext): string[][] {
     metrics.lastLapseAt === null ? '' : toIsoUtc(metrics.lastLapseAt),
     nullableNumber(metrics.timeSinceLastLapseMs),
     String(metrics.streakCount),
-    fixedNumber(metrics.averageStreakMs, 0),
-    fixedNumber(metrics.averageBetweenLapsesMs, 0),
-    fixedNumber(metrics.medianBetweenLapsesMs, 0),
+    fixedNumber(metrics.averageStreakMs, 2),
+    fixedNumber(metrics.averageBetweenLapsesMs, 2),
+    fixedNumber(metrics.medianBetweenLapsesMs, 2),
     fixedNumber(metrics.abstinenceShareOfElapsed, 4),
     fixedNumber(metrics.activeShareOfElapsed, 4),
     fixedNumber(metrics.lapsesPerActiveWeek, 4),
@@ -460,15 +460,3 @@ export function buildCsvExport(
     rows: rows.length,
   };
 }
-
-/** Exposed for tests: the local time-of-day formatter used by local columns. */
-export function localTimeOfDay(epochMs: number, formatting: ResolvedFormatting): string {
-  return formatTimeOfDay(epochMs, formatting.timeZone, formatting.timeFormat);
-}
-
-/** Exposed for tests: local date formatter used by local columns. */
-export function localDateFormatted(epochMs: number, formatting: ResolvedFormatting): string {
-  return formatDate(epochMs, formatting.timeZone, formatting.dateFormat);
-}
-
-export type { ResolvedFormatting };

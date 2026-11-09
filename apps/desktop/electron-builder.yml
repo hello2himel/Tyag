@@ -47,6 +47,9 @@ linux:
     device — no accounts, no analytics, no network access.
   icon: build/icons
   executableName: deurge
+  # Keep the generated .desktop filename in sync with Electron's desktopName
+  # (WM_CLASS/window association) instead of relying on heuristics.
+  syncDesktopName: true
   desktop:
     entry:
       Name: deUrge
@@ -58,7 +61,6 @@ linux:
 
 appImage:
   artifactName: deUrge-${version}-${arch}.AppImage
-  license: LICENSE
 
 win:
   target:

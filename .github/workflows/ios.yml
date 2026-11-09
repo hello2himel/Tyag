@@ -1,0 +1,95 @@
+name: iOS
+
+# Builds the Capacitor iOS project unsigned on a macOS runner:
+#   * simulator build  — proves the Xcode project + Swift packages compile
+#   * device archive   — unsigned .xcarchive, to be signed/exported with the
+#                        team's Apple Developer account (never in this repo)
+#
+# Capacitor 8 uses Swift Package Manager (CapApp-SPM); CocoaPods is only used
+# if a Podfile exists. See docs/BUILDING.md § iOS.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'apps/mobile/ios/**'
+      - 'apps/mobile/capacitor.config.ts'
+      - 'apps/web/**'
+      - 'packages/core/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ios.yml'
+  pull_request:
+    paths:
+      - 'apps/mobile/ios/**'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.15.0'
+
+jobs:
+  ios:
+    name: Simulator build + unsigned archive
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Ensure iOS platform exists
+        run: |
+          if [ ! -d apps/mobile/ios/App/App.xcodeproj ]; then
+            pnpm --filter @deurge/mobile exec cap add ios
+          fi
+
+      - name: Simulator build (unsigned)
+        run: bash apps/mobile/scripts/build-ios.sh simulator
+
+      - name: Unsigned device archive
+        run: bash apps/mobile/scripts/build-ios.sh archive
+
+      - name: Package artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p apps/mobile/dist/ios
+          ditto -c -k --sequesterRsrc --keepParent \
+            "apps/mobile/build/ios/Build/Products/Debug-iphonesimulator/App.app" \
+            "apps/mobile/dist/ios/deUrge-simulator.zip"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "apps/mobile/dist/ios/deUrge.xcarchive" \
+            "apps/mobile/dist/ios/deUrge-unsigned.xcarchive.zip"
+          cd apps/mobile/dist/ios
+          shasum -a 256 *.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-${{ github.ref_name }}-${{ github.sha }}
+          path: |
+            apps/mobile/dist/ios/*.zip
+            apps/mobile/dist/ios/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14

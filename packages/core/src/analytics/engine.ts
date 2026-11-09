@@ -19,6 +19,14 @@
  *  - Combined periods *sum tracker-time*: two trackers running in parallel
  *    each contribute their own time. This can exceed wall-clock time and is
  *    documented on `CombinedAnalytics`; it is not wall-clock math.
+ *  - `weekdayCounts` and `hourCounts` are distributions of *recorded lapses*
+ *    in the effective timezone (they describe when lapses were logged).
+ *    `lapseTriggers`/`lapseReasons`/`lapseContexts` come from lapse records;
+ *    `urgeTriggers`/`urgeOutcomes` come from urge records. Values are never
+ *    invented: an empty list means no matching records.
+ *  - Combined `journalCount` counts every journal entry (tracker-linked *and*
+ *    global), and combined `checkInCount` every check-in, so the combined
+ *    activity chart matches the journal/check-in screens.
  */
 import type {
   CategoryCount,
@@ -41,7 +49,7 @@ import { requireTracker } from '../services/context';
 import type { SettingsService } from '../services/settings';
 import { groupBy, loadAllData, loadTrackerBundle } from '../services/data';
 import { buildActiveIntervals, computeTrackerMetrics } from '../engine/streak';
-import { addPeriodsMs, periodKeyFor, startOfPeriodMs } from '../time/periods';
+import { addPeriodsMs, enumeratePeriods, periodKeyFor, startOfPeriodMs } from '../time/periods';
 import { localDateKey, localHour, weekdayIndex } from '../time/temporal';
 import { DeUrgeError } from '../util/errors';
 import type { CombinedAnalyticsOptions, TrackerAnalyticsOptions } from './service';
@@ -49,7 +57,7 @@ import type { CombinedAnalyticsOptions, TrackerAnalyticsOptions } from './servic
 /** Chart buckets returned when the caller does not choose a limit. */
 export const DEFAULT_PERIOD_LIMIT = 90;
 /** Hard upper bound so analytics can never enumerate unbounded history. */
-export const MAX_PERIOD_LIMIT = 1000;
+export const MAX_PERIOD_LIMIT = 4_000;
 
 const GRANULARITIES: readonly Granularity[] = ['day', 'week', 'month', 'quarter', 'year'];
 const URGE_OUTCOMES: readonly UrgeOutcome[] = ['passed', 'lapse', 'unknown'];
@@ -124,6 +132,11 @@ interface PeriodRangeWithKey {
  * Enumerate the periods overlapping `[from, to)`, keeping the `limit` most
  * recent periods. The first and last range are clipped to the window so a
  * chart never shows time outside the requested bounds.
+ *
+ * Uses `enumeratePeriods` from `time/periods` for windows that fit within the
+ * limit (the normal case, including DST-correct week boundaries). Only when
+ * the window contains more periods than may be shown does it walk backwards
+ * from the end so the *most recent* buckets survive, instead of the oldest.
  */
 export function enumeratePeriodRanges(
   granularity: Granularity,
@@ -134,6 +147,16 @@ export function enumeratePeriodRanges(
   limit: number,
 ): PeriodRangeWithKey[] {
   if (!(to > from)) return [];
+  const forward = enumeratePeriods(granularity, from, to, timeZone, firstDayOfWeek, limit + 1);
+  if (forward.length <= limit) {
+    // `enumeratePeriods` returns true period boundaries (a chart bucket can
+    // start before midnight on a partial first day); clip to the window.
+    return forward.map((range) => ({
+      key: range.key,
+      startAt: Math.max(range.startAt, from),
+      endAt: Math.min(range.endAt, to),
+    }));
+  }
   const firstStart = startOfPeriodMs(granularity, from, timeZone, firstDayOfWeek);
   let cursor = startOfPeriodMs(granularity, to - 1, timeZone, firstDayOfWeek);
   const starts: number[] = [];
