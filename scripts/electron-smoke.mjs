@@ -74,13 +74,30 @@ let logs = '';
 child.stdout.on('data', (chunk) => (logs += chunk));
 child.stderr.on('data', (chunk) => (logs += chunk));
 
-const shutdown = (code) => {
+const shutdown = async (code) => {
   try {
-    child.kill('SIGTERM');
+    child.kill('SIGKILL');
   } catch {
     /* already gone */
   }
-  rmSync(USER_DATA, { recursive: true, force: true });
+  await new Promise((resolve) => {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      resolve();
+      return;
+    }
+    child.once('exit', resolve);
+    setTimeout(resolve, 3000);
+  });
+  // Chromium can still be flushing files right after exit; retry politely and
+  // never turn a cleanup hiccup into a release-blocking test failure.
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      rmSync(USER_DATA, { recursive: true, force: true, maxRetries: 3 });
+      break;
+    } catch {
+      await sleep(250);
+    }
+  }
   process.exit(code);
 };
 
@@ -103,9 +120,8 @@ try {
     throw new Error(`no app:// page target appeared.\nElectron logs:\n${logs}`);
   }
 
-  console.log(`electron-smoke: ${page.url} — ${page.title}`);
+  console.log(`electron-smoke: ${page.url}`);
   check(page.url === 'app://deurge/index.html', 'loads app://deurge/index.html (not file://)');
-  check(/deUrge/.test(page.title ?? ''), 'window title is deUrge');
 
   // ------------------------------------------------------------------- CDP glue
   const ws = new WebSocket(page.webSocketDebuggerUrl);
@@ -156,6 +172,7 @@ try {
       const result = {
         rootChildren: root.children.length,
         bodyTextLength: document.body.innerText.trim().length,
+        documentTitle: document.title,
         bridge: null,
         consoleErrors: [],
       };
@@ -188,6 +205,7 @@ try {
   const externalRequests = requests.filter((u) => /^(https?|wss?):/i.test(u));
 
   check(result.rootChildren > 0 && result.bodyTextLength > 20, `web app rendered (${result.bodyTextLength} chars of UI text)`);
+  check(/deUrge/.test(result.documentTitle ?? ''), 'window/document title is deUrge');
   check(appRequests.some((u) => u.includes('sql-wasm') && u.endsWith('.wasm')), 'SQLite-WASM loaded from app://');
   check(externalRequests.length === 0, `no external network requests (${externalRequests.join(', ') || 'none'})`);
   check(Boolean(result.bridge), 'window.deurgeDesktop is exposed');
@@ -222,12 +240,12 @@ try {
   if (failures.length > 0) {
     console.error(`\nelectron-smoke: FAILED — ${failures.length} check(s)`);
     console.error(`Electron logs:\n${logs}`);
-    shutdown(1);
+    await shutdown(1);
   }
   console.log('\nelectron-smoke: PASS — packaged Electron app serves the PWA over app://, boots the SQLite-WASM bundle offline, and persists the database atomically.');
-  shutdown(0);
+  await shutdown(0);
 } catch (error) {
   console.error(`\nelectron-smoke: ERROR — ${error?.message ?? error}`);
   console.error(`Electron logs:\n${logs}`);
-  shutdown(1);
+  await shutdown(1);
 }
