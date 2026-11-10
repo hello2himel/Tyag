@@ -15,6 +15,7 @@ license; no package includes advertising, tracking or cloud functionality.
 | Tauri 2, @tauri-apps/api, @tauri-apps/cli | MIT / Apache-2.0 | desktop shell using the OS WebView, packaging |
 | TypeScript | Apache-2.0 | type system/build |
 | Vitest | MIT | tests |
+| Inter font (bundled WOFF2, SIL OFL 1.1) | OFL-1.1 | system-font fallback so non-Apple platforms match the iOS design (local files, no remote fonts) |
 
 The system font stack is used; no font files are bundled or downloaded. The
 application does not load resources from third-party servers at runtime.

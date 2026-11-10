@@ -46,6 +46,14 @@ All screens are responsive: a single component tree renders both mobile and
 desktop layouts via CSS breakpoints (980px desktop shell, 700px for wider
 sheets/grids).
 
+## Typography and platform fidelity
+
+The kit's font stack is SF Pro on Apple platforms with Inter as the fallback.
+deUrge bundles the Inter WOFF2 files locally (SIL OFL, no remote fonts) and uses
+the same stack, so non-Apple platforms match the iOS boards. iOS PWA metadata,
+`viewport-fit=cover`, safe-area insets and the `-webkit-tap-highlight-color`
+reset are applied for an app-like iOS feel.
+
 ## Brand
 
 The supplied skeleton used a placeholder clock mark. The final product uses the

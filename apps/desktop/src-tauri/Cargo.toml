@@ -6,6 +6,8 @@ authors = ["deUrge contributors"]
 license = "AGPL-3.0-only"
 edition = "2021"
 rust-version = "1.77.2"
+# Tauri CLI needs an unambiguous main binary if extra bins ever exist.
+default-run = "deurge"
 
 # The desktop shell is a Tauri 2 application: the same React/Vite bundle as the
 # web/PWA is embedded at compile time and rendered by the system WebView

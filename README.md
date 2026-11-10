@@ -8,8 +8,8 @@ Windows, macOS and Linux. It runs entirely on your device — no account, no
 cloud, no tracking, no internet required.
 
 <p align="center">
+  <img src="docs/screenshots/onboarding-welcome.png" width="240" alt="deUrge onboarding (mobile, light)" />
   <img src="docs/screenshots/mobile-light-trackers.png" width="240" alt="deUrge trackers (mobile, light)" />
-  <img src="docs/screenshots/mobile-light-record-lapse.png" width="240" alt="deUrge record sheet (mobile, light)" />
   <img src="docs/screenshots/desktop-light-tracker-detail.png" width="560" alt="deUrge tracker detail (desktop, light)" />
 </p>
 <p align="center">

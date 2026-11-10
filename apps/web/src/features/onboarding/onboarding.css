@@ -20,13 +20,13 @@
   -webkit-overflow-scrolling: touch;
 }
 .onb-scroll-privacy {
-  padding: 80px 24px 0;
+  padding: calc(80px + env(safe-area-inset-top)) 24px 0;
 }
 .onb-scroll-form {
-  padding: 52px 20px 0;
+  padding: calc(52px + env(safe-area-inset-top)) 20px 0;
 }
 .onb-scroll-reminders {
-  padding: 80px 24px 0;
+  padding: calc(80px + env(safe-area-inset-top)) 24px 0;
 }
 
 .onb-title {
@@ -175,6 +175,51 @@
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
+.onb-suggestions {
+  list-style: none;
+  margin: -6px 0 16px;
+  padding: 0;
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  z-index: 5;
+  max-height: 264px;
+  overflow-y: auto;
+}
+.onb-suggestions li + li {
+  border-top: 0.5px solid var(--sep);
+  margin-left: 16px;
+}
+.onb-suggestions button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 17px;
+  text-align: left;
+  cursor: pointer;
+}
+.onb-suggestions button:hover {
+  background: var(--fill);
+}
+.onb-suggestion-icon {
+  display: inline-flex;
+  color: var(--mut);
+}
+.onb-desktop-content .onb-suggestions {
+  margin: 8px 0 14px;
+  font-size: 15px;
+}
+.onb-desktop-content .onb-suggestions button {
+  min-height: 40px;
+  font-size: 15px;
+}
 .onb-chip {
   display: inline-flex;
   align-items: center;
@@ -257,6 +302,10 @@
 }
 .onb-inline-input[type='datetime-local'] {
   font-size: 16px;
+}
+.onb-inline-input:focus,
+.onb-inline-input:focus-visible {
+  outline: none;
 }
 .onb-textarea {
   width: 100%;

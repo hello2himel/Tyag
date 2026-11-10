@@ -1,3 +1,41 @@
+/* Inter (SIL Open Font License) is bundled locally — the onboarding kit's
+   fallback for platforms without Apple's SF fonts. No remote fonts are loaded. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/inter-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../assets/fonts/inter-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/fonts/inter-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/inter-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../assets/fonts/inter-latin-800-normal.woff2') format('woff2');
+}
+
 /* ==========================================================================
    deUrge design system
    Derived from the supplied deUrge UI/UX skeleton (light + dark, iOS-like
@@ -30,8 +68,8 @@
   --radius: 20px;
   --radius-sm: 12px;
   --radius-xs: 9px;
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Inter, system-ui,
-    'Noto Sans', sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', Inter, system-ui, 'Noto Sans',
+    sans-serif;
   --logo-bg: #ffffff;
   --logo-fg: #000000;
   --max-mobile: 560px;
@@ -81,6 +119,7 @@ body {
   font-size: 17px;
   line-height: 1.35;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
   font-variant-numeric: tabular-nums;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-y: none;
@@ -181,7 +220,7 @@ p {
 
 .screen {
   flex: 1;
-  padding: 56px 20px 128px;
+  padding: calc(56px + env(safe-area-inset-top)) 20px 128px;
   width: 100%;
   max-width: var(--max-mobile);
   margin: 0 auto;
