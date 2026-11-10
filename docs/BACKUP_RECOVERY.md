@@ -59,11 +59,11 @@ a `deurge-backup-<timestamp>.deurge-backup` file:
 - The password is never stored. There is no password recovery.
 - A wrong password or tampered payload fails with a clear error.
 - Encrypted backups are unreadable without the password, unlike JSON exports.
-- The **app lock** password is separate from the encrypted-backup password. It
-  is stored only as a salted hash in the local `meta` table and is never part of
-  any export. Restoring a backup on a new device therefore asks you to set a new
-  app password. Forgetting the app password has no recovery: reset erases local
-  data and you re-import your latest backup.
+- The **app lock** PIN (4 digits) is separate from the encrypted-backup
+  password. It is stored only as a salted hash in the local `meta` table and is
+  never part of any export. Restoring a backup on a new device therefore asks
+  you to set a new app PIN. Forgetting the app PIN has no recovery: reset erases
+  local data and you re-import your latest backup.
 
 ## 3. CSV exports
 

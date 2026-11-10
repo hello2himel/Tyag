@@ -680,7 +680,7 @@ p {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.46);
-  z-index: 120;
+  z-index: 300;
   display: flex;
   align-items: center;
   justify-content: center;

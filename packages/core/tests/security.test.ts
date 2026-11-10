@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DeUrgeError, isDeUrgeError } from '../src/index';
 import { createTestCore, reopenTestCore, DAY, T0 } from './helpers';
 
-const PASSWORD = 'correct horse battery staple';
+const PASSWORD = '4829';
 
 async function expectError(promise: Promise<unknown>, code: string): Promise<void> {
   try {
@@ -15,7 +15,7 @@ async function expectError(promise: Promise<unknown>, code: string): Promise<voi
 }
 
 describe('app lock security', () => {
-  it('starts without a password and sets one with a salted hash', async () => {
+  it('starts without a PIN and sets one with a salted hash', async () => {
     const { core } = await createTestCore();
     expect(core.security.hasPassword()).toBe(false);
     expect(core.security.biometricsEnabled()).toBe(false);
@@ -30,29 +30,31 @@ describe('app lock security', () => {
     expect(JSON.stringify(rows)).not.toContain(PASSWORD);
   });
 
-  it('verifies the correct password and rejects wrong ones', async () => {
+  it('verifies the correct PIN and rejects wrong ones', async () => {
     const { core } = await createTestCore();
     await core.security.setPassword(PASSWORD);
     expect(await core.security.verifyPassword(PASSWORD)).toBe(true);
-    expect(await core.security.verifyPassword('wrong password')).toBe(false);
+    expect(await core.security.verifyPassword('9999')).toBe(false);
     expect(await core.security.verifyPassword('')).toBe(false);
   });
 
-  it('rejects short passwords and biometrics without a password', async () => {
+  it('rejects non-PIN or too-short PINs and biometrics without a PIN', async () => {
     const { core } = await createTestCore();
-    await expectError(core.security.setPassword('short'), 'VALIDATION');
+    for (const invalid of ['123', '12345', 'abcd', '']) {
+      await expectError(core.security.setPassword(invalid), 'VALIDATION');
+    }
     await expectError(core.security.setBiometricsEnabled(true), 'VALIDATION');
   });
 
-  it('stores the biometric flag locally and changes/removes passwords', async () => {
+  it('stores the biometric flag locally and changes/removes the PIN', async () => {
     const { core } = await createTestCore();
     await core.security.setPassword(PASSWORD, { biometricsEnabled: true });
     expect(core.security.biometricsEnabled()).toBe(true);
     await core.security.setBiometricsEnabled(false);
     expect(core.security.biometricsEnabled()).toBe(false);
-    await core.security.setPassword('a brand new passphrase');
+    await core.security.setPassword('9021');
     expect(await core.security.verifyPassword(PASSWORD)).toBe(false);
-    expect(await core.security.verifyPassword('a brand new passphrase')).toBe(true);
+    expect(await core.security.verifyPassword('9021')).toBe(true);
     await core.security.clearPassword();
     expect(core.security.hasPassword()).toBe(false);
     expect(core.security.biometricsEnabled()).toBe(false);
@@ -68,7 +70,7 @@ describe('app lock security', () => {
     expect(await reopened.core.security.verifyPassword(PASSWORD)).toBe(true);
   });
 
-  it('does not export the password hash or biometric flag in backups', async () => {
+  it('does not export the PIN hash or biometric flag in backups', async () => {
     const { core } = await createTestCore();
     await core.trackers.create({ name: 'Private' });
     await core.security.setPassword(PASSWORD, { biometricsEnabled: true });

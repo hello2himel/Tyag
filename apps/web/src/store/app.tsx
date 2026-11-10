@@ -15,7 +15,7 @@ import {
 } from 'react';
 import { DeUrgeCore, type AppSettings, type PersistenceAdapter } from '@deurge/core';
 import { openDeUrgeCore } from '../platform/db';
-import { DeUrgeAppIcon, DeUrgeLockup } from '../ui/logo';
+import { DeUrgeAppIcon } from '../ui/logo';
 import {
   cancelNativeAcknowledgement,
   notificationAvailability,
@@ -248,7 +248,6 @@ function BootScreen() {
       <div className="boot-mark">
         <DeUrgeAppIcon size={64} />
       </div>
-      <DeUrgeLockup height={26} />
       <div className="mut" style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
         <span className="spinner" aria-hidden="true" /> Opening your local database…
       </div>

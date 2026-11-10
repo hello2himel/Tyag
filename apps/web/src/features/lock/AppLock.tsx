@@ -1,18 +1,19 @@
 /**
- * App lock: the password/biometric gate shown before any records are rendered.
+ * App lock — implemented 1:1 from the supplied deUrge PIN screen kit
+ * (`deurge-pin-screens`): mobile create/confirm/lock/forgot sheets, a
+ * biometrics opt-in, and the desktop lock/set-PIN cards.
  *
- * - First run after onboarding (or after upgrading without a lock) forces the
- *   user to set a password.
- * - Every visit/cold start shows the unlock screen.
- * - Android can use the system BiometricPrompt instead of typing the password.
- * - Forgetting the password can only be recovered by erasing local data and
- *   re-importing a backup; there is deliberately no server-side recovery.
+ * Product decisions layered on the kit: the PIN is exactly 4 digits (so every
+ * "6 digits" in the kit becomes four), and Touch ID / Face ID wording is
+ * replaced with "biometrics". The Android build supplies the actual system
+ * biometric prompt; other platforms use the PIN only.
  */
 import { useEffect, useRef, useState } from 'react';
 import { isDeUrgeError, userMessage } from '@deurge/core';
 import { useApp } from '../../store/app';
-import { Button, Field, Input, Modal, Toggle, useToast } from '../../ui/components';
-import { DeUrgeAppIcon } from '../../ui/logo';
+import { ConfirmDialog } from '../../ui/components';
+import { DeUrgeMark } from '../../ui/logo';
+import { pickTextFile } from '../../platform/files';
 import {
   authenticateBiometrics,
   biometricsAvailable,
@@ -20,36 +21,729 @@ import {
 } from '../../platform/biometrics';
 import './lock.css';
 
-const MIN_PASSWORD_LENGTH = 8;
-const AUTO_LOCK_AFTER_MS = 60_000;
+const PIN_LENGTH = 4;
 const MAX_ATTEMPTS = 5;
 const COOLDOWN_MS = 30_000;
 
-function LockBrand() {
+const DIGITS: { digit: string; letters: string }[] = [
+  { digit: '1', letters: '' },
+  { digit: '2', letters: 'ABC' },
+  { digit: '3', letters: 'DEF' },
+  { digit: '4', letters: 'GHI' },
+  { digit: '5', letters: 'JKL' },
+  { digit: '6', letters: 'MNO' },
+  { digit: '7', letters: 'PQRS' },
+  { digit: '8', letters: 'TUV' },
+  { digit: '9', letters: 'WXYZ' },
+];
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(query).matches : false,
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const media = window.matchMedia(query);
+    const listener = () => setMatches(media.matches);
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
+  }, [query]);
+  return matches;
+}
+
+function BiometricsIcon({ size = 32 }: { size?: number }) {
   return (
-    <div className="lock-mark">
-      <DeUrgeAppIcon size={72} />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      strokeWidth="1.6"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M8 4H6a2 2 0 0 0-2 2v2M16 4h2a2 2 0 0 1 2 2v2M8 20H6a2 2 0 0 1-2-2v-2M16 20h2a2 2 0 0 0 2-2v-2M9 10v1.5M15 10v1.5M12 10v3h-1M9.5 16a3.5 3.5 0 0 0 5 0" />
+    </svg>
+  );
+}
+
+function BackIcon() {
+  return (
+    <svg width="10" height="17" viewBox="0 0 8 13" strokeWidth="2" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6.5 1.5l-5 5 5 5" />
+    </svg>
+  );
+}
+
+function DeleteIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" strokeWidth="1.6" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 6h11a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-6-6z" />
+      <path d="M12 9.5l5 5M17 9.5l-5 5" />
+    </svg>
+  );
+}
+
+function usePinKeyboard(onDigit: (digit: string) => void, onDelete: () => void, enabled = true): void {
+  useEffect(() => {
+    if (!enabled) return undefined;
+    function handler(event: KeyboardEvent): void {
+      const active = document.activeElement;
+      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
+      if (/^\d$/.test(event.key)) {
+        event.preventDefault();
+        onDigit(event.key);
+      } else if (event.key === 'Backspace') {
+        event.preventDefault();
+        onDelete();
+      }
+    }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [enabled, onDelete, onDigit]);
+}
+
+function PinDots({ length, error = false, size = 'sm' }: { length: number; error?: boolean; size?: 'sm' | 'md' }) {
+  return (
+    <div className={`pn-dots pn-dots-${size}`} role="img" aria-label={`${length} of ${PIN_LENGTH} digits entered`}>
+      {Array.from({ length: PIN_LENGTH }, (_, index) => (
+        <i key={index} className={`${index < length ? 'on' : ''}${error ? ' err' : ''}`} />
+      ))}
     </div>
   );
 }
 
-export function SetPasswordScreen({
-  mode = 'create',
+function Keypad({
+  onDigit,
+  onDelete,
+  onBiometrics,
+  biometricsEnabled = false,
+}: {
+  onDigit: (digit: string) => void;
+  onDelete: () => void;
+  onBiometrics?: () => void;
+  biometricsEnabled?: boolean;
+}) {
+  return (
+    <div className="pn-keypad">
+      {DIGITS.map(({ digit, letters }) => (
+        <button key={digit} type="button" className="pn-key" onClick={() => onDigit(digit)} aria-label={digit}>
+          <span className="pn-key-digit">{digit}</span>
+          <small>{letters}</small>
+        </button>
+      ))}
+      {onBiometrics ? (
+        <button type="button" className="pn-key pn-key-flat" onClick={onBiometrics} aria-label="Use biometrics">
+          <BiometricsIcon size={32} />
+        </button>
+      ) : biometricsEnabled ? (
+        <span />
+      ) : (
+        <span />
+      )}
+      <button type="button" className="pn-key" onClick={() => onDigit('0')} aria-label="0">
+        <span className="pn-key-digit">0</span>
+        <small />
+      </button>
+      <button type="button" className="pn-key pn-key-flat" onClick={onDelete} aria-label="Delete">
+        <DeleteIcon />
+      </button>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- mobile */
+
+function MobileCreateOrConfirm({
+  mode,
+  onDone,
+  onCancel,
+  overlay,
+}: {
+  mode: 'create' | 'change';
+  onDone: () => void;
+  onCancel?: () => void;
+  overlay: boolean;
+}) {
+  const app = useApp();
+  const [stage, setStage] = useState<'current' | 'new' | 'confirm' | 'biometrics'>(
+    mode === 'change' ? 'current' : 'new',
+  );
+  const [pin, setPin] = useState('');
+  const [firstPin, setFirstPin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [biometrics, setBiometrics] = useState<BiometricAvailability | null>(null);
+  const [wantsBiometrics, setWantsBiometrics] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [bioError, setBioError] = useState<string | null>(null);
+  const timer = useRef<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void biometricsAvailable().then((result) => {
+      if (!cancelled) setBiometrics(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const title =
+    stage === 'current'
+      ? 'Enter your PIN'
+      : stage === 'confirm'
+        ? 'Confirm your PIN'
+        : 'Create a PIN';
+  const subtitle =
+    stage === 'current'
+      ? 'Enter your current PIN to change it.'
+      : stage === 'confirm'
+        ? 'Enter the same PIN once more.'
+        : 'You will use it to open deUrge. It stays on this device.';
+  const bottomAction =
+    stage === 'confirm' ? 'Start over' : stage === 'new' && mode === 'change' ? null : 'PIN options';
+
+  function fail(message: string): void {
+    setError(message);
+    setPin('');
+  }
+
+  function addDigit(digit: string): void {
+    if (saving || stage === 'biometrics' || pin.length >= PIN_LENGTH) return;
+    setError(null);
+    const next = pin + digit;
+    setPin(next);
+    if (next.length === PIN_LENGTH) {
+      timer.current = window.setTimeout(() => void complete(next), 160);
+    }
+  }
+
+  function deleteDigit(): void {
+    if (saving) return;
+    setPin((current) => current.slice(0, -1));
+    setError(null);
+  }
+
+  usePinKeyboard(addDigit, deleteDigit, stage !== 'biometrics');
+
+  async function complete(entered: string): Promise<void> {
+    setSaving(true);
+    setError(null);
+    try {
+      if (stage === 'current') {
+        if (!(await app.core.security.verifyPassword(entered))) {
+          fail('Incorrect PIN. Try again.');
+          return;
+        }
+        setStage('new');
+        setPin('');
+      } else if (stage === 'new') {
+        setFirstPin(entered);
+        setStage('confirm');
+        setPin('');
+      } else if (entered !== firstPin) {
+        setStage('confirm');
+        setError('PINs did not match. Try again.');
+        setPin('');
+      } else {
+        await app.core.security.setPassword(entered, { biometricsEnabled: app.core.security.biometricsEnabled() });
+        setPin('');
+        const availability = biometrics ?? (await biometricsAvailable());
+        setBiometrics(availability);
+        if (mode === 'create' && availability.available) {
+          setStage('biometrics');
+        } else {
+          onDone();
+        }
+      }
+    } catch (failure) {
+      setError(isDeUrgeError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
+      setPin('');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function enableBiometrics(): Promise<void> {
+    setBioError(null);
+    const result = await authenticateBiometrics();
+    if (!result.success) {
+      setBioError(result.error ?? 'Biometric authentication failed. You can continue with your PIN.');
+      return;
+    }
+    await app.core.security.setBiometricsEnabled(true);
+    onDone();
+  }
+
+  async function declineBiometrics(): Promise<void> {
+    await app.core.security.setBiometricsEnabled(false);
+    onDone();
+  }
+
+  if (stage === 'biometrics') {
+    return (
+      <div className={`pin-ui pn-screen ${overlay ? 'pn-overlay-screen' : ''}`}>
+        <div className="pn-bio">
+          <div className="pn-bio-icon">
+            <BiometricsIcon size={56} />
+          </div>
+          <h1 className="pn-big">Unlock with biometrics?</h1>
+          <p className="pn-muted pn-bio-copy">
+            Skip typing your PIN. Biometric data stays in the system. deUrge never sees it, and your PIN always works too.
+          </p>
+          <div className="pn-group pn-bio-group">
+            <div className="pn-row">
+              <span>Require unlock</span>
+              <span className="pn-muted pn-row-value">Immediately</span>
+            </div>
+            <div className="pn-row">
+              <span>Hide in app switcher</span>
+              <span className="pn-switch on" role="switch" aria-checked="true" aria-label="Hide in app switcher">
+                <i />
+              </span>
+            </div>
+          </div>
+          {bioError ? <p className="pn-error">{bioError}</p> : null}
+          <button type="button" className="pn-btn pn-btn-primary" onClick={() => void enableBiometrics()}>
+            Enable biometrics
+          </button>
+          <button type="button" className="pn-btn pn-btn-text pn-bio-skip" onClick={() => void declineBiometrics()}>
+            Not Now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`pin-ui pn-screen ${overlay ? 'pn-overlay-screen' : ''}`}>
+      <div className="pn-mobile-top">
+        {onCancel ? (
+          <button type="button" className="pn-btn-text pn-back" onClick={onCancel}>
+            <BackIcon /> Back
+          </button>
+        ) : stage === 'confirm' ? (
+          <button
+            type="button"
+            className="pn-btn-text pn-back"
+            onClick={() => {
+              setStage('new');
+              setFirstPin('');
+              setPin('');
+              setError(null);
+            }}
+          >
+            <BackIcon /> Back
+          </button>
+        ) : (
+          <span />
+        )}
+      </div>
+      <div className="pn-mobile-head">
+        <h1 className="pn-big pn-create-title">{title}</h1>
+        <p className="pn-muted pn-mobile-subtitle">{subtitle}</p>
+        <PinDots length={pin.length} error={Boolean(error)} />
+      </div>
+      {error ? <p className="pn-mobile-error">{error}</p> : null}
+      <div className="pn-mobile-bottom">
+        <Keypad onDigit={addDigit} onDelete={deleteDigit} />
+        {bottomAction === 'Start over' ? (
+          <button type="button" className="pn-btn-text pn-bottom-link" onClick={() => {
+            setStage('new');
+            setFirstPin('');
+            setPin('');
+            setError(null);
+          }}>
+            Start over
+          </button>
+        ) : bottomAction === 'PIN options' ? (
+          <button type="button" className="pn-btn-text pn-bottom-link" onClick={() => setOptionsOpen(true)}>
+            PIN options
+          </button>
+        ) : null}
+      </div>
+      {optionsOpen ? (
+        <div className="pn-sheet-layer" role="presentation">
+          <div className="pn-sheet-backdrop" onClick={() => setOptionsOpen(false)} />
+          <div className="pn-sheet" role="dialog" aria-modal="true" aria-label="PIN options">
+            <div className="pn-sheet-grabber" />
+            <h2 className="pn-sheet-title">PIN options</h2>
+            <div className="pn-group">
+              {biometrics?.available ? (
+                <div className="pn-row">
+                  <span>Unlock with biometrics</span>
+                  <button
+                    type="button"
+                    className={`pn-switch${wantsBiometrics ? ' on' : ''}`}
+                    role="switch"
+                    aria-checked={wantsBiometrics}
+                    aria-label="Unlock with biometrics"
+                    onClick={() => setWantsBiometrics((value) => !value)}
+                  >
+                    <i />
+                  </button>
+                </div>
+              ) : null}
+              <div className="pn-row">
+                <span>Lock after</span>
+                <span className="pn-muted pn-row-value">1 minute</span>
+              </div>
+            </div>
+            <button type="button" className="pn-btn pn-btn-primary" onClick={() => setOptionsOpen(false)}>
+              Done
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- lock */
+
+function ForgotSheet({
+  onClose,
+  onRestored,
+}: {
+  onClose: () => void;
+  onRestored: () => void;
+}) {
+  const app = useApp();
+  const [confirmErase, setConfirmErase] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function restore(): Promise<void> {
+    setError(null);
+    setBusy(true);
+    try {
+      const file = await pickTextFile('.json,application/json');
+      if (!file) return;
+      const parsed = JSON.parse(file.text) as { format?: string };
+      if (parsed.format === 'deurge-encrypted-backup') {
+        setError('This is an encrypted backup. Use a plain JSON backup to restore while locked.');
+        return;
+      }
+      await app.core.backup.importJson(file.text, { mode: 'replace', confirmReplace: true });
+      await app.core.security.clearPassword();
+      onRestored();
+    } catch (failure) {
+      setError(isDeUrgeError(failure) ? userMessage(failure) : 'That backup could not be restored.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function erase(): Promise<void> {
+    setBusy(true);
+    try {
+      await app.core.security.wipeAllData();
+      window.location.reload();
+    } catch {
+      setError('The app could not be reset. Close deUrge and try again.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="pn-sheet-layer" role="presentation">
+        <div className="pn-sheet-backdrop" onClick={onClose} />
+        <div className="pn-sheet" role="dialog" aria-modal="true" aria-labelledby="pn-forgot-title">
+          <div className="pn-sheet-grabber" />
+          <h2 className="pn-sheet-title" id="pn-forgot-title">Forgot your PIN?</h2>
+          <p className="pn-muted pn-sheet-copy">
+            deUrge has no account, so nobody can reset your PIN for you. That is what keeps your data private. You have two
+            options.
+          </p>
+          <div className="pn-group">
+            <button type="button" className="pn-row pn-row-block" onClick={() => void restore()} disabled={busy}>
+              <span className="pn-row-strong">Restore from a backup</span>
+              <span className="pn-muted">Replace this device's data with a backup file you exported.</span>
+            </button>
+            <button type="button" className="pn-row pn-row-block" onClick={() => setConfirmErase(true)} disabled={busy}>
+              <span className="pn-row-strong pn-danger">Erase and start over</span>
+              <span className="pn-muted">Deletes every tracker and entry on this device. This can't be undone.</span>
+            </button>
+          </div>
+          {error ? <p className="pn-error">{error}</p> : null}
+          <button type="button" className="pn-btn pn-btn-primary" onClick={onClose} disabled={busy}>
+            Keep Trying
+          </button>
+        </div>
+      </div>
+      <ConfirmDialog
+        open={confirmErase}
+        title="Erase everything?"
+        body={<p>Every tracker, lapse, urge, journal entry and setting on this device will be deleted. This cannot be undone.</p>}
+        confirmLabel="Erase and reset"
+        tone="danger"
+        onCancel={() => setConfirmErase(false)}
+        onConfirm={() => void erase()}
+      />
+    </>
+  );
+}
+
+function MobileLock({ onUnlock }: { onUnlock: () => void }) {
+  const app = useApp();
+  const config = app.core.security.config();
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  const [availability, setAvailability] = useState<BiometricAvailability | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const autoPrompted = useRef(false);
+  const timer = useRef<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void biometricsAvailable().then((result) => {
+      if (cancelled) return;
+      setAvailability(result);
+      if (config.biometricsEnabled && result.available && !autoPrompted.current) {
+        autoPrompted.current = true;
+        void (async () => {
+          const biometric = await authenticateBiometrics();
+          if (biometric.success) onUnlock();
+        })();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return undefined;
+    const interval = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(interval);
+  }, [cooldownUntil]);
+
+  useEffect(
+    () => () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const cooldown = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
+
+  async function verify(entered: string): Promise<void> {
+    if (cooldown > 0) return;
+    if (await app.core.security.verifyPassword(entered)) {
+      onUnlock();
+      return;
+    }
+    const nextAttempts = attempts + 1;
+    setAttempts(nextAttempts);
+    setPin('');
+    if (nextAttempts >= MAX_ATTEMPTS) {
+      setCooldownUntil(Date.now() + COOLDOWN_MS);
+      setNow(Date.now());
+      setError('Too many attempts. Wait 30 seconds.');
+    } else {
+      setError(`Incorrect PIN. ${MAX_ATTEMPTS - nextAttempts} attempts left.`);
+    }
+  }
+
+  function addDigit(digit: string): void {
+    if (cooldown > 0 || pin.length >= PIN_LENGTH) return;
+    setError(null);
+    const next = pin + digit;
+    setPin(next);
+    if (next.length === PIN_LENGTH) {
+      timer.current = window.setTimeout(() => void verify(next), 160);
+    }
+  }
+
+  function deleteDigit(): void {
+    setPin((current) => current.slice(0, -1));
+    setError(null);
+  }
+
+  usePinKeyboard(addDigit, deleteDigit, !forgotOpen);
+
+  async function handleBiometrics(): Promise<void> {
+    const result = await authenticateBiometrics();
+    if (result.success) onUnlock();
+  }
+
+  return (
+    <div className="pin-ui pn-screen">
+      <div className="pn-lock-head">
+        <DeUrgeMark size={44} />
+        <h1 className="pn-big pn-lock-title">Enter PIN</h1>
+        {error ? <p className="pn-error pn-lock-error">{error}</p> : <p className="pn-muted">deUrge is locked</p>}
+        <div className="pn-lock-dots">
+          <PinDots length={pin.length} error={Boolean(error)} />
+        </div>
+      </div>
+      <div className="pn-mobile-bottom">
+        <Keypad
+          onDigit={addDigit}
+          onDelete={deleteDigit}
+          onBiometrics={config.biometricsEnabled && availability?.available ? () => void handleBiometrics() : undefined}
+        />
+        <button type="button" className="pn-btn-text pn-bottom-link" onClick={() => setForgotOpen(true)}>
+          Forgot PIN?
+        </button>
+      </div>
+      {forgotOpen ? (
+        <ForgotSheet onClose={() => setForgotOpen(false)} onRestored={() => window.location.reload()} />
+      ) : null}
+    </div>
+  );
+
+}
+
+function DesktopPinBoxes({
+  value,
+  active,
+  onFocus,
+}: {
+  value: string;
+  active: boolean;
+  onFocus: () => void;
+}) {
+  return (
+    <div className="pn-boxes" role="group" aria-label={`PIN, ${value.length} of ${PIN_LENGTH} digits entered`} onClick={onFocus}>
+      {Array.from({ length: PIN_LENGTH }, (_, index) => (
+        <span key={index} className={`pn-box${index < value.length ? ' filled' : ''}${active && index === Math.min(value.length, PIN_LENGTH - 1) ? ' active' : ''}`}>
+          {index < value.length ? <i /> : null}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
+  const app = useApp();
+  const config = app.core.security.config();
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [availability, setAvailability] = useState<BiometricAvailability | null>(null);
+  const [focused, setFocused] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autoPrompted = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void biometricsAvailable().then((result) => {
+      if (cancelled) return;
+      setAvailability(result);
+      if (config.biometricsEnabled && result.available && !autoPrompted.current) {
+        autoPrompted.current = true;
+        void (async () => {
+          const biometric = await authenticateBiometrics();
+          if (biometric.success) onUnlock();
+        })();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  async function unlock(): Promise<void> {
+    if (await app.core.security.verifyPassword(pin)) {
+      onUnlock();
+    } else {
+      setPin('');
+      setError('Incorrect PIN. Try again.');
+      inputRef.current?.focus();
+    }
+  }
+
+  async function biometrics(): Promise<void> {
+    const result = await authenticateBiometrics();
+    if (result.success) onUnlock();
+    else setError(result.error ?? 'Biometric authentication failed.');
+  }
+
+  return (
+    <div className="pin-ui pn-desktop-stage">
+      <div className="pn-desktop-lock">
+        <DeUrgeMark size={52} />
+        <h1 className="pn-big pn-desktop-title">deUrge is locked</h1>
+        <p className="pn-muted">Type your PIN to unlock.</p>
+        <DesktopPinBoxes value={pin} active={focused} onFocus={() => inputRef.current?.focus()} />
+        <input
+          ref={inputRef}
+          className="pn-hidden-input"
+          type="password"
+          inputMode="numeric"
+          value={pin}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onChange={(event) => {
+            setError(null);
+            setPin(event.target.value.replace(/\D/g, '').slice(0, PIN_LENGTH));
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') void unlock();
+          }}
+          aria-label="Enter PIN"
+          autoComplete="off"
+        />
+        {error ? <p className="pn-error pn-desktop-error">{error}</p> : null}
+        <button type="button" className="pn-btn pn-btn-primary pn-desktop-btn" onClick={() => void unlock()}>
+          Unlock
+        </button>
+        {availability?.available && config.biometricsEnabled ? (
+          <button type="button" className="pn-btn pn-btn-secondary pn-desktop-btn" onClick={() => void biometrics()}>
+            <BiometricsIcon size={20} /> Use biometrics
+          </button>
+        ) : null}
+        <button type="button" className="pn-btn-text pn-desktop-forgot" onClick={() => setForgotOpen(true)}>
+          Forgot PIN?
+        </button>
+      </div>
+      <span className="pn-chip">Local only · no account</span>
+      {forgotOpen ? (
+        <ForgotSheet onClose={() => setForgotOpen(false)} onRestored={() => window.location.reload()} />
+      ) : null}
+    </div>
+  );
+}
+
+function DesktopSetPin({
+  mode,
   onDone,
   onCancel,
 }: {
-  mode?: 'create' | 'change';
+  mode: 'create' | 'change';
   onDone: () => void;
   onCancel?: () => void;
 }) {
   const app = useApp();
-  const [current, setCurrent] = useState('');
-  const [next, setNext] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [activeField, setActiveField] = useState<'pin' | 'confirm'>('pin');
+  const [error, setError] = useState<string | null>(null);
   const [wantsBiometrics, setWantsBiometrics] = useState(false);
   const [availability, setAvailability] = useState<BiometricAvailability | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,420 +755,168 @@ export function SetPasswordScreen({
     };
   }, []);
 
-  const canUseBiometrics = availability?.available === true;
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [activeField]);
 
-  async function submit(): Promise<void> {
-    if (saving) return;
+  const value = activeField === 'pin' ? pin : confirmPin;
+  const setValue = activeField === 'pin' ? setPin : setConfirmPin;
+
+  function onInput(next: string): void {
+    const clean = next.replace(/\D/g, '').slice(0, PIN_LENGTH);
+    setValue(clean);
     setError(null);
-    if (next.length < MIN_PASSWORD_LENGTH) {
-      setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`);
+    if (clean.length === PIN_LENGTH) {
+      if (activeField === 'pin') setActiveField('confirm');
+      else inputRef.current?.blur();
+    }
+  }
+
+  async function save(): Promise<void> {
+    setError(null);
+    if (pin.length !== PIN_LENGTH || confirmPin.length !== PIN_LENGTH) {
+      setError('Enter all 4 digits in both fields.');
       return;
     }
-    if (next !== confirm) {
-      setError('The two passwords do not match.');
+    if (pin !== confirmPin) {
+      setError('PINs did not match.');
+      setConfirmPin('');
+      setActiveField('confirm');
       return;
     }
     setSaving(true);
     try {
-      if (mode === 'change') {
-        const valid = await app.core.security.verifyPassword(current);
-        if (!valid) {
-          setError('Your current password is incorrect.');
-          return;
-        }
-      }
-      let biometricsEnabled = mode === 'change' ? app.core.security.biometricsEnabled() : false;
-      if (mode === 'create' && wantsBiometrics && canUseBiometrics) {
+      if (wantsBiometrics && availability?.available) {
         const result = await authenticateBiometrics();
         if (!result.success) {
-          setError(result.error ?? 'Biometric authentication failed. Try again or turn it off.');
+          setError(result.error ?? 'Biometric authentication failed.');
           return;
         }
-        biometricsEnabled = true;
       }
-      await app.core.security.setPassword(next, { biometricsEnabled });
+      await app.core.security.setPassword(pin, {
+        biometricsEnabled: wantsBiometrics && availability?.available === true,
+      });
       onDone();
     } catch (failure) {
-      setError(isDeUrgeError(failure) ? userMessage(failure) : 'The password could not be saved. Nothing changed.');
+      setError(isDeUrgeError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="lock-setup">
-      <div className="lock-setup-inner">
-        <LockBrand />
-        <h1 className="lock-title">{mode === 'create' ? 'Protect deUrge' : 'Change password'}</h1>
-        <p className="lock-subtitle">
-          {mode === 'create'
-            ? 'Choose a password to open deUrge on this device. You will need it each time you visit.'
-            : 'Enter your current password, then choose a new one.'}
-        </p>
-        <div className="lock-form">
-          {mode === 'change' ? (
-            <Field label="Current password" htmlFor="lock-current">
-              <Input
-                id="lock-current"
-                type="password"
-                value={current}
-                onChange={(event) => setCurrent(event.target.value)}
-                autoComplete="current-password"
-                autoFocus
-                autoCapitalize="none"
-                spellCheck={false}
-              />
-            </Field>
-          ) : null}
-          <Field label={mode === 'create' ? 'Password' : 'New password'} htmlFor="lock-new" hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}>
-            <Input
-              id="lock-new"
-              type="password"
-              value={next}
-              onChange={(event) => setNext(event.target.value)}
-              autoComplete="new-password"
-              autoFocus={mode === 'create'}
-              autoCapitalize="none"
-              spellCheck={false}
-            />
-          </Field>
-          <Field label="Confirm password" htmlFor="lock-confirm">
-            <Input
-              id="lock-confirm"
-              type="password"
-              value={confirm}
-              onChange={(event) => setConfirm(event.target.value)}
-              autoComplete="new-password"
-              autoCapitalize="none"
-              spellCheck={false}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') void submit();
-              }}
-            />
-          </Field>
-          {error ? (
-            <p className="lock-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-          {mode === 'create' && canUseBiometrics ? (
-            <div className="lock-toggle">
-              <Toggle
-                label="Unlock with biometrics"
-                description="Use your fingerprint or face instead of typing the password. Android only."
-                checked={wantsBiometrics}
-                onChange={setWantsBiometrics}
-                disabled={saving}
-              />
-            </div>
-          ) : null}
-          <div className="lock-actions">
-            <Button variant="primary" block onClick={() => void submit()} disabled={saving}>
-              {saving ? 'Saving…' : mode === 'create' ? 'Set password' : 'Save new password'}
-            </Button>
-            {mode === 'change' && onCancel ? (
-              <Button block onClick={onCancel} disabled={saving}>
-                Cancel
-              </Button>
-            ) : null}
+    <div className="pin-ui pn-desktop-stage">
+      <div className="pn-desktop-card">
+        <aside className="pn-desktop-side">
+          <DeUrgeMark size={44} />
+          <div className="pn-desktop-wordmark">
+            <span>de</span>
+            <b>Urge</b>
           </div>
-        </div>
-        <p className="lock-note">
-          deUrge cannot recover this password. If you forget it, you can reset the app — that erases the data on this device,
-          so keep a backup. The password is stored only as a salted hash that never leaves this device.
-        </p>
+          <div className="pn-side-text">
+            <b>Why a PIN?</b>
+            <p>It locks the app when you step away.</p>
+            <b>Where it lives</b>
+            <p>Only as a salted hash in your device's secure storage. deUrge cannot read or recover it.</p>
+            <b>If you forget it</b>
+            <p>Restore from a backup or erase this device. Keep a backup.</p>
+          </div>
+        </aside>
+        <section className="pn-desktop-main">
+          <div className="pn-lb">Security</div>
+          <h1 className="pn-big pn-desktop-set-title">{mode === 'change' ? 'Change PIN' : 'Set a PIN'}</h1>
+          <div className="pn-lb pn-box-label">New PIN</div>
+          <DesktopPinBoxes
+            value={pin}
+            active={activeField === 'pin'}
+            onFocus={() => {
+              setActiveField('pin');
+              inputRef.current?.focus();
+            }}
+          />
+          <div className="pn-lb pn-box-label">Confirm PIN</div>
+          <DesktopPinBoxes
+            value={confirmPin}
+            active={activeField === 'confirm'}
+            onFocus={() => {
+              setActiveField('confirm');
+              inputRef.current?.focus();
+            }}
+          />
+          <input
+            ref={inputRef}
+            className="pn-hidden-input"
+            type="password"
+            inputMode="numeric"
+            value={value}
+            onChange={(event) => onInput(event.target.value)}
+            aria-label={activeField === 'pin' ? 'New PIN' : 'Confirm PIN'}
+            autoComplete="off"
+          />
+          {error ? <p className="pn-error">{error}</p> : null}
+          <div className="pn-group pn-desktop-options">
+            {availability?.available ? (
+              <div className="pn-row">
+                <span>Unlock with biometrics</span>
+                <button
+                  type="button"
+                  className={`pn-switch${wantsBiometrics ? ' on' : ''}`}
+                  role="switch"
+                  aria-checked={wantsBiometrics}
+                  aria-label="Unlock with biometrics"
+                  onClick={() => setWantsBiometrics((current) => !current)}
+                >
+                  <i />
+                </button>
+              </div>
+            ) : null}
+            <div className="pn-row">
+              <span>Lock after</span>
+              <span className="pn-muted pn-row-value">1 minute</span>
+            </div>
+          </div>
+          <div className="pn-desktop-footer">
+            {onCancel ? (
+              <button type="button" className="pn-btn-text" onClick={onCancel}>
+                Cancel
+              </button>
+            ) : (
+              <span />
+            )}
+            <button type="button" className="pn-btn pn-btn-primary pn-set-btn" onClick={() => void save()} disabled={saving}>
+              {saving ? 'Saving…' : 'Set PIN'}
+            </button>
+          </div>
+        </section>
       </div>
     </div>
   );
+}
+
+export function SetPinScreen({
+  mode = 'create',
+  onDone,
+  onCancel,
+  overlay = false,
+}: {
+  mode?: 'create' | 'change';
+  onDone: () => void;
+  onCancel?: () => void;
+  overlay?: boolean;
+}) {
+  const desktop = useMediaQuery('(min-width: 980px)');
+  if (desktop) {
+    return (
+      <div className={overlay ? 'pn-overlay-wrap' : ''}>
+        <DesktopSetPin mode={mode} onDone={onDone} onCancel={onCancel} />
+      </div>
+    );
+  }
+  return <MobileCreateOrConfirm mode={mode} onDone={onDone} onCancel={onCancel} overlay={overlay} />;
 }
 
 export function LockScreen({ onUnlock }: { onUnlock: () => void }) {
-  const app = useApp();
-  const config = app.core.security.config();
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [bioBusy, setBioBusy] = useState(false);
-  const [availability, setAvailability] = useState<BiometricAvailability | null>(null);
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [cooldownUntil, setCooldownUntil] = useState(0);
-  const [now, setNow] = useState(() => Date.now());
-  const [resetOpen, setResetOpen] = useState(false);
-  const [resetText, setResetText] = useState('');
-  const [resetting, setResetting] = useState(false);
-  const autoPrompted = useRef(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void biometricsAvailable().then((result) => {
-      if (cancelled) return;
-      setAvailability(result);
-      if (config.biometricsEnabled && result.available && !autoPrompted.current) {
-        autoPrompted.current = true;
-        void tryBiometrics(true);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (cooldownUntil <= Date.now()) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 500);
-    return () => window.clearInterval(timer);
-  }, [cooldownUntil]);
-
-  const cooldownRemaining = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
-  const canUseBiometrics = config.biometricsEnabled && availability?.available === true;
-
-  async function tryBiometrics(auto = false): Promise<void> {
-    if (bioBusy) return;
-    setBioBusy(true);
-    setError(null);
-    try {
-      const result = await authenticateBiometrics();
-      if (result.success) {
-        onUnlock();
-      } else if (!auto && result.error) {
-        setError(result.error);
-      }
-    } finally {
-      setBioBusy(false);
-    }
-  }
-
-  async function unlock(): Promise<void> {
-    if (busy || cooldownRemaining > 0) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const valid = await app.core.security.verifyPassword(password);
-      if (valid) {
-        onUnlock();
-        return;
-      }
-      const nextAttempts = failedAttempts + 1;
-      setFailedAttempts(nextAttempts);
-      if (nextAttempts >= MAX_ATTEMPTS) {
-        setCooldownUntil(Date.now() + COOLDOWN_MS);
-        setNow(Date.now());
-        setError('Too many incorrect attempts. Wait 30 seconds and try again.');
-      } else {
-        setError('Incorrect password. Try again.');
-      }
-    } catch {
-      setError('The password could not be checked. Try again.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function resetApp(): Promise<void> {
-    if (resetting || resetText.trim().toLowerCase() !== 'reset') return;
-    setResetting(true);
-    try {
-      await app.core.security.wipeAllData();
-      window.location.reload();
-    } catch {
-      setError('The app could not be reset. Close deUrge and try again.');
-      setResetting(false);
-    }
-  }
-
-  return (
-    <div className="lock-screen">
-      <div className="lock-card">
-        <LockBrand />
-        <h1 className="lock-title">Welcome back</h1>
-        <p className="lock-subtitle">deUrge is locked. Enter your password to open your private records.</p>
-        <div className="lock-form">
-          <Field label="Password" htmlFor="lock-password">
-            <Input
-              id="lock-password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              autoFocus
-              autoCapitalize="none"
-              spellCheck={false}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') void unlock();
-              }}
-            />
-          </Field>
-          {error ? (
-            <p className="lock-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-          <div className="lock-actions">
-            <Button
-              variant="primary"
-              block
-              onClick={() => void unlock()}
-              disabled={busy || cooldownRemaining > 0 || password.length === 0}
-            >
-              {busy ? 'Checking…' : cooldownRemaining > 0 ? `Try again in ${cooldownRemaining}s` : 'Unlock'}
-            </Button>
-            {canUseBiometrics ? (
-              <>
-                <div className="lock-divider">or</div>
-                <Button
-                  variant="secondary"
-                  block
-                  className="lock-bio"
-                  onClick={() => void tryBiometrics(false)}
-                  disabled={bioBusy}
-                >
-                  {bioBusy ? 'Waiting for biometrics…' : 'Unlock with biometrics'}
-                </Button>
-              </>
-            ) : null}
-          </div>
-        </div>
-        {config.biometricsEnabled && availability && !availability.available ? (
-          <p className="lock-note">Biometric unlock is enabled, but no biometric is available right now. Use your password.</p>
-        ) : null}
-        <button type="button" className="lock-link" onClick={() => setResetOpen((value) => !value)}>
-          Forgot password?
-        </button>
-        {resetOpen ? (
-          <div className="lock-reset">
-            <p>
-              There is no password recovery. Resetting erases every tracker, lapse, urge, journal entry and setting on this
-              device, then starts fresh. Export a backup from another device first if you have one.
-            </p>
-            <Field label='Type "reset" to confirm' htmlFor="lock-reset-confirm">
-              <Input
-                id="lock-reset-confirm"
-                value={resetText}
-                onChange={(event) => setResetText(event.target.value)}
-                autoCapitalize="none"
-                spellCheck={false}
-              />
-            </Field>
-            <Button
-              variant="danger"
-              block
-              disabled={resetting || resetText.trim().toLowerCase() !== 'reset'}
-              onClick={() => void resetApp()}
-            >
-              {resetting ? 'Erasing…' : 'Erase all data and reset app'}
-            </Button>
-          </div>
-        ) : null}
-        <p className="lock-note">Your password is checked locally. It is never sent anywhere.</p>
-      </div>
-    </div>
-  );
-}
-
-export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const app = useApp();
-  const toast = useToast();
-  const [current, setCurrent] = useState('');
-  const [next, setNext] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setCurrent('');
-    setNext('');
-    setConfirm('');
-    setError(null);
-  }, [open]);
-
-  async function save(): Promise<void> {
-    if (saving) return;
-    setError(null);
-    if (next.length < MIN_PASSWORD_LENGTH) {
-      setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`);
-      return;
-    }
-    if (next !== confirm) {
-      setError('The two passwords do not match.');
-      return;
-    }
-    setSaving(true);
-    try {
-      if (!(await app.core.security.verifyPassword(current))) {
-        setError('Your current password is incorrect.');
-        return;
-      }
-      await app.core.security.setPassword(next, { biometricsEnabled: app.core.security.biometricsEnabled() });
-      toast.show('Password changed.');
-      onClose();
-    } catch (failure) {
-      setError(isDeUrgeError(failure) ? userMessage(failure) : 'The password could not be changed.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Change password"
-      actions={
-        <>
-          <Button onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={() => void save()} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
-        </>
-      }
-    >
-      <div className="stack">
-        <p className="mut" style={{ margin: 0, fontSize: 14 }}>
-          Changing the password does not re-encrypt any backup files you have already created.
-        </p>
-        <Field label="Current password" htmlFor="change-current">
-          <Input
-            id="change-current"
-            type="password"
-            value={current}
-            onChange={(event) => setCurrent(event.target.value)}
-            autoComplete="current-password"
-            autoCapitalize="none"
-            spellCheck={false}
-          />
-        </Field>
-        <Field label="New password" htmlFor="change-new" hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}>
-          <Input
-            id="change-new"
-            type="password"
-            value={next}
-            onChange={(event) => setNext(event.target.value)}
-            autoComplete="new-password"
-            autoCapitalize="none"
-            spellCheck={false}
-          />
-        </Field>
-        <Field label="Confirm new password" htmlFor="change-confirm">
-          <Input
-            id="change-confirm"
-            type="password"
-            value={confirm}
-            onChange={(event) => setConfirm(event.target.value)}
-            autoComplete="new-password"
-            autoCapitalize="none"
-            spellCheck={false}
-          />
-        </Field>
-        {error ? (
-          <p className="lock-error" role="alert">
-            {error}
-          </p>
-        ) : null}
-      </div>
-    </Modal>
-  );
+  const desktop = useMediaQuery('(min-width: 980px)');
+  if (desktop) return <DesktopLock onUnlock={onUnlock} />;
+  return <MobileLock onUnlock={onUnlock} />;
 }

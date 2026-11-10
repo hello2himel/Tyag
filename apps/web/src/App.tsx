@@ -10,7 +10,7 @@ import { JournalScreen } from './features/journal/JournalScreen';
 import { InsightsScreen } from './features/insights/InsightsScreen';
 import { SettingsScreen } from './features/settings/SettingsScreen';
 import { DataScreen } from './features/data/DataScreen';
-import { LockScreen, SetPasswordScreen } from './features/lock/AppLock';
+import { LockScreen, SetPinScreen } from './features/lock/AppLock';
 
 const NAV: { name: RouteName; label: string; icon: IconName; path: string }[] = [
   { name: 'trackers', label: 'Trackers', icon: 'clock', path: '/trackers' },
@@ -33,6 +33,7 @@ function Root() {
   const app = useApp();
   const [hasPassword, setHasPassword] = useState(() => app.core.security.hasPassword());
   const [unlocked, setUnlocked] = useState(false);
+  const [changePinOpen, setChangePinOpen] = useState(false);
   const hiddenSince = useRef<number | null>(null);
 
   // Lock again after a minute in the background, and support an explicit
@@ -50,12 +51,18 @@ function Root() {
     }
     function onLock(): void {
       setUnlocked(false);
+      setChangePinOpen(false);
+    }
+    function onChangePin(): void {
+      setChangePinOpen(true);
     }
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('deurge:lock', onLock);
+    window.addEventListener('deurge:change-pin', onChangePin);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('deurge:lock', onLock);
+      window.removeEventListener('deurge:change-pin', onChangePin);
     };
   }, []);
 
@@ -64,7 +71,7 @@ function Root() {
   }
   if (!hasPassword) {
     return (
-      <SetPasswordScreen
+      <SetPinScreen
         onDone={() => {
           setHasPassword(true);
           setUnlocked(true);
@@ -75,7 +82,22 @@ function Root() {
   if (!unlocked) {
     return <LockScreen onUnlock={() => setUnlocked(true)} />;
   }
-  return <Shell />;
+  return (
+    <>
+      <Shell />
+      {changePinOpen ? (
+        <SetPinScreen
+          mode="change"
+          overlay
+          onCancel={() => setChangePinOpen(false)}
+          onDone={() => {
+            setChangePinOpen(false);
+            app.refresh();
+          }}
+        />
+      ) : null}
+    </>
+  );
 }
 
 function ScreenContent({ route }: { route: ReturnType<typeof useRoute> }) {

@@ -34,7 +34,6 @@ import {
 import { useFormatters } from '../../ui/format';
 import { cancelNativeAcknowledgement, notificationAvailability, requestNotificationPermission } from '../../platform/notifications';
 import { CategoriesSection } from './CategoriesSection';
-import { ChangePasswordDialog } from '../lock/AppLock';
 import { authenticateBiometrics, biometricsAvailable, biometricsSupported } from '../../platform/biometrics';
 import './settings.css';
 
@@ -129,7 +128,6 @@ export function SettingsScreen() {
   const toast = useToast();
   const fmt = useFormatters();
   const { settings, timeZone } = app;
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [biometricAvailability, setBiometricAvailability] = useState<{ available: boolean; reason?: string } | null>(null);
   const [lockConfig, setLockConfig] = useState(() => app.core.security.config());
 
@@ -452,24 +450,18 @@ export function SettingsScreen() {
 
         <SettingSection
           label="App lock"
-          note="deUrge asks for your password every time it opens and locks again after 60 seconds in the background. The password is stored only as a salted hash on this device and is never included in backups."
+          note="deUrge asks for your PIN every time it opens and locks again after 60 seconds in the background. The PIN is exactly 4 digits and stored only as a salted hash on this device; it is never included in backups."
         >
           <ListGroup aria-label="App lock">
-            <ListRow label="Password" value="Set" chevron onClick={() => setChangePasswordOpen(true)} />
-            {biometricsSupported() ? (
-              biometricAvailability?.available ? (
-                <Toggle
-                  label="Biometric unlock"
-                  description="Use your fingerprint or face instead of typing the password."
-                  checked={lockConfig.biometricsEnabled}
-                  onChange={(value) => void toggleBiometrics(value)}
-                />
-              ) : (
-                <ListRow label="Biometric unlock" value="Unavailable on this device" />
-              )
-            ) : (
-              <ListRow label="Biometric unlock" value="Android app only" />
-            )}
+            <ListRow label="Change PIN" value="4 digits" chevron onClick={() => window.dispatchEvent(new Event('deurge:change-pin'))} />
+            {biometricsSupported() && biometricAvailability?.available ? (
+              <Toggle
+                label="Biometric unlock"
+                description="Use your fingerprint or face instead of typing the PIN."
+                checked={lockConfig.biometricsEnabled}
+                onChange={(value) => void toggleBiometrics(value)}
+              />
+            ) : null}
             <ListRow
               label="Lock now"
               chevron
@@ -477,8 +469,8 @@ export function SettingsScreen() {
             />
           </ListGroup>
           <p className="setting-note">
-            Reset is the only recovery: forgetting the password means erasing the local data and re-importing a backup. Turn on
-            biometric unlock to avoid typing the password on this Android device.
+            Reset is the only recovery: forgetting the PIN means erasing the local data and re-importing a backup. Turn on
+            biometric unlock to avoid typing the PIN on this Android device.
           </p>
         </SettingSection>
 
@@ -511,7 +503,7 @@ export function SettingsScreen() {
             network request that carries your data. Files leave the app only when you export a backup or spreadsheet yourself.
           </div>
           <div className="notice warn" style={{ marginTop: 8 }}>
-            The app password and biometric unlock gate access to deUrge, but the live database itself is not encrypted by
+            The app PIN and biometric unlock gate access to deUrge, but the live database itself is not encrypted by
             deUrge. Rely on your device passcode and disk encryption as well; someone with access to the app's private storage or
             a device backup could read the database file.
           </div>
@@ -536,14 +528,6 @@ export function SettingsScreen() {
           <p className="setting-note">Plain-text links are shown for reference only; deUrge never opens external pages for you.</p>
         </SettingSection>
       </div>
-
-      <ChangePasswordDialog
-        open={changePasswordOpen}
-        onClose={() => {
-          setChangePasswordOpen(false);
-          setLockConfig(app.core.security.config());
-        }}
-      />
 
       <div className="tiny settings-footer">
         <span>All preferences are saved automatically.</span>

@@ -1,10 +1,10 @@
 /**
  * App-lock security.
  *
- * The password is never stored or exported. Only a salted PBKDF2-SHA-256 hash
- * lives in the local `meta` table (which is intentionally not part of JSON
- * backups), so backups can be restored on a new device and protected with a new
- * password. The optional biometric flag is local-only too.
+ * The PIN is never stored or exported. Only a salted PBKDF2-SHA-256 hash lives
+ * in the local `meta` table (which is intentionally not part of JSON backups),
+ * so backups can be restored on a new device and protected with a new PIN. The
+ * optional biometric flag is local-only too.
  *
  * This is an application access gate, not database encryption: the SQLite file
  * itself is protected by the operating system's app-private storage and disk
@@ -110,7 +110,7 @@ export class SecurityService {
 
   async setBiometricsEnabled(enabled: boolean): Promise<void> {
     if (enabled && !this.hasPassword()) {
-      fail('VALIDATION', 'Set an app password before enabling biometric unlock.');
+      fail('VALIDATION', 'Set an app PIN before enabling biometric unlock.');
     }
     await write(this.ctx, () => {
       metaRepo.set(this.ctx.db, BIOMETRICS_KEY, enabled ? '1' : '0');
@@ -150,8 +150,8 @@ export class SecurityService {
   }
 
   private validatePassword(password: string): void {
-    if (typeof password !== 'string') fail('VALIDATION', 'Enter a password.');
-    if (password.length < 8) fail('VALIDATION', 'Use at least 8 characters for your app password.');
-    if (password.length > 256) fail('VALIDATION', 'That password is too long.');
+    if (typeof password !== 'string' || !/^\d{4}$/.test(password)) {
+      fail('VALIDATION', 'Enter a 4-digit PIN.');
+    }
   }
 }
