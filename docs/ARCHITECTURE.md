@@ -8,15 +8,15 @@ is no server, no account system and no network dependency.
 
 **React 19 + TypeScript + Vite 8** for the application, **SQLite compiled to
 WebAssembly (sql.js)** for storage, **Capacitor 8** for Android/iOS shells and
-**Electron** for Windows/macOS/Linux + **Flatpak**.
+**Tauri 2** (Rust + the system WebView) for Windows/macOS/Linux + **Flatpak**.
 
 Why this stack over Flutter (the other obvious option):
 
-| Requirement | React/Vite + Capacitor/Electron | Flutter |
+| Requirement | React/Vite + Capacitor/Tauri | Flutter |
 | --- | --- | --- |
 | Host on Netlify | Native static SPA build | Needs a custom build image |
 | One UI for the supplied HTML-based design | Direct, design tokens map 1:1 | Recreate every screen by hand |
-| Five platforms | PWA + Capacitor + Electron | Native targets, but web is a different renderer |
+| Five platforms | PWA + Capacitor + Tauri | Native targets, but web is a different renderer |
 | Local SQLite | One WASM driver everywhere, testable in Node | Native SQLite plugins per platform |
 | Automated tests of calculations | Pure TS core, Vitest | Dart tests, separate tooling |
 
@@ -32,10 +32,10 @@ platform-specific.
 | `react`, `react-dom` | UI runtime; no framework lock-in beyond the component tree |
 | `vite`, `@vitejs/plugin-react` | Fast deterministic builds and static output for Netlify |
 | `vite-plugin-pwa` (+`workbox-window`) | Offline precache of the locally bundled app; no runtime/remote caching |
-| `sql.js` | Real SQLite (SQL, constraints, joins, transactions) compiled to WASM; runs identically in browsers, WebViews, Electron and Node tests |
+| `sql.js` | Real SQLite (SQL, constraints, joins, transactions) compiled to WASM; runs identically in browsers, WebViews, Tauri's WebView and Node tests |
 | `@js-temporal/polyfill` | Correct DST/leap-year/timezone calendar arithmetic for local day/week/month grouping |
 | `@capacitor/core`, `@capacitor/android`, `@capacitor/filesystem`, `@capacitor/local-notifications` | Native Android/iOS shell, app-private DB file, on-device notifications |
-| `electron`, `electron-builder` | Desktop shell + installers; no bundled browser engine download at runtime |
+| `@tauri-apps/api`, `@tauri-apps/cli`, Rust `tauri` crate | Desktop shell using the operating system's WebView (no bundled Chromium), plus installers; IPC payloads are base64 database snapshots |
 | `vitest` | Fast TS test runner for the core |
 | `typescript` | Strict typing across the monorepo |
 
@@ -50,7 +50,7 @@ deUrge/
 ├── apps/
 │   ├── web/            React PWA (Netlify deploy target, shared by all shells)
 │   ├── mobile/         Capacitor config + committed android/ (ios/ via CI)
-│   └── desktop/        Electron main/preload + electron-builder config
+│   └── desktop/        Tauri 2 shell (Rust commands + system WebView)
 ├── packages/
 │   └── core/           @deurge/core — domain, SQLite, services, engines, backups
 ├── flatpak/            Flatpak manifest, AppStream metadata, build script
@@ -74,7 +74,7 @@ deUrge/
 │  repositories + SQLite wrapper + migrations                   │
 ├──────────────────────────────────────────────────────────────┤
 │ Platform adapters                                             │
-│  IndexedDB (web) · Filesystem (Capacitor) · IPC file (Electron)│
+│  IndexedDB (web) · Filesystem (Capacitor) · Tauri IPC file      │
 │  clock · local notifications · native file save/open          │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -117,7 +117,7 @@ stays exactly as it was. This is what makes merge/replace imports safe.
 The database is loaded into memory and snapshotted after writes. This is a
 deliberate trade-off: the dataset is a personal journal (kilobytes to a few
 megabytes), snapshots are atomic per platform, and a single storage driver can
-be tested under Node and shipped to browsers, WebViews and Electron without
+be tested under Node and shipped to browsers, WebViews and Tauri without
 native bindings. The portability/export formats make the snapshot itself
 disposable: every record can be reconstructed from the JSON export, and the
 JSON export is generated from the database, not vice versa.
@@ -154,11 +154,15 @@ See [CALCULATION_RULES.md](CALCULATION_RULES.md) for the exact definitions.
   app bundle over `https://localhost`; the database lives in app-private
   storage via `@capacitor/filesystem`; notifications use the local
   notification plugin.
-- **Windows/macOS/Linux** (`apps/desktop`): Electron loads the same `dist/` over
-  a privileged custom `app://` protocol; the database is a local file in
-  `app.getPath('userData')` written atomically by the main process.
-- **Linux Flatpak**: the Electron bundle is packaged with the
-  `org.electronjs.Electron2.BaseApp` runtime, zypak, and no network permission.
+- **Windows/macOS/Linux** (`apps/desktop`): a Tauri 2 application embeds the same
+  `dist/` and renders it in the system WebView (WebKitGTK / WKWebView /
+  WebView2). Three Rust commands are the only privileged surface: `db_read`,
+  `db_write` (atomic temp + fsync + rename) and `db_backup`, plus
+  `save_text_file` for user-initiated exports. The database lives in the app
+  data directory. No filesystem, shell, HTTP or updater plugin is linked.
+- **Linux Flatpak**: the Tauri binary is packaged against an `org.gnome.Platform`
+  runtime (WebKitGTK 4.1) with no network permission and no home-directory
+  access.
 
 ## 9. Testing strategy
 

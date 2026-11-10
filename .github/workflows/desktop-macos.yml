@@ -1,7 +1,13 @@
-name: Desktop macOS (DMG)
+name: Desktop macOS (Tauri)
 
-# electron-builder macOS disk image (unsigned unless a Developer ID certificate
-# is provided via CI secrets — see docs/RELEASING.md).
+# Tauri 2 macOS disk image, rendered by the system WKWebView. Unsigned by
+# design: `bundle.macOS.signingIdentity` is null in tauri.conf.json and no
+# signing secrets are referenced, so CI needs no certificates. A maintainer can
+# sign/notarize a locally built DMG later (see docs/RELEASING.md).
+#
+# Output (normalised by scripts/collect-tauri-artifacts.mjs):
+#   apps/desktop/release/deUrge-<version>-<arch>.dmg   (x64 | arm64)
+#   apps/desktop/release/SHA256SUMS.txt
 
 on:
   push:
@@ -11,11 +17,14 @@ on:
       - 'apps/desktop/**'
       - 'apps/web/**'
       - 'packages/core/**'
+      - 'scripts/collect-tauri-artifacts.mjs'
       - 'pnpm-lock.yaml'
       - '.github/workflows/desktop-macos.yml'
   pull_request:
     paths:
       - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'scripts/collect-tauri-artifacts.mjs'
       - '.github/workflows/desktop-macos.yml'
   workflow_dispatch:
 
@@ -29,7 +38,6 @@ permissions:
 env:
   NODE_VERSION: '22'
   PNPM_VERSION: '10.15.0'
-  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
 jobs:
   macos:
@@ -47,34 +55,31 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
-      - name: Cache Electron / electron-builder downloads
-        uses: actions/cache@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust / Tauri build
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/Library/Caches/electron
-            ~/Library/Caches/electron-builder
-          key: electron-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
-          restore-keys: electron-${{ runner.os }}-
+          workspaces: apps/desktop/src-tauri -> target
+          key: desktop-macos-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build web app
-        run: pnpm --filter @deurge/web build
-
-      - name: Package DMG
+      - name: Build DMG
         run: pnpm --filter @deurge/desktop dist:mac
 
-      - name: Verify + checksums
+      - name: Verify DMG + checksums
         run: |
           set -euo pipefail
           ls -lh apps/desktop/release
-          cd apps/desktop/release
           shopt -s nullglob
-          dmgs=(*.dmg)
-          test ${#dmgs[@]} -gt 0
-          shasum -a 256 *.dmg > SHA256SUMS.txt
-          cat SHA256SUMS.txt
+          dmgs=(apps/desktop/release/*.dmg)
+          test ${#dmgs[@]} -eq 1
+          (cd apps/desktop/release && shasum -a 256 -c SHA256SUMS.txt)
+          file apps/desktop/src-tauri/target/release/deurge
+          hdiutil verify apps/desktop/release/*.dmg
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4

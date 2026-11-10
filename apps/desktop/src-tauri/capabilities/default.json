@@ -1,0 +1,9 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "deUrge desktop capability: the main window may only call the app's own commands (db_read/db_write/db_backup/save_text_file). No filesystem, shell, HTTP, opener, updater or process plugin is linked or exposed.",
+  "windows": [
+    "main"
+  ],
+  "permissions": []
+}

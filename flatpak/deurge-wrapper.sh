@@ -1,20 +1,16 @@
 #!/bin/sh
 # deUrge — Flatpak launcher.
 #
-# zypak-wrapper comes from org.electronjs.Electron2.BaseApp: it lets Chromium's
-# own sandbox run inside the Flatpak sandbox, where the setuid chrome-sandbox
-# helper is unavailable. TMPDIR is redirected into the per-app runtime dir so
-# Chromium never writes outside the sandbox.
+# Tauri renders the embedded React/Vite bundle with the GNOME runtime's
+# WebKitGTK 4.1; there is no Electron/Chromium here, so no zypak wrapper and no
+# sandbox workarounds are needed. This launcher exists so the Flatpak entrypoint
+# stays stable (desktop file + AppStream <binary>) and to give WebKitGTK a
+# writable TMPDIR even in minimal sessions. It never touches the network.
 set -eu
 
 if [ -z "${TMPDIR:-}" ] || [ ! -d "${TMPDIR}" ]; then
-    export TMPDIR="${XDG_RUNTIME_DIR}/app/${FLATPAK_ID}"
+    export TMPDIR="${XDG_RUNTIME_DIR:-/tmp}/app/${FLATPAK_ID:-org.deurge.DeUrge}"
     mkdir -p "${TMPDIR}"
 fi
 
-# Electron 44 auto-detects Wayland/X11 through Ozone; the flags are explicit so
-# behaviour is identical on both sessions.
-exec zypak-wrapper /app/deurge/deurge \
-    --ozone-platform-hint=auto \
-    --enable-features=WaylandWindowDecorations \
-    "$@"
+exec /app/bin/deurge "$@"

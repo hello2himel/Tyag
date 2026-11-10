@@ -1,6 +1,7 @@
 import { AppProvider, useApp } from './store/app';
 import { navigate, useRoute, type RouteName } from './router';
 import { Icon, type IconName } from './ui/components';
+import { DeUrgeLockup } from './ui/logo';
 import { TrackersScreen } from './features/trackers/TrackersScreen';
 import { TrackerDetailScreen } from './features/trackers/TrackerDetailScreen';
 import { OnboardingScreen } from './features/onboarding/OnboardingScreen';
@@ -60,8 +61,13 @@ function Shell() {
   return (
     <div className="layout">
       <aside className="sidebar" aria-label="Primary">
-        <button type="button" className="sidebar-brand" onClick={() => navigate('/trackers')}>
-          deUrge
+        <button
+          type="button"
+          className="sidebar-brand"
+          onClick={() => navigate('/trackers')}
+          aria-label="deUrge — Trackers"
+        >
+          <DeUrgeLockup height={26} />
         </button>
         <div className="sidebar-label">Trackers</div>
         {trackers.map((tracker) => (

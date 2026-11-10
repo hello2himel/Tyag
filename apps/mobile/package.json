@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "deUrge mobile shell (Capacitor) for Android and iOS — offline, local-only.",
-  "license": "MIT",
+  "description": "deUrge mobile shell (Capacitor) for Android and iOS \u2014 offline, local-only.",
+  "license": "AGPL-3.0-only",
   "scripts": {
     "build:web": "pnpm --filter @deurge/web build",
     "sync": "pnpm build:web && cap sync",

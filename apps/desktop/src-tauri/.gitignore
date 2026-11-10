@@ -1,0 +1,4 @@
+# Rust / Tauri build output (generated)
+/target/
+# Generated ACL schemas (recreated by `tauri dev`/`tauri build`)
+/gen/schemas/

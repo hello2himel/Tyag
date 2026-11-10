@@ -63,10 +63,11 @@ packaged as:
 
 - **Web/PWA** — Netlify-ready static build, installable, offline after first load.
 - **Android/iOS** — Capacitor 8 shell around the same bundle; APK **and** AAB.
-- **Windows/macOS/Linux** — Electron shell + **Flatpak** for Linux.
+- **Windows/macOS/Linux** — **Tauri 2** (Rust + the OS WebView) desktop app + **Flatpak** for Linux.
 
 The supplied UI/UX design is HTML-based, so a TypeScript/React stack implements
-it faithfully while sharing one tested core across all five platforms. The
+it faithfully while sharing one tested core across all five platforms, and the
+desktop shell is Tauri (Rust + the system WebView) rather than a bundled browser. The
 domain, streak engine, analytics, insights, import/export and SQLite layer have
 zero platform imports and run under Node in the test suite — the tests exercise
 the same code that ships. See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the
@@ -77,7 +78,7 @@ full rationale and trade-offs.
 ```
 apps/web        React PWA (shared UI, Netlify deploy target)
 apps/mobile     Capacitor config + Android project (iOS via CI)
-apps/desktop    Electron main/preload + electron-builder config
+apps/desktop    Tauri 2 desktop shell (Rust) + bundle/Flatpak icons
 packages/core   @deurge/core: domain, SQLite, services, streak/analytics/
                 insights/backup engines (fully unit-tested, platform-free)
 flatpak         Flatpak manifest, AppStream metadata, build script
@@ -106,8 +107,9 @@ No environment variables, accounts or network services are needed.
 - **Android APK + AAB**: `pnpm build:android` (requires JDK 21 + Android SDK;
   see [docs/BUILDING.md](docs/BUILDING.md)).
 - **Linux Flatpak**: `pnpm build:flatpak`.
-- **Windows/macOS/iOS**: Electron/Capacitor projects build on their native
-  runners; CI configuration is in [`.github/workflows`](.github/workflows).
+- **Windows/macOS**: the Tauri desktop bundle and **iOS** Capacitor project
+  build on their native runners; CI configuration is in
+  [`.github/workflows`](.github/workflows).
 
 Releases are published on the **[Releases page](https://github.com/hello2himel/deUrge/releases/latest)**
 with the signed Android APK/AAB, Linux Flatpak, Linux AppImage and a
@@ -155,4 +157,10 @@ create. There is no hidden copy anywhere else. Export a backup regularly from
 
 ## License
 
-[MIT](LICENSE)
+**GNU Affero General Public License v3.0** (`AGPL-3.0-only`) — see [LICENSE](LICENSE).
+
+deUrge is free software: you can use, study, share and improve it. If you modify
+it and distribute it or make it available over a network, the AGPL requires the
+corresponding source to remain available under the same license. Your personal
+data is still entirely yours; the license covers the application code, not what
+you record in it.

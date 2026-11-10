@@ -9,7 +9,7 @@
  *  - AES-256-GCM with a 12-byte random IV and a 128-bit authentication tag for
  *    the payload.
  *
- * The same code runs in browsers, Capacitor WebViews, Electron and Node >= 20
+ * The same code runs in browsers, Capacitor/Tauri WebViews and Node >= 20
  * because all of them expose `globalThis.crypto.subtle`. Base64 is implemented
  * here (rather than `btoa`/`Buffer`) so the envelope is identical everywhere
  * and importable by every platform.

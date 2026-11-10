@@ -3,26 +3,27 @@
 # deUrge — build the Flatpak bundle.
 #
 # Pipeline:
-#   1. build the web app        (pnpm --filter @deurge/web build)
-#   2. package Electron         (pnpm --filter @deurge/desktop build -> linux-unpacked)
-#   3. stage the payload        (flatpak/build/stage)
-#   4. flatpak-builder          (org.deurge.DeUrge.yml, runtime 24.08)
-#   5. flatpak build-bundle     -> flatpak/dist/deUrge-<version>-<arch>.flatpak
+#   1. build the web app          (pnpm --filter @deurge/web build)
+#   2. build the Tauri binary     (pnpm --filter @deurge/desktop build -> target/release/deurge)
+#   3. stage the payload          (flatpak/build/stage)
+#   4. flatpak-builder            (org.deurge.DeUrge.yml, org.gnome.Platform//48)
+#   5. flatpak build-bundle       -> flatpak/dist/deUrge-<version>-<arch>.flatpak
+#
+# The Flatpak ships the prebuilt Tauri binary and runs it on the WebKitGTK 4.1
+# from the GNOME runtime: no Electron base app, no zypak, no bundled Chromium.
 #
 # Usage:
-#   bash flatpak/build.sh                 # auto-detect builder
-#   BUILD=direct  bash flatpak/build.sh   # host flatpak-builder
-#   BUILD=docker  bash flatpak/build.sh   # containerized flatpak-builder
-#   SKIP_APP_BUILD=1 bash flatpak/build.sh   # reuse existing web/Electron build
+#   bash flatpak/build.sh                    # auto-detect builder
+#   BUILD=direct  bash flatpak/build.sh      # host flatpak-builder
+#   BUILD=docker  bash flatpak/build.sh      # containerized flatpak-builder
+#   SKIP_APP_BUILD=1 bash flatpak/build.sh   # reuse existing web/Tauri build
 #   FLATPAK_BUILDER=/path/to/flatpak-builder bash flatpak/build.sh
 #
 # Requirements (see docs/BUILDING.md):
-#   - node + pnpm; flatpak CLI with the flathub remote (user or system)
-#   - flatpak-builder: either on PATH, via `org.flatpak.Builder` (flatpak app),
-#     or Docker. `--install-deps-from=flathub` fetches the 24.08 runtime/SDK.
-#
-# The finished bundle is self-contained w.r.t. the app; at install time the
-# Flathub runtime repo is referenced so the runtime can be resolved.
+#   - node + pnpm; Rust toolchain with the Tauri Linux deps (webkit2gtk-4.1-dev …)
+#   - flatpak CLI with the flathub remote (user or system)
+#   - flatpak-builder: either on PATH, via the `org.flatpak.Builder` app, or
+#     Docker. `--install-deps-from=flathub` fetches org.gnome.Platform/Sdk 48.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -36,11 +37,12 @@ BUILD_ROOT="$FP/build"
 STAGE="$BUILD_ROOT/stage"
 REPO="$FP/repo"
 BUILD_DIR="$BUILD_ROOT/dir"
-UNPACKED="$ROOT/apps/desktop/release/linux-unpacked"
+BINARY="$ROOT/apps/desktop/src-tauri/target/release/deurge"
 BUNDLE="$DIST/deUrge-$VERSION-$ARCH.flatpak"
 MODE="${BUILD:-auto}"
 FLATHUB_REPO_URL="https://dl.flathub.org/repo/flathub.flatpakrepo"
-RUNTIME_VERSION="24.08"
+# The GNOME runtime that ships WebKitGTK 4.1. Keep in sync with the manifest.
+RUNTIME_VERSION="48"
 
 say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 warn() { printf 'WARNING: %s\n' "$*" >&2; }
@@ -62,26 +64,32 @@ if [[ "${SKIP_APP_BUILD:-0}" != "1" ]]; then
   say "Building web app"
   (cd "$ROOT" && pnpm --filter @deurge/web build)
 
-  say "Packaging Electron (linux unpacked)"
+  say "Building Tauri binary (release, no bundle)"
   (cd "$ROOT" && pnpm --filter @deurge/desktop build)
 fi
 
-[[ -x "$UNPACKED/deurge" ]] || die "missing $UNPACKED/deurge — run without SKIP_APP_BUILD=1"
+[[ -x "$BINARY" ]] || die "missing $BINARY — run without SKIP_APP_BUILD=1"
 
 say "Staging Flatpak payload (v$VERSION, $ARCH)"
 rm -rf "$STAGE"
-mkdir -p "$STAGE/deurge-app" "$DIST"
-cp -a "$UNPACKED/." "$STAGE/deurge-app/"
+mkdir -p "$STAGE" "$DIST"
+install -Dm755 "$BINARY" "$STAGE/deurge"
 install -m755 "$FP/deurge-wrapper.sh" "$STAGE/deurge-wrapper.sh"
 install -m644 "$FP/$APP_ID.desktop" "$STAGE/$APP_ID.desktop"
 install -m644 "$FP/$APP_ID.metainfo.xml" "$STAGE/$APP_ID.metainfo.xml"
-for size in 128 256 512; do
-  install -m644 "$ROOT/apps/desktop/build/icons/${size}x${size}.png" "$STAGE/icon-$size.png"
-done
+# Tauri's generated icon set (RGBA) plus the 512px PWA asset.
+install -m644 "$ROOT/apps/desktop/src-tauri/icons/128x128.png" "$STAGE/icon-128.png"
+install -m644 "$ROOT/apps/desktop/src-tauri/icons/128x128@2x.png" "$STAGE/icon-256.png"
+install -m644 "$ROOT/apps/web/public/icons/icon-512.png" "$STAGE/icon-512.png"
 
 # -------------------------------------------------------------------- builder
 BUILDER_CMD=()
 USING_BUILDER_APP=0
+# The org.flatpak.Builder app is sandboxed: its own `--user` flatpak
+# installation starts empty. Point flatpak-builder at the host user
+# installation instead (it is visible inside the sandbox via
+# `--filesystem=xdg-data/flatpak`), so already-installed runtimes are reused.
+HOST_FLATPAK_USER_DIR="${FLATPAK_USER_DIR:-$HOME/.local/share/flatpak}"
 resolve_builder() {
   if [[ -n "${FLATPAK_BUILDER:-}" ]]; then
     read -r -a BUILDER_CMD <<< "$FLATPAK_BUILDER"
@@ -92,7 +100,7 @@ resolve_builder() {
     # flatpak user installation starts without remotes. Register flathub inside
     # that installation first; --install-deps-from=flathub then works there.
     USING_BUILDER_APP=1
-    BUILDER_CMD=(flatpak run --command=flatpak-builder org.flatpak.Builder)
+    BUILDER_CMD=(flatpak run "--env=FLATPAK_USER_DIR=$HOST_FLATPAK_USER_DIR" --command=flatpak-builder org.flatpak.Builder)
   else
     return 1
   fi
@@ -102,19 +110,39 @@ resolve_builder() {
 ensure_builder_app_flathub() {
   [[ "$USING_BUILDER_APP" == "1" ]] || return 0
   say "Preparing flathub remote inside the org.flatpak.Builder sandbox"
-  flatpak run --command=flatpak org.flatpak.Builder remote-add \
-    --user --if-not-exists flathub "$FLATHUB_REPO_URL" || {
-      warn "could not configure flathub inside org.flatpak.Builder; install the 24.08 SDK/base app in its sandbox manually"
+  flatpak run "--env=FLATPAK_USER_DIR=$HOST_FLATPAK_USER_DIR" --command=flatpak \
+    org.flatpak.Builder remote-add --user --if-not-exists flathub "$FLATHUB_REPO_URL" || {
+      warn "could not configure flathub inside org.flatpak.Builder; install org.gnome.Platform//$RUNTIME_VERSION and org.gnome.Sdk//$RUNTIME_VERSION in its sandbox manually"
     }
+  # `flatpak install <remote> <ref>` needs the remote summary before it can
+  # resolve a ref; fetch it once so --install-deps-from can work.
+  flatpak run "--env=FLATPAK_USER_DIR=$HOST_FLATPAK_USER_DIR" --command=flatpak \
+    org.flatpak.Builder update --appstream flathub >/dev/null 2>&1 || \
+    warn "could not refresh the flathub appstream inside org.flatpak.Builder (will try the installed runtimes)"
+}
+
+# Is the GNOME runtime/SDK for $RUNTIME_VERSION already available to the builder?
+builder_runtime_available() {
+  local ref
+  for ref in "org.gnome.Platform//$RUNTIME_VERSION" "org.gnome.Sdk//$RUNTIME_VERSION"; do
+    if [[ "$USING_BUILDER_APP" == "1" ]]; then
+      flatpak run "--env=FLATPAK_USER_DIR=$HOST_FLATPAK_USER_DIR" --command=flatpak \
+        org.flatpak.Builder info --user "$ref" >/dev/null 2>&1 || return 1
+    else
+      flatpak info "$ref" >/dev/null 2>&1 || return 1
+    fi
+  done
+  return 0
 }
 
 # Some distributions ship appstreamcli built against libvips without JPEG-XL
 # support, which makes `appstreamcli compose` fail with `media-worker-error`.
-# The org.freedesktop.Sdk used by the Flatpak contains an AppStream that works;
-# run only the compose step through it (transparent shim on PATH) and retry.
+# The AppStream in the GNOME SDK works; run only the compose step through the
+# SDK (transparent shim on PATH) and retry once.
+# shellcheck disable=SC2016
 make_appstream_shim() {
   local shim_dir="$BUILD_ROOT/appstream-shim"
-  local sdk="org.freedesktop.Sdk//$RUNTIME_VERSION"
+  local sdk="org.gnome.Sdk//$RUNTIME_VERSION"
   flatpak info "$sdk" >/dev/null 2>&1 || return 1
   mkdir -p "$shim_dir"
   cat > "$shim_dir/appstreamcli" <<'SHIM'
@@ -130,7 +158,7 @@ for arg in "$@"; do
     *) argv+=("$arg") ;;
   esac
 done
-exec flatpak run --filesystem=host --command=appstreamcli "org.freedesktop.Sdk//${DEURGE_FLATPAK_RUNTIME:-24.08}" "${argv[@]}"
+exec flatpak run --filesystem=host --command=appstreamcli "org.gnome.Sdk//${DEURGE_FLATPAK_RUNTIME:-48}" "${argv[@]}"
 SHIM
   chmod +x "$shim_dir/appstreamcli"
   printf '%s' "$shim_dir"
@@ -145,8 +173,8 @@ run_flatpak_builder() {
   if grep -qE 'media-worker-error|filters-but-no-output|asc-mediaworker' "$log"; then
     local shim_dir
     if shim_dir="$(make_appstream_shim)"; then
-      warn "host appstreamcli compose failed (libvips/JPEG-XL); retrying with the SDK AppStream shim"
-      PATH="$shim_dir:$PATH" "$@" 2>&1 | tee -a "$log"
+      warn "host appstreamcli compose failed (libvips/JPEG-XL); retrying with the GNOME SDK AppStream shim"
+      DEURGE_FLATPAK_RUNTIME="$RUNTIME_VERSION" PATH="$shim_dir:$PATH" "$@" 2>&1 | tee -a "$log"
       return "${PIPESTATUS[0]}"
     fi
   fi
@@ -155,9 +183,16 @@ run_flatpak_builder() {
 
 direct_build() {
   say "flatpak-builder (direct: ${BUILDER_CMD[*]})"
-  ensure_builder_app_flathub
+  local -a deps_args=()
+  if builder_runtime_available; then
+    say "Using the installed org.gnome.Platform/org.gnome.Sdk //$RUNTIME_VERSION"
+  else
+    say "org.gnome.Platform/org.gnome.Sdk //$RUNTIME_VERSION missing — installing from flathub"
+    ensure_builder_app_flathub
+    deps_args=(--install-deps-from=flathub)
+  fi
   if ! run_flatpak_builder "${BUILDER_CMD[@]}" --user --force-clean --disable-rofiles-fuse \
-    --default-branch=stable --repo="$REPO" --install-deps-from=flathub --arch="$ARCH" \
+    --default-branch=stable --repo="$REPO" "${deps_args[@]}" --arch="$ARCH" \
     "$BUILD_DIR" "$MANIFEST"; then
     die "flatpak-builder failed — see $BUILD_ROOT/flatpak-builder.log"
   fi
@@ -222,9 +257,12 @@ cat <<'EOF'
 
 Notes:
   * The bundle targets the build host architecture only. Cross-arch Flatpaks
-    need a matching Electron build + arch-specific manifest (see docs/BUILDING.md).
+    need a matching Tauri build for that architecture (CI builds x86_64 only).
+  * Runtime: org.gnome.Platform//48 provides GTK 3 + WebKitGTK 4.1; the bundle
+    references the Flathub runtime repo so the runtime can be resolved at
+    install time.
   * Sandbox: no network, no home-directory access, only xdg-download for
-    user-initiated backup export/import.
+    user-initiated exports/backups.
   * Install locally:  flatpak install --user --bundle dist/deUrge-*.flatpak
     Run:              flatpak run org.deurge.DeUrge
 EOF

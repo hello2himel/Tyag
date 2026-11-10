@@ -1,0 +1,36 @@
+[package]
+name = "deurge"
+version = "1.0.0"
+description = "deUrge — local-first, offline addiction & habit recovery tracker"
+authors = ["deUrge contributors"]
+license = "AGPL-3.0-only"
+edition = "2021"
+rust-version = "1.77.2"
+
+# The desktop shell is a Tauri 2 application: the same React/Vite bundle as the
+# web/PWA is embedded at compile time and rendered by the system WebView
+# (WebKitGTK on Linux, WKWebView on macOS, WebView2 on Windows). No remote
+# content, no network capability, no auto-update.
+[lib]
+name = "deurge_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# IPC payloads are base64 strings, so the database commands stay JSON-safe
+# without Vec<u8> -> number[] inflation on the wire.
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
+# See https://docs.rs/url: Url is Tauri's navigation type.
+url = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

@@ -2,8 +2,8 @@
  * Platform storage for the SQLite snapshot.
  *
  * The engines never know where bytes live: the browser uses IndexedDB,
- * Capacitor uses the app's private filesystem, Electron uses a local file via
- * IPC. Tests use memory. Adapters must persist atomically (temp file + rename
+ * Capacitor uses the app's private filesystem, Tauri uses atomic Rust commands
+ * over IPC. Tests use memory. Adapters must persist atomically (temp file + rename
  * or a single IndexedDB put) and must never send data off device.
  */
 export interface PersistenceAdapter {

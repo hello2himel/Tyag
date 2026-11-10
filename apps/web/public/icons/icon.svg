@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="deUrge">
-  <rect width="512" height="512" rx="112" fill="#0071E3"/>
-  <path d="M256 104a152 152 0 1 0 0 304 152 152 0 0 0 0-304Zm0 52a100 100 0 1 1 0 200 100 100 0 0 1 0-200Z" fill="#fff"/>
-  <path d="M256 184v72l48 32" stroke="#fff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="deUrge app icon"><rect width="1024" height="1024" rx="229" fill="#FFFFFF"/><g transform="translate(212 212) scale(5)"><path d="M13.00,23.10A60.53 60.53 0 0 1 96.90,107.00A88.24 88.24 0 0 0 13.00,23.10Z" fill="#000000"/></g></svg>

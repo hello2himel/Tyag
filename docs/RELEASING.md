@@ -1,9 +1,10 @@
 # Releasing deUrge
 
 deUrge ships the **same** React/Vite bundle on every platform. A release is a
-single git tag that produces web, Android, iOS, Windows, macOS, Linux AppImage
-and Linux Flatpak artifacts plus checksums, and a draft GitHub release that a
-maintainer reviews and publishes.
+single git tag that produces web, Android, iOS, Windows (NSIS + MSI), macOS
+(DMG), Linux AppImage/deb/rpm and Linux Flatpak (Tauri 2 + system WebView)
+artifacts plus checksums, and a draft GitHub release that a maintainer reviews
+and publishes.
 
 Everything here is designed so that **no signing key, password or certificate
 is ever committed**. Builds are produced by CI from the tag
@@ -31,7 +32,10 @@ Bump these **together** in one commit before tagging:
 | `apps/mobile/android/app/build.gradle` | `versionCode` + `versionName` | `versionCode` is an integer that must strictly increase for Play Store; `versionName` = semver |
 | `apps/mobile/ios/App/App.xcodeproj/project.pbxproj` | `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION` | in both Debug and Release configurations |
 | `flatpak/org.deurge.DeUrge.metainfo.xml` | `<release version= date=>` | newest release first; AppStream requires it |
-| `apps/desktop/package.json`, `apps/mobile/package.json`, `packages/core/package.json` | `version` | keep in step with the root version |
+| `apps/desktop/package.json` | `version` | keep in step with the root version |
+| `apps/desktop/src-tauri/tauri.conf.json` | `version` | Tauri bundle version (must equal the root version; `tauri build` refuses on mismatch) |
+| `apps/desktop/src-tauri/Cargo.toml` | `version` | Rust crate version; `Cargo.lock` is refreshed by the build (commit it) |
+| `apps/mobile/package.json`, `packages/core/package.json` | `version` | keep in step with the root version |
 
 Then:
 
@@ -54,15 +58,18 @@ All artifacts are attached to the GitHub release and covered by
 | --- | --- | --- |
 | Web/PWA | `deUrge-<version>-web.zip` | `web` job (`apps/web/dist`) |
 | Android | `deUrge-<version>-debug.apk` (CI fallback) / `deUrge-<version>-release.apk` / `deUrge-<version>-release.aab` | `android` job |
-| Linux AppImage | `deUrge-<version>-<arch>.AppImage` | `linux-appimage` job |
-| Linux Flatpak | `deUrge-<version>-<arch>.flatpak` | `flatpak` job |
-| Windows | `deUrge-Setup-<version>-<arch>.exe` | `windows` job |
-| macOS | `deUrge-<version>-<arch>.dmg` | `macos` job |
+| Linux AppImage | `deUrge-<version>-<arch>.AppImage` | `linux` job (Tauri) |
+| Linux deb | `deUrge-<version>-<arch>.deb` (`arch` = `amd64`) | `linux` job (Tauri) |
+| Linux rpm | `deUrge-<version>-<arch>.rpm` (`arch` = `x86_64`) | `linux` job (Tauri) |
+| Linux Flatpak | `deUrge-<version>-<arch>.flatpak` | `flatpak` job (Tauri on `org.gnome.Platform//48`) |
+| Windows | `deUrge-Setup-<version>-<arch>.exe` (NSIS) | `windows` job (Tauri) |
+| Windows MSI | `deUrge-<version>-<arch>.msi` | `windows` job (Tauri) |
+| macOS | `deUrge-<version>-<arch>.dmg` | `macos` job (Tauri, unsigned) |
 | iOS (unsigned) | `deUrge-<version>-unsigned.xcarchive.zip` | `ios` job |
 | Checksums | `SHA256SUMS.txt` | publish job (all files) |
 
 `<arch>` is `x86_64`/`aarch64` for Linux, `x64`/`arm64` for Windows/macOS,
-matching electron-builder/`uname -m` output.
+matching the Tauri bundle arch (`uname -m` on Linux, `process.arch` in `scripts/collect-tauri-artifacts.mjs`). The Tauri builds write native names first (`deUrge_1.0.0_amd64.AppImage`, `deUrge_1.0.0_x64-setup.exe`, …); the collection script renames them to the stable scheme above and generates `SHA256SUMS.txt`.
 
 ---
 
@@ -97,35 +104,27 @@ Play Console upload uses the `.aab`; `versionCode` must increase monotonically.
 Never delete or rotate the upload keystore without using Play App Signing key
 rotation — losing it means losing update rights.
 
-### Windows (NSIS installer)
+### Windows (NSIS installer + MSI)
 
-electron-builder reads standard variables, so provide them as CI secrets and it
-signs automatically:
-
-| Secret | Notes |
-| --- | --- |
-| `CSC_LINK` | base64 of a `.pfx` (or a URL) |
-| `CSC_KEY_PASSWORD` | certificate password |
+Tauri builds unsigned by default — CI needs no secrets. For signed releases,
+configure Tauri's Windows signing options (certificate thumbprint or `.pfx`
+path plus timestamp URL, see the Tauri bundler docs) and provide the
+certificate material/password as CI secrets only; never commit it. Signing can
+also be done as a post-processing step with `signtool` before uploading.
 
 Unsigned installers are fine for testing; SmartScreen will warn end users.
 
 ### macOS (DMG)
 
-Unsigned DMGs work locally but Gatekeeper blocks them on other Macs. For real
-distribution provide:
-
-| Secret | Notes |
-| --- | --- |
-| `CSC_LINK` | Developer ID Application certificate (base64 `.p12`) |
-| `CSC_KEY_PASSWORD` | certificate password |
-| `APPLE_ID` | Apple ID for notarization |
-| `APPLE_APP_SPECIFIC_PASSWORD` | app-specific password |
-| `APPLE_TEAM_ID` | 10-character team id |
-
-`apps/desktop/electron-builder.yml` has `hardenedRuntime: true` and the
-entitlements in `apps/desktop/build/entitlements.mac.plist`; notarization is
-performed by electron-builder when the Apple variables are present. Without
-them the DMG is unsigned (`CSC_IDENTITY_AUTO_DISCOVERY=false` in CI).
+Unsigned DMGs work locally but Gatekeeper blocks them on other Macs. CI builds
+them **unsigned** on purpose: `apps/desktop/src-tauri/tauri.conf.json` sets
+`bundle.macOS.signingIdentity: null`, so no certificate discovery happens and no
+signing secrets are required. For a distributable DMG, a maintainer signs and
+notarizes it on macOS with their Developer ID identity
+(`APPLE_SIGNING_IDENTITY` + `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` for
+notarization, passed only through the environment). No certificate, password or
+key is ever committed. Tauri builds both the Intel (`x64`) and Apple Silicon
+(`aarch64`) DMGs natively on the matching macOS runner.
 
 ### iOS
 
@@ -182,8 +181,8 @@ mirror a Flatpak repository, use a GPG key stored only in CI secrets.
 ```bash
 pnpm install --frozen-lockfile
 pnpm --filter @deurge/web build
-pnpm build:desktop                     # Linux unpacked
-pnpm --filter @deurge/desktop dist:linux
+pnpm build:desktop                     # Tauri release binary (no installer bundles)
+pnpm --filter @deurge/desktop dist:linux   # AppImage + deb + rpm (+ SHA256SUMS.txt)
 pnpm build:android                     # debug unless DEURGE_* signing vars set
 pnpm build:flatpak                     # needs flatpak-builder/docker
 ```
@@ -208,13 +207,24 @@ Platform checks:
   disabled after first load (service worker).
 * **Android**: `apksigner verify --print-certs <apk>` (CI does this), then
   `adb install -r` on a device.
-* **AppImage**: `chmod +x deUrge-*.AppImage && ./deUrge-*.AppImage`.
+* **AppImage**: `chmod +x deUrge-*.AppImage && ./deUrge-*.AppImage` (needs the
+  system WebKitGTK 4.1 and `libfuse2`; `--appimage-extract-and-run` works
+  without FUSE).
+* **deb/rpm**: `sudo apt install ./deUrge-*.deb` or `sudo dnf install
+  ./deUrge-*.rpm`; then launch `deUrge` from the application menu.
+* **Windows MSI**: `msiexec /i deUrge-*.msi`; NSIS installer is unsigned
+  (SmartScreen warning expected).
+* **macOS DMG**: unsigned — right-click → Open the first time on other Macs.
 * **Flatpak**: `flatpak install --user --bundle deUrge-*.flatpak` then
-  `flatpak run org.deurge.DeUrge`; verify the sandbox has no network access and
-  the database lives under `~/.var/app/org.deurge.DeUrge/`.
-* **Electron desktop**: first launch creates `deurge.db` in the OS user-data
-  directory; the window must load `app://deurge/index.html` and never make a
-  network request.
+  `flatpak run org.deurge.DeUrge`; `flatpak info --user --show-permissions
+  org.deurge.DeUrge` must show no network and no home access; the database
+  lives under `~/.var/app/org.deurge.DeUrge/data/app.deurge.DeUrge/`.
+* **Tauri desktop**: first launch creates `deurge.db` in the Tauri app-data
+  directory (`~/.local/share/app.deurge.DeUrge` on Linux,
+  `~/Library/Application Support/app.deurge.DeUrge` on macOS,
+  `%APPDATA%\app.deurge.DeUrge` on Windows); the window must render the
+  embedded bundle from `tauri://localhost` (Linux/macOS) or
+  `http://tauri.localhost` (Windows) and never make a network request.
 
 ---
 
@@ -223,15 +233,24 @@ Platform checks:
 | Workflow | Release responsibility |
 | --- | --- |
 | `.github/workflows/release.yml` | tag `v*` → all platform artifacts + `SHA256SUMS.txt` + draft GitHub release |
-| `.github/workflows/ci.yml` | PR/main gate: typecheck, tests, web build, privacy audit, Electron packaging smoke |
+| `.github/workflows/ci.yml` | PR/main gate: typecheck, tests, web build, privacy audit, Tauri release binary + WebKitGTK linkage + Rust command tests |
 | `.github/workflows/android.yml` | per-push APK (debug) / tag APK+AAB (signed when secrets exist) |
 | `.github/workflows/flatpak.yml` | `.flatpak` bundle |
-| `.github/workflows/desktop-{linux,windows,macos}.yml` | AppImage / NSIS / DMG |
+| `.github/workflows/desktop-{linux,windows,macos}.yml` | Tauri: AppImage+deb+rpm / NSIS+MSI / DMG |
 | `.github/workflows/ios.yml` | unsigned simulator build + unsigned `.xcarchive` |
 
-Actions caches: pnpm store (`setup-node cache: pnpm`), Electron/electron-builder
-downloads (`~/.cache/electron*`, `~/Library/Caches/electron*`,
-`~/AppData/Local/electron*`), Gradle (`gradle/actions/setup-gradle`).
+Actions caches: pnpm store (`setup-node cache: pnpm`), Rust `target/`
+(`Swatinem/rust-cache`), Tauri bundler tools (`~/.cache/tauri`,
+`~/AppData/Local/tauri` — linuxdeploy/AppImage runtime, NSIS/WiX), Gradle
+(`gradle/actions/setup-gradle`).
+
+Tauri notes for release engineers:
+* the Linux jobs install the WebKitGTK 4.1 development packages before building;
+* `rpm` packages need `rpmbuild` (installed in the Linux CI job; not present on
+  every developer machine — `dist:linux` will then fail at the rpm step, so use
+  the CI artifact or install `rpm`);
+* no signing secrets are referenced by any desktop job; all desktop artifacts
+  are unsigned unless a maintainer signs them explicitly.
 
 ---
 

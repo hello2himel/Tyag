@@ -98,7 +98,7 @@ export function TrackersScreen() {
           <IconButton label="New tracker" icon="plus" onClick={() => setSheet({ tracker: null })} />
         </div>
         <h1 className="screen-title">Trackers</h1>
-        <div className="sub">deUrge · {countLabel}, stored on this device</div>
+        <div className="sub">{countLabel}</div>
       </header>
 
       {trackers.length === 0 ? (

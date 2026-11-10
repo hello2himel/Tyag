@@ -1,6 +1,6 @@
 # deUrge — Dependencies
 
-deUrge intentionally keeps its dependency surface small. Each direct dependency
+deUrge itself is licensed under **AGPL-3.0-only** (see `LICENSE`). Its dependency surface is intentionally small. Each direct dependency
 has a technical justification; none includes telemetry, advertising or cloud
 synchronisation. Versions are pinned in `pnpm-lock.yaml`.
 
@@ -10,7 +10,7 @@ synchronisation. Versions are pinned in `pnpm-lock.yaml`.
 
 | Package | Version | Why |
 | --- | --- | --- |
-| `sql.js` | 1.15.x | SQLite compiled to WebAssembly — real SQL, constraints, transactions and migrations with one driver across browser, WebView, Electron and Node tests. |
+| `sql.js` | 1.15.x | SQLite compiled to WebAssembly — real SQL, constraints, transactions and migrations with one driver across browser, WebView, Tauri's WebView and Node tests. |
 | `@js-temporal/polyfill` | 0.5.x | Correct timezone/DST/leap-year calendar boundaries for local periods. |
 
 ### `apps/web`
@@ -30,13 +30,16 @@ macOS/CI.
 
 ### `apps/desktop`
 
-`electron` + `electron-builder` (dev/build tooling). No runtime network
-features enabled.
+**Tauri 2** (Rust) with only `serde`, `base64` and the `tauri` crate on the Rust
+side; `@tauri-apps/cli` is build tooling and `@tauri-apps/api` is used by the
+web bundle solely to call the app's own database/export commands. The system
+WebView (WebKitGTK/WKWebView/WebView2) renders the shared bundle; no plugin
+that could access the network, shell or arbitrary files is linked.
 
 ## Build/test tooling
 
 `typescript`, `vite`, `@vitejs/plugin-react`, `vite-plugin-pwa`,
-`workbox-window`, `vitest`, `@types/*`, `electron-builder`.
+`workbox-window`, `vitest`, `@types/*`, `@tauri-apps/cli`.
 
 ## Not included, by design
 

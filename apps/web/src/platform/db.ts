@@ -2,30 +2,55 @@
  * Boots the deUrge core on the current platform.
  *
  * Persistence order:
- *   1. Electron preload bridge (local file, exposed by apps/desktop)
+ *   1. Tauri desktop commands (atomic local file in the app data directory)
  *   2. Capacitor native filesystem (Android/iOS app-private storage)
  *   3. IndexedDB (browser/PWA), with a localStorage fallback
  *   4. In-memory (last resort; the UI warns that data will not be kept)
  */
 import { DeUrgeCore, loadSqlJs, MemoryPersistence, type PersistenceAdapter } from '@deurge/core';
 import { Capacitor } from '@capacitor/core';
+import { invoke } from '@tauri-apps/api/core';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { idbGet, idbSet } from './idb';
 
-class DesktopPersistence implements PersistenceAdapter {
+/** True when the bundle is running inside the Tauri desktop shell. */
+export function isTauriDesktop(): boolean {
+  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+}
+
+function bytesToBase64(data: Uint8Array): string {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let index = 0; index < data.length; index += chunk) {
+    binary += String.fromCharCode(...data.subarray(index, index + chunk));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value: string): Uint8Array {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+/**
+ * Desktop persistence through the app's own Tauri commands. Payloads travel as
+ * base64 strings so the JSON IPC never inflates a snapshot into a number array;
+ * the Rust side validates the size and writes atomically (temp file + fsync +
+ * rename) inside the per-user app data directory.
+ */
+class TauriPersistence implements PersistenceAdapter {
   readonly kind = 'desktop' as const;
-  constructor(private readonly bridge: NonNullable<Window['deurgeDesktop']>) {}
   async load(): Promise<Uint8Array | null> {
-    const value = await this.bridge.readDatabase();
-    return value ? new Uint8Array(value) : null;
+    const value = await invoke<string | null>('db_read');
+    return value ? base64ToBytes(value) : null;
   }
   async save(data: Uint8Array): Promise<void> {
-    const copy = new Uint8Array(data);
-    await this.bridge.writeDatabase(copy.buffer);
+    await invoke('db_write', { payloadB64: bytesToBase64(data) });
   }
   async backup(data: Uint8Array): Promise<void> {
-    const copy = new Uint8Array(data);
-    await this.bridge.backupDatabase(copy.buffer);
+    await invoke('db_backup', { payloadB64: bytesToBase64(data) });
   }
 }
 
@@ -87,8 +112,8 @@ async function loadWasm(): Promise<ArrayBuffer> {
 }
 
 async function createPersistence(): Promise<{ persistence: PersistenceAdapter; warning: string | null }> {
-  if (typeof window !== 'undefined' && window.deurgeDesktop) {
-    return { persistence: new DesktopPersistence(window.deurgeDesktop), warning: null };
+  if (isTauriDesktop()) {
+    return { persistence: new TauriPersistence(), warning: null };
   }
   if (Capacitor.isNativePlatform()) {
     try {

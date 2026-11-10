@@ -20,6 +20,7 @@ import {
   type DateFormat,
 } from '@deurge/core';
 import { useApp } from '../../store/app';
+import { DeUrgeLockup } from '../../ui/logo';
 import { navigate } from '../../router';
 import {
   Button,
@@ -449,10 +450,13 @@ export function SettingsScreen() {
         </SettingSection>
 
         <SettingSection label="About">
+          <div className="about-brand">
+            <DeUrgeLockup height={24} />
+          </div>
           <ListGroup aria-label="About deUrge">
             <ListRow label="Version" value={app.core.appVersion} />
             <ListRow label="Database schema" value={String(SCHEMA_VERSION)} />
-            <ListRow label="License" value="MIT" />
+            <ListRow label="License" value="AGPL-3.0-only" />
             <ListRow label="Source" value={<span className="setting-wrap-value">{REPOSITORY_URL.replace(/^https?:\/\//, '')}</span>} />
             <ListRow label="Works offline" value="Yes" />
             <ListRow label="Notifications require" value="Your permission" />

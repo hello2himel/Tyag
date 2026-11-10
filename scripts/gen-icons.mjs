@@ -1,127 +1,112 @@
 #!/usr/bin/env node
 /**
- * gen-icons.mjs — every deUrge icon, generated from one source of truth.
+ * gen-icons.mjs — every deUrge icon, generated from the official logo kit.
  *
- * Source of truth (owned by the web app):
- *   apps/web/public/icons/icon.svg  512x512 rounded-square deUrge mark
- *   apps/web/public/favicon.svg      64x64  simplified mark
+ * Source of truth (committed):
+ *   assets/brand/deurge-icon-light-rounded.svg   app icon, light
+ *   assets/brand/deurge-icon-dark-rounded.svg    app icon, dark
+ *   assets/brand/deurge-mark-primary.svg         bare mark (black)
+ *   assets/brand/deurge-mark-reversed.svg        bare mark (white)
+ *   assets/brand/favicon.svg                     adaptive favicon
  *
- * Generated (committed; regenerate with `pnpm icons`):
- *   apps/web/public/icons/icon-192.png             PWA any
- *   apps/web/public/icons/icon-512.png             PWA any
- *   apps/web/public/icons/icon-maskable-512.png    PWA maskable (full-bleed, 80% safe-area inset)
- *   apps/web/public/icons/apple-touch-icon-180.png iOS home screen (full-bleed)
- *   apps/web/public/favicon-32.png                 legacy favicon
- *   apps/desktop/build/icon.png                    electron-builder source (1024)
- *   apps/desktop/build/icons/<n>.png                Linux icon set 16..512
- *   apps/desktop/build/icon.ico                    Windows
- *   apps/desktop/build/icon.icns                   macOS (PNG-in-ICNS container)
- *   apps/mobile/android/app/src/main/res/**        adaptive + legacy launcher icons
- *   apps/mobile/ios/App/App/Assets.xcassets/**     iOS app icon + launch splash
+ * Generated (committed):
+ *   apps/web/public/{favicon-32.png, icons/icon-{192,512,maskable-512,1024}.png,
+ *                    icons/apple-touch-icon-180.png}
+ *   apps/mobile/android/app/src/main/res/**       launcher + splash icons
+ *   apps/mobile/ios/App/App/Assets.xcassets/**    app icon + launch splash
+ *   apps/desktop/src-tauri/icons/**               Tauri bundle icons
  *
- * Usage: node scripts/gen-icons.mjs [web|desktop|android|ios|all]   (default: all)
- *
- * Tooling: librsvg (`rsvg-convert`) is preferred; ImageMagick (`magick`) is a
- * fallback. Both are only needed to *regenerate* icons — the generated PNGs
- * are committed, so normal builds and CI do not need them.
- *
- * No network access, no third-party services.
+ * Usage: node scripts/gen-icons.mjs [web|android|ios|desktop|all]   (default all)
+ * Tooling: librsvg (rsvg-convert) or ImageMagick (magick) — regeneration only;
+ * generated PNGs/ICO/ICNS are committed, so normal builds need neither.
+ * No network access.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const BRAND = join(ROOT, 'assets/brand');
 const WEB_PUBLIC = join(ROOT, 'apps/web/public');
 const WEB_ICONS = join(WEB_PUBLIC, 'icons');
-const DESKTOP_BUILD = join(ROOT, 'apps/desktop/build');
 const ANDROID_RES = join(ROOT, 'apps/mobile/android/app/src/main/res');
 const IOS_ASSETS = join(ROOT, 'apps/mobile/ios/App/App/Assets.xcassets');
+const TAURI_ICONS = join(ROOT, 'apps/desktop/src-tauri/icons');
 const TMP = join(tmpdir(), `deurge-icons-${process.pid}`);
 mkdirSync(TMP, { recursive: true });
 
-const BRAND = '#0071E3';
-
-/* ------------------------------------------------------------------ tools */
+const read = (name) => readFileSync(join(BRAND, name), 'utf8');
+const MARK_PATH = (() => {
+  const svg = read('deurge-mark-primary.svg');
+  const m = svg.match(/<svg\b[^>]*>([\s\S]*?)<\/svg>/);
+  if (!m) throw new Error('gen-icons: unexpected mark SVG');
+  return m[1];
+})();
+const MARK_INNER = (color) => MARK_PATH.replace(/fill="[^"]*"/g, `fill="${color}"`);
+const LIGHT_ROUNDED = read('deurge-icon-light-rounded.svg');
+const DARK_ROUNDED = read('deurge-icon-dark-rounded.svg');
+const FAVICON = read('favicon.svg');
 
 function findTool() {
   const candidates = [
     ['rsvg-convert', (svg, size, out) => ['-w', String(size), '-h', String(size), svg, '-o', out]],
-    [
-      'magick',
-      (svg, size, out) => ['-background', 'none', '-density', '384', svg, '-resize', `${size}x${size}`, out],
-    ],
+    ['magick', (svg, size, out) => ['-background', 'none', '-density', '384', svg, '-resize', `${size}x${size}`, out]],
   ];
   for (const [bin, args] of candidates) {
     try {
       execFileSync(bin, ['--version'], { stdio: 'ignore' });
       return { bin, args };
     } catch {
-      /* try next */
+      /* next */
     }
   }
   throw new Error('gen-icons: need librsvg (rsvg-convert) or ImageMagick (magick) on PATH');
 }
-
 const RASTER = findTool();
 
-function render(svgText, size, outPath) {
+let written = 0;
+
+/** Tauri requires RGBA PNGs; librsvg emits RGB for fully opaque images. */
+function ensureRgba(outPath) {
+  try {
+    execFileSync('magick', [outPath, '-alpha', 'on', `PNG32:${outPath}`], { stdio: 'ignore' });
+  } catch {
+    console.warn(`gen-icons: could not force RGBA on ${outPath} (ImageMagick missing)`);
+  }
+}
+
+function render(svg, size, outPath) {
   mkdirSync(dirname(outPath), { recursive: true });
   const svgPath = join(TMP, `src-${size}-${Math.random().toString(36).slice(2, 8)}.svg`);
-  writeFileSync(svgPath, svgText, 'utf8');
+  writeFileSync(svgPath, svg, 'utf8');
   execFileSync(RASTER.bin, RASTER.args(svgPath, size, outPath), { stdio: 'ignore' });
   rmSync(svgPath, { force: true });
+  written += 1;
+  console.log(`  ${outPath.replace(ROOT + '/', '')}`);
 }
 
-/* --------------------------------------------------- svg variant builders */
-
-/** Split a single-root inline SVG into `<svg attrs>` header and inner markup. */
-function svgParts(text) {
-  const m = text.match(/^(<svg\b[^>]*>)([\s\S]*?)(<\/svg>\s*)$/);
-  if (!m) throw new Error('gen-icons: unexpected SVG structure');
-  return { open: m[1], inner: m[2] };
+/** Full-bleed square with the mark inset. `scale` is the mark's share of the canvas. */
+function fullBleed(scale, bg = '#FFFFFF', fg = '#000000') {
+  const factor = (1024 * scale) / 120;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><rect width="1024" height="1024" fill="${bg}"/><g transform="translate(512 512) scale(${factor}) translate(-60 -60)">${MARK_INNER(fg)}</g></svg>\n`;
 }
 
-const MARK = svgParts(readFileSync(join(WEB_ICONS, 'icon.svg'), 'utf8'));
-const markInner = MARK.inner;
-/** The rounded-square background rect of the mark (also used as its own bg). */
-const markBgRe = /<rect\b[^>]*\bfill="#0071E3"[^>]*\/>/;
-if (!markBgRe.test(markInner)) {
-  throw new Error('gen-icons: icon.svg background rect (fill="#0071E3") not found');
+/** Transparent canvas with the mark inset (launcher foregrounds, splash marks). */
+function transparent(scale, fg = '#000000') {
+  const factor = (1024 * scale) / 120;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><g transform="translate(512 512) scale(${factor}) translate(-60 -60)">${MARK_INNER(fg)}</g></svg>\n`;
 }
 
-/** Wrap the full mark in an extra transform, preserving its own background. */
-function wrapMark(transform) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><g transform="${transform}">${markInner}</g></svg>\n`;
-}
+/* --------------------------------------------------------------- icns/ico */
 
-/** Mark with no background rect — for adaptive-icon foreground layers. */
-function transparentMark(scale = 1) {
-  const inner = markInner.replace(markBgRe, '');
-  const xform = `translate(256 256) scale(${scale}) translate(-256 -256)`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><g transform="${xform}">${inner}</g></svg>\n`;
-}
-
-/** Full-bleed brand background + inset mark (safe area for platform masks). */
-function fullBleed(scale) {
-  return wrapMark(`translate(256 256) scale(${scale}) translate(-256 -256)`);
-}
-
-/* ------------------------------------------------------------- icns (mac) */
-
-/**
- * Minimal PNG-in-ICNS writer. macOS 10.7+ accepts PNG payloads for the
- * ic07..ic14 element types, which is exactly what electron-builder expects.
- */
 function writeIcns(outPath, entries) {
   const chunks = [];
   for (const [type, png] of entries) {
-    const len = 8 + png.length;
     const head = Buffer.alloc(8);
     head.write(type, 0, 4, 'ascii');
-    head.writeUInt32BE(len, 4);
+    head.writeUInt32BE(8 + png.length, 4);
     chunks.push(head, png);
   }
   const body = Buffer.concat(chunks);
@@ -132,152 +117,114 @@ function writeIcns(outPath, entries) {
   writeFileSync(outPath, Buffer.concat([header, body]));
 }
 
-/* ------------------------------------------------------------------- main */
+function writeIco(outPath, pngPaths) {
+  try {
+    execFileSync('magick', [...pngPaths, '-define', 'icon:auto-resize=256,128,64,48,32,16', outPath]);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const targets = new Set(
-  (process.argv[2] ?? 'all') === 'all'
-    ? ['web', 'desktop', 'android', 'ios']
-    : [process.argv[2]].filter(Boolean),
+  (process.argv[2] ?? 'all') === 'all' ? ['web', 'android', 'ios', 'desktop'] : [process.argv[2]].filter(Boolean),
 );
 
-const written = [];
-function record(p) {
-  written.push(p);
-}
-
-/* web (PWA + favicon) — the mark is already a rounded square, so `any` icons
-   keep its transparent corners; maskable/apple variants are full-bleed. */
+/* ------------------------------------------------------------------- web */
 if (targets.has('web')) {
-  const any = (size, name) => {
-    const out = join(WEB_ICONS, name);
-    render(`${MARK.open}${markInner}</svg>\n`, size, out);
-    record(out);
-  };
-  any(192, 'icon-192.png');
-  any(512, 'icon-512.png');
-
-  const maskable = join(WEB_ICONS, 'icon-maskable-512.png');
-  render(fullBleed(0.8), 512, maskable);
-  record(maskable);
-
-  const apple = join(WEB_ICONS, 'apple-touch-icon-180.png');
-  render(fullBleed(0.86), 180, apple);
-  record(apple);
-
-  // Legacy favicon PNG: the 64-unit viewBox favicon.svg scales cleanly.
-  const favicon = svgParts(readFileSync(join(WEB_PUBLIC, 'favicon.svg'), 'utf8'));
-  const fav = join(WEB_PUBLIC, 'favicon-32.png');
-  render(`${favicon.open.replace('viewBox="0 0 64 64"', 'viewBox="0 0 64 64"')}${favicon.inner}</svg>\n`, 32, fav);
-  record(fav);
+  render(LIGHT_ROUNDED, 192, join(WEB_ICONS, 'icon-192.png'));
+  render(LIGHT_ROUNDED, 512, join(WEB_ICONS, 'icon-512.png'));
+  render(fullBleed(0.8), 512, join(WEB_ICONS, 'icon-maskable-512.png'));
+  render(LIGHT_ROUNDED, 180, join(WEB_PUBLIC, 'icons/apple-touch-icon-180.png'));
+  render(fullBleed(0.82), 1024, join(WEB_ICONS, 'icon-1024.png'));
+  render(FAVICON, 32, join(WEB_PUBLIC, 'favicon-32.png'));
+  // Dark-theme app icon source (used by the UI where an explicit dark mark is needed).
+  render(DARK_ROUNDED, 512, join(WEB_ICONS, 'icon-dark-512.png'));
 }
 
-/* desktop (Electron) — electron-builder reads build/icon.png + icon.ico/icns */
-if (targets.has('desktop')) {
-  const big = join(DESKTOP_BUILD, 'icon.png');
-  render(`${MARK.open}${markInner}</svg>\n`, 1024, big);
-  record(big);
-
-  for (const size of [16, 24, 32, 48, 64, 128, 256, 512]) {
-    const out = join(DESKTOP_BUILD, 'icons', `${size}x${size}.png`);
-    render(`${MARK.open}${markInner}</svg>\n`, size, out);
-    record(out);
-  }
-
-  try {
-    const ico = join(DESKTOP_BUILD, 'icon.ico');
-    execFileSync('magick', [
-      big,
-      '-define',
-      'icon:auto-resize=256,128,64,48,32,16',
-      ico,
-    ]);
-    record(ico);
-  } catch {
-    console.warn('gen-icons: ImageMagick missing — skipped desktop icon.ico');
-  }
-
-  try {
-    const entries = [];
-    for (const [type, size] of [
-      ['ic11', 32],
-      ['ic12', 64],
-      ['ic07', 128],
-      ['ic13', 256],
-      ['ic09', 512],
-      ['ic14', 512],
-      ['ic10', 1024],
-    ]) {
-      const png = join(TMP, `icns-${size}-${type}.png`);
-      render(`${MARK.open}${markInner}</svg>\n`, size, png);
-      entries.push([type, readFileSync(png)]);
-    }
-    const icns = join(DESKTOP_BUILD, 'icon.icns');
-    writeIcns(icns, entries);
-    record(icns);
-  } catch (err) {
-    console.warn(`gen-icons: skipped icon.icns (${err.message})`);
-  }
-}
-
-/* android — Capacitor project must exist (npx cap add android) */
+/* --------------------------------------------------------------- android */
 if (targets.has('android')) {
   if (!existsSync(ANDROID_RES)) {
-    console.warn('gen-icons: apps/mobile/android missing — run `npx cap add android` first; skipped.');
+    console.warn('gen-icons: apps/mobile/android missing — skipped.');
   } else {
-    const densities = {
-      mdpi: 1,
-      hdpi: 1.5,
-      xhdpi: 2,
-      xxhdpi: 3,
-      xxxhdpi: 4,
-    };
-    const full = `${MARK.open}${markInner}</svg>\n`;
+    const densities = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 };
     for (const [density, factor] of Object.entries(densities)) {
       const dir = join(ANDROID_RES, `mipmap-${density}`);
-      // Legacy launcher icon: 48dp
       for (const name of ['ic_launcher.png', 'ic_launcher_round.png']) {
-        const out = join(dir, name);
-        render(full, Math.round(48 * factor), out);
-        record(out);
+        render(LIGHT_ROUNDED, Math.round(48 * factor), join(dir, name));
       }
-      // Adaptive foreground: 108dp canvas, mark kept inside the 66dp safe circle
-      const fg = join(dir, 'ic_launcher_foreground.png');
-      render(transparentMark(0.95), Math.round(108 * factor), fg);
-      record(fg);
+      render(transparent(0.62), Math.round(108 * factor), join(dir, 'ic_launcher_foreground.png'));
     }
-    // Android 12+ splash icon (240dp masked by the system) + legacy splash
-    // drawable (120dp intrinsic size, centered by launch_background.xml).
+    // Adaptive-icon background is pure white so the black mark is always visible.
+    const bgXml = join(ANDROID_RES, 'values/ic_launcher_background.xml');
+    mkdirSync(dirname(bgXml), { recursive: true });
+    writeFileSync(bgXml, '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#FFFFFF</color>\n</resources>\n');
+    written += 1;
+    // Android 12+ splash: transparent mark; the launch background provides the field.
     for (const [density, factor] of Object.entries(densities)) {
-      const splash = join(ANDROID_RES, `drawable-${density}`, 'splash_icon.png');
-      render(transparentMark(1), Math.round(120 * factor), splash);
-      record(splash);
+      const dir = join(ANDROID_RES, `drawable-${density}`);
+      render(transparent(0.6), Math.round(120 * factor), join(dir, 'splash_icon.png'));
     }
-    // Keep a base-density fallback for resource resolution edge cases.
-    const splashFallback = join(ANDROID_RES, 'drawable', 'splash_icon.png');
-    render(transparentMark(1), 240, splashFallback);
-    record(splashFallback);
+    render(transparent(0.6), 240, join(ANDROID_RES, 'drawable/splash_icon.png'));
   }
 }
 
-/* ios — AppIcon + launch screen splash (SPM project, no CocoaPods) */
+/* ------------------------------------------------------------------- ios */
 if (targets.has('ios')) {
   if (!existsSync(IOS_ASSETS)) {
-    console.warn('gen-icons: apps/mobile/ios missing — run `npx cap add ios` first; skipped.');
+    console.warn('gen-icons: apps/mobile/ios missing — skipped.');
   } else {
-    // iOS masks the icon itself; use a full-bleed brand field with the mark inset.
-    const icon = join(IOS_ASSETS, 'AppIcon.appiconset/AppIcon-512@2x.png');
-    render(fullBleed(0.82), 1024, icon);
-    record(icon);
-
-    // LaunchScreen.storyboard scales Splash aspect-fill to the whole screen.
+    render(fullBleed(0.8), 1024, join(IOS_ASSETS, 'AppIcon.appiconset/AppIcon-512@2x.png'));
     for (const name of ['splash-2732x2732.png', 'splash-2732x2732-1.png', 'splash-2732x2732-2.png']) {
-      const splash = join(IOS_ASSETS, 'Splash.imageset', name);
-      render(fullBleed(0.22), 2732, splash);
-      record(splash);
+      render(fullBleed(0.22), 2732, join(IOS_ASSETS, 'Splash.imageset', name));
     }
+  }
+}
+
+/* --------------------------------------------------------------- desktop */
+if (targets.has('desktop')) {
+  // Tauri icon set (regenerate with `pnpm tauri icon` if the bundle format changes).
+  const tauriPng = (size, name) => {
+    const out = join(TAURI_ICONS, name);
+    render(fullBleed(0.82), size, out);
+    ensureRgba(out);
+    return out;
+  };
+  tauriPng(1024, 'icon.png');
+  tauriPng(32, '32x32.png');
+  tauriPng(128, '128x128.png');
+  tauriPng(256, '128x128@2x.png');
+  if (
+    !writeIco(join(TAURI_ICONS, 'icon.ico'), [
+      join(TAURI_ICONS, '128x128@2x.png'),
+      join(TAURI_ICONS, '128x128.png'),
+      join(TAURI_ICONS, '32x32.png'),
+    ])
+  ) {
+    console.warn('gen-icons: ImageMagick missing — skipped Tauri icon.ico');
+  } else {
+    written += 1;
+  }
+  try {
+    const entries = [];
+    for (const [type, size] of [['ic11', 32], ['ic12', 64], ['ic07', 128], ['ic13', 256], ['ic09', 512], ['ic14', 512], ['ic10', 1024]]) {
+      const png = join(TMP, `icns-${size}-${type}.png`);
+      render(fullBleed(0.82), size, png);
+      ensureRgba(png);
+      entries.push([type, readFileSync(png)]);
+    }
+    writeIcns(join(TAURI_ICONS, 'icon.icns'), entries);
+    written += 1;
+    console.log(`  apps/desktop/src-tauri/icons/icon.icns`);
+  } catch (err) {
+    console.warn(`gen-icons: skipped Tauri icon.icns (${err.message})`);
+  }
+  for (const size of [30, 44, 71, 89, 107, 142, 150, 284, 310]) {
+    const out = join(TAURI_ICONS, `Square${size}x${size}Logo.png`);
+    render(fullBleed(0.82), size, out);
+    ensureRgba(out);
   }
 }
 
 rmSync(TMP, { recursive: true, force: true });
-console.log(`gen-icons: ${written.length} file(s) written with ${RASTER.bin}`);
-for (const p of written) console.log(`  ${p.replace(ROOT + '/', '')}`);
+console.log(`gen-icons: ${written} file(s) written with ${RASTER.bin}`);

@@ -7,8 +7,8 @@
 <component type="desktop-application">
   <id>org.deurge.DeUrge</id>
 
-  <metadata_license>MIT</metadata_license>
-  <project_license>MIT</project_license>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>AGPL-3.0-only</project_license>
 
   <name>deUrge</name>
   <summary>Local-first addiction and habit recovery tracker</summary>
@@ -16,6 +16,9 @@
   <developer id="org.deurge">
     <name>deUrge contributors</name>
   </developer>
+
+  <!-- Inert AppStream metadata URL: the app itself never fetches it. -->
+  <url type="homepage">https://github.com/hello2himel/deUrge</url>
 
   <description>
     <p>

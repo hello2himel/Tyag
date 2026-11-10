@@ -21,6 +21,8 @@ equivalents (see `.github/workflows/`).
 | JDK | **21** (AGP 8.13 in Capacitor 8 requires 21) | Android |
 | Android SDK | platform **android-36**, build-tools **36.0.0**, platform-tools | Android |
 | Xcode | 16+ on macOS | iOS |
+| Rust | stable toolchain (`rustup`), `cargo`/`rustc` | Tauri desktop |
+| Linux Tauri libs | `libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libxdo-dev libssl-dev build-essential pkg-config` (Debian/Ubuntu) | Tauri desktop (Linux) |
 | Flatpak CLI | 1.14+ with the `flathub` remote | Flatpak |
 | flatpak-builder | 1.4+ (or `org.flatpak.Builder` app, or Docker) | Flatpak |
 | librsvg (`rsvg-convert`) or ImageMagick (`magick`) | any recent | regenerating icons only |
@@ -40,11 +42,11 @@ shell (or CI):
 | --- | --- | --- |
 | `JAVA_HOME` | Android | JDK 21 installation directory |
 | `ANDROID_HOME` | Android | Android SDK directory (fallback: `apps/mobile/android/local.properties`, git-ignored) |
-| `DEURGE_DEV_SERVER_URL` | Electron dev | Vite dev server URL (default `http://localhost:5173`) |
+| (none) | Tauri dev | `tauri dev` uses the Vite dev server from `tauri.conf.json` (`http://localhost:5173`) |
 | `DEURGE_KEYSTORE`, `DEURGE_KEYSTORE_PASSWORD`, `DEURGE_KEY_ALIAS`, `DEURGE_KEY_PASSWORD` | Android release | release signing (never committed) |
 | `FLATPAK_BUILDER` | Flatpak | explicit path to a `flatpak-builder` binary |
 | `BUILD` | Flatpak | `direct`, `docker` or `auto` |
-| `SKIP_APP_BUILD` | Flatpak | `1` reuses an existing web + Electron build |
+| `SKIP_APP_BUILD` | Flatpak | `1` reuses an existing web + Tauri build |
 
 CI additionally uses `ANDROID_KEYSTORE_BASE64` (base64 of the release keystore)
 and platform signing secrets; see [RELEASING.md](RELEASING.md).
@@ -53,11 +55,11 @@ and platform signing secrets; see [RELEASING.md](RELEASING.md).
 
 ```
 apps/web/          React 19 + Vite 8 PWA (the single shared UI bundle)
-apps/desktop/      Electron shell (main process, preload, electron-builder)
+apps/desktop/      Tauri 2 shell (src-tauri: Rust commands + window hardening)
 apps/mobile/       Capacitor shell + committed android/ and ios/ projects
 packages/core/     domain, persistence, engines, analytics, insights
-flatpak/           Flatpak manifest, AppStream metadata, launcher, build.sh
-scripts/           privacy audit + icon generation
+flatpak/           Flatpak manifest (GNOME/WebKitGTK runtime), AppStream metadata, launcher, build.sh
+scripts/           privacy audit, icon generation, Tauri artifact collection
 .github/workflows/ CI and per-platform release workflows
 ```
 
@@ -92,112 +94,165 @@ worker, `manifest.webmanifest`, icons, `assets/sql-wasm-*.wasm`).
 
 ---
 
-## 3. Electron desktop (Windows, macOS, Linux)
+## 3. Tauri 2 desktop (Windows, macOS, Linux)
+
+The desktop shell is **Tauri 2**: the same React/Vite bundle from `apps/web/dist`
+is embedded in a small Rust binary and rendered by the operating system WebView
+(WebKitGTK 4.1 on Linux, WKWebView on macOS, WebView2 on Windows). There is no
+bundled Chromium and no Node.js runtime.
 
 ```
 apps/desktop/
-  src/main.js       main process (app:// scheme, window, navigation/CSP hardening)
-  src/preload.cjs   the only bridge: window.deurgeDesktop
-  src/db-store.js   atomic local SQLite snapshot persistence (IPC handlers)
-  electron-builder.yml
-  build/            committed icons (png, ico, icns) — generated, do not hand-edit
+  package.json              scripts: dev / build / dist:linux / dist:win / dist:mac
+  src-tauri/
+    Cargo.toml, Cargo.lock  Rust app (@tauri-apps 2), committed lockfile
+    build.rs                tauri-build (config/capability/codegen validation)
+    tauri.conf.json         productName, identifier, CSP, bundle targets, icons
+    capabilities/default.json  main window may only call the app's own commands
+    icons/                  committed RGBA icon set generated from the brand kit
+    src/main.rs, src/lib.rs window hardening + db_read/db_write/db_backup
+  release/                  normalised artifacts (git-ignored, written by
+                            scripts/collect-tauri-artifacts.mjs)
 ```
 
 ### How the shell loads the app
 
-The packaged UI is served from a **privileged custom scheme**, not `file://`:
-`protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard,
-secure, supportFetchAPI, corsEnabled, stream } }])` then
-`protocol.handle('app', …)` reads files from `resources/web` and serves
-`app://deurge/index.html`. This keeps fetch(), SQLite-WASM streaming,
-IndexedDB/OPFS and the service worker working exactly like on the web, and it
-gives the shell a real origin to enforce:
+`tauri.conf.json` points `frontendDist` at `../../web/dist`, so the built PWA is
+compiled into the binary and served from the app's own origin:
+`tauri://localhost` on Linux/macOS and `http://tauri.localhost` on Windows.
+WebKitGTK/WKWebView/WebView2 render it, so `fetch()`, SQLite-WASM, IndexedDB and
+the service worker behave exactly as on the web — with no network access.
 
-* CSP (`default-src 'self'`, `script-src 'self' 'wasm-unsafe-eval'`, …) on every
-  response — identical to the Netlify header policy;
-* navigation is denied unless it targets `app://deurge/` (or the Vite dev
-  server in development); popups and webviews are denied;
-* permissions other than notifications are denied;
-* `contextIsolation`, `sandbox: true`, `nodeIntegration: false`.
+The window is created in Rust (`WebviewWindowBuilder`) so the hardening lives in
+code rather than in the web bundle:
+
+* **navigation** — only the embedded bundle origin is allowed; remote URLs are
+  cancelled (`on_navigation`), and in debug builds the Vite dev server at
+  `http://localhost:5173` is the only extra origin;
+* **new windows** — `window.open`/`target=_blank` is denied outright
+  (`on_new_window` → `Deny`), so nothing can hand a URL to the system browser;
+* **permissions** — camera, microphone, geolocation, clipboard, etc. are denied;
+  only `Notifications` is granted (local reminders);
+* **CSP** — mirrors `netlify.toml`, including `script-src 'self'
+  'wasm-unsafe-eval'` for SQLite-WASM, with `connect-src 'self' ipc:
+  http://ipc.localhost` for Tauri's local IPC (the IPC is a custom protocol
+  inside the webview, never a network socket);
+* **capabilities** — `capabilities/default.json` grants no plugin permissions at
+  all: no fs, shell, http, opener, process or updater plugin is linked or
+  exposed. The only privileged API is the four commands below;
+* **downloads** — WebView downloads (JSON/CSV export) are redirected to the
+  user's Downloads folder (`on_download`), avoiding a WebKitGTK blob-download
+  limitation;
+* **devtools** — available in debug builds only; release builds are compiled
+  without the `devtools` feature.
 
 ### Local persistence contract (must stay in sync with the web adapter)
 
-`window.deurgeDesktop` is the only privileged API:
+The web adapter (`apps/web/src/platform/db.ts`) detects
+`'__TAURI_INTERNALS__' in window` and calls exactly these Tauri commands:
 
 ```ts
-readDatabase():        Promise<ArrayBuffer | null>  // null on first run
-writeDatabase(bytes):  Promise<void>                // atomic: temp file + fsync + rename
-backupDatabase(bytes): Promise<void>                // stable + timestamped backups
-platform: 'electron'
-versions: { electron, chrome }
+invoke<ArrayBuffer | null>('db_read')                     // base64 decoded by the adapter
+invoke<void>('db_write',  { payloadB64: string })
+invoke<void>('db_backup', { payloadB64: string })
+invoke<string>('save_text_file', { filename, content })    // JSON/CSV export
 ```
 
-Files (inside Electron's per-user data directory, e.g.
-`~/.config/@deurge/desktop` on Linux):
+Payloads are **base64 strings**, not `Vec<u8>`/ArrayBuffer: Tauri's JSON IPC
+would otherwise send a multi-hundred-kilobyte snapshot as a JSON number array
+on every save. Rust decodes with `base64` 0.22 and validates the result:
+
+| Command | Behaviour |
+| --- | --- |
+| `db_read` | base64 of `deurge.db`, or `null` on first run |
+| `db_write` | atomic snapshot write (sibling temp file → `fsync` → `rename`) |
+| `db_backup` | stable `deurge.backup.db` + `backups/deurge-<epoch-ms>.db`, last 20 kept |
+| `save_text_file` | sanitised filename (no paths/`..`/control chars, `.json`/`.csv` only) written atomically to the Downloads folder; returns the absolute path |
+
+Files live in the Tauri **app data dir** (identifier `app.deurge.DeUrge`):
 
 | Path | Purpose |
 | --- | --- |
-| `deurge.db` | live SQLite snapshot (atomic writes) |
-| `deurge.backup.db` | stable pre-write backup (overwritten each backup) |
-| `backups/deurge-<ISO-8601>.db` | rotating history, last 20 kept |
+| `<app data>/deurge.db` | live SQLite snapshot (atomic writes, 64 MiB cap) |
+| `<app data>/deurge.backup.db` | stable pre-write backup (overwritten each backup) |
+| `<app data>/backups/deurge-<epoch-ms>.db` | rotating history, last 20 kept |
 
-IPC channels `deurge:db:read|write|backup` validate the sender frame and reject
-payloads that are not `ArrayBuffer`/`Uint8Array`, empty, or larger than 64 MiB.
+Typical locations: `~/.local/share/app.deurge.DeUrge` (Linux),
+`~/Library/Application Support/app.deurge.DeUrge` (macOS),
+`%APPDATA%\app.deurge.DeUrge` (Windows). Inside the Flatpak it is
+`~/.var/app/org.deurge.DeUrge/data/app.deurge.DeUrge/`.
+
+Errors returned to the UI are short, stable strings such as
+`invalid_payload: …`, `db_too_large: …`, `db_write_failed: …`,
+`export_failed: …` — they never contain paths or user data.
 
 ### Develop
 
 ```bash
-pnpm dev                                       # terminal 1: Vite dev server (:5173)
-pnpm --filter @deurge/desktop dev              # terminal 2: Electron against the dev server
+pnpm install
+pnpm --filter @deurge/desktop dev   # tauri dev: starts Vite (beforeDevCommand) + the shell
 ```
 
-`dev` loads `DEURGE_DEV_SERVER_URL` (default `http://localhost:5173`) and opens
-DevTools. `pnpm --filter @deurge/desktop start` instead serves the local
-`apps/web/dist` through `app://` **without** packaging — handy to validate the
-production loading path after `pnpm --filter @deurge/web build`.
+The first Rust build downloads crates and takes a few minutes; subsequent
+builds are incremental. `RUST_LOG`/`WEBKIT_INSPECTOR_SERVER` are not needed for
+normal development (devtools are available in debug builds via the webview
+context menu / inspector).
 
-Headless end-to-end smoke test (no display required; also runs in CI):
+### Test and validate
 
 ```bash
-pnpm --filter @deurge/web build
-pnpm build:desktop                 # unpacked bundle in apps/desktop/release
-node scripts/electron-smoke.mjs
+cd apps/desktop/src-tauri
+cargo test                 # storage/atomic-write/navigation/export unit tests
+cargo clippy --all-targets # lint
 ```
 
-`scripts/electron-smoke.mjs` launches `apps/desktop/release/linux-unpacked`
-under `--ozone-platform=headless`, drives it over the Chrome DevTools Protocol
-and asserts: `app://deurge/index.html` is served, the web app renders, the
-SQLite-WASM asset is fetched locally, **no external network request** is made,
-`window.deurgeDesktop` round-trips database bytes, `deurge.db` +
-`deurge.backup.db` + `backups/` exist on disk, and there are no CSP violations.
-Exits non-zero on any failure.
+CI additionally builds the release binary and asserts it links the system
+WebKitGTK 4.1 (`ldd … | grep webkit2gtk-4.1`) and contains the strict CSP. A
+fully headless end-to-end boot is **not** part of CI: Tauri has no
+`--ozone-platform=headless` equivalent and WebKitGTK needs a real display
+(X11/Wayland) plus a compositor; driving it headlessly is flaky on CI runners.
+Local validation is therefore: build, launch on a real desktop session, confirm
+the UI renders and `deurge.db` is created under the app data dir, then quit.
+The Rust unit tests cover the atomic-write/backup/sanitisation logic, and the
+launch check is documented in [RELEASING.md](RELEASING.md) §5.
 
 ### Package
 
 ```bash
-pnpm build:desktop                            # Linux unpacked dir (also used by Flatpak)
-pnpm --filter @deurge/desktop dist:linux      # + AppImage
-pnpm --filter @deurge/desktop dist:win        # NSIS installer  (on Windows)
-pnpm --filter @deurge/desktop dist:mac        # DMG             (on macOS)
+pnpm build:desktop                            # release binary, no bundles
+pnpm --filter @deurge/desktop dist:linux      # AppImage + deb + rpm
+pnpm --filter @deurge/desktop dist:win        # NSIS + MSI          (on Windows)
+pnpm --filter @deurge/desktop dist:mac        # DMG                 (on macOS)
 ```
 
-Outputs land in `apps/desktop/release/` (git-ignored):
+Each `dist:*` script builds the web app first, runs `tauri build`, then
+normalises the bundle names and writes checksums via
+`scripts/collect-tauri-artifacts.mjs`. Outputs land in `apps/desktop/release/`
+(git-ignored):
 
 | Artifact | Target |
 | --- | --- |
-| `linux-unpacked/deurge` | Linux unpacked (input for the Flatpak build) |
 | `deUrge-<version>-x86_64.AppImage` | Linux AppImage |
+| `deUrge-<version>-amd64.deb` | Debian/Ubuntu package |
+| `deUrge-<version>-x86_64.rpm` | Fedora/RHEL package (needs `rpmbuild`; available in CI) |
 | `deUrge-Setup-<version>-x64.exe` | Windows NSIS installer |
+| `deUrge-<version>-x64.msi` | Windows MSI |
 | `deUrge-<version>-<arch>.dmg` | macOS disk image |
+| `SHA256SUMS.txt` | checksums for the artifacts above |
 
-Icons are committed in `apps/desktop/build/` (`icon.png` 1024², `icon.ico`,
-`icon.icns`, `icons/<n>x<n>.png`). Regenerate them with the icon script (§7) if
-the mark changes — never edit PNGs by hand.
+Raw Tauri output lives in `apps/desktop/src-tauri/target/release/bundle/` and
+the Flatpak input binary is `apps/desktop/src-tauri/target/release/deurge`.
 
-Signing is optional for local builds. Real releases: see
-[RELEASING.md](RELEASING.md) (Windows code signing via `CSC_LINK`/`CSC_KEY_PASSWORD`,
-macOS Developer ID + notarization via `APPLE_ID`/`APPLE_APP_SPECIFIC_PASSWORD`/
-`APPLE_TEAM_ID`). No certificates are stored in the repository.
+Icons are committed in `apps/desktop/src-tauri/icons/` (RGBA PNG set, `icon.ico`,
+`icon.icns`). Tauri refuses non-RGBA icons, so regenerate with
+`pnpm --filter @deurge/desktop exec tauri icon ../web/public/icons/icon-1024.png`
+if the mark changes (§7).
+
+Signing is optional for local builds and CI requires **no** signing secrets (see
+[RELEASING.md](RELEASING.md)): Windows installers are unsigned unless Tauri
+signing options are configured, and the macOS config has
+`bundle.macOS.signingIdentity: null` so the DMG is unsigned. No certificates or
+keys are stored in the repository.
 
 ---
 
@@ -325,67 +380,76 @@ bash apps/mobile/scripts/build-ios.sh archive  # unsigned .xcarchive for signing
 
 ## 6. Linux Flatpak
 
-The Flatpak packages the same Electron `linux-unpacked` payload with `zypak`,
-so Chromium's sandbox runs inside the Flatpak sandbox.
+The Flatpak ships the **prebuilt Tauri binary** and runs it on the WebKitGTK 4.1
+that comes with `org.gnome.Platform//48`. There is no Electron base app, no
+zypak and no bundled Chromium; the app is a normal GTK 3 + WebKitGTK program.
 
 ```
 flatpak/
-  org.deurge.DeUrge.yml          manifest (runtime/base 24.08, zypak, sandbox policy)
+  org.deurge.DeUrge.yml          manifest (org.gnome.Platform//48, simple prebuilt module,
+                                 sandbox policy: no network, no home)
   org.deurge.DeUrge.metainfo.xml AppStream metadata (offline; no remote URLs/screenshots)
-  org.deurge.DeUrge.desktop      desktop entry
-  deurge-wrapper.sh              launcher (zypak-wrapper + Ozone flags + TMPDIR)
-  build.sh                       web + Electron build -> stage -> flatpak-builder -> .flatpak
+  org.deurge.DeUrge.desktop      desktop entry (Exec=deurge-wrapper)
+  deurge-wrapper.sh              launcher -> /app/bin/deurge
+  build.sh                       web + Tauri build -> stage -> flatpak-builder -> .flatpak
   dist/                          output (git-ignored)
 ```
 
 ### Build
 
 ```bash
-pnpm build:flatpak                    # bash flatpak/build.sh (auto-detects builder)
-BUILD=direct  bash flatpak/build.sh   # require flatpak-builder on PATH
-BUILD=docker  bash flatpak/build.sh   # use ghcr.io/flathub-infra/flatpak-builder image
-SKIP_APP_BUILD=1 bash flatpak/build.sh  # reuse existing web/Electron build
+pnpm build:flatpak                      # bash flatpak/build.sh (auto-detects builder)
+BUILD=direct  bash flatpak/build.sh     # require flatpak-builder on PATH
+BUILD=docker  bash flatpak/build.sh     # use ghcr.io/flathub-infra/flatpak-builder image
+SKIP_APP_BUILD=1 bash flatpak/build.sh  # reuse existing web/desktop build
 FLATPAK_BUILDER=/path/to/flatpak-builder bash flatpak/build.sh
 ```
 
-Requirements: `flatpak` CLI with the `flathub` remote (user or system), and one
-of: `flatpak-builder` on `PATH`, the `org.flatpak.Builder` Flatpak app, or
-Docker. `--install-deps-from=flathub` downloads the 24.08 SDK/runtime/base app on
-first build (~1.5 GB) and then builds offline.
+Requirements: `flatpak` CLI with the `flathub` remote (user or system), a Rust
+toolchain with the Tauri Linux libraries (§1), and one of: `flatpak-builder` on
+`PATH`, the `org.flatpak.Builder` Flatpak app, or Docker. On first use,
+`--install-deps-from=flathub` fetches `org.gnome.Platform//48` and
+`org.gnome.Sdk//48` (~1 GB); afterwards the build is fully offline for the
+runtime.
 
 Output: `flatpak/dist/deUrge-<version>-<arch>.flatpak` + `SHA256SUMS.txt`.
 
 ```bash
 flatpak install --user --bundle flatpak/dist/deUrge-*.flatpak
 flatpak run org.deurge.DeUrge
+flatpak info --user --show-permissions org.deurge.DeUrge   # audit the sandbox
 ```
 
 ### Sandbox permissions (deliberately minimal)
 
 ```
---share=ipc --socket=wayland --socket=fallback-x11 --device=dri
---filesystem=xdg-download:rw        # only for user-initiated backup export/import
---talk-name=org.freedesktop.Notifications
+Shared: ipc
+Sockets: wayland, fallback-x11
+Devices: dri
+Filesystems: xdg-download:rw
 ```
 
 No `--share=network` and no `--filesystem=home`: the app cannot reach the
-network and its database stays inside the sandbox. File import/export uses the
-Downloads folder and desktop portals.
+network and its database stays inside `~/.var/app/org.deurge.DeUrge/`. The only
+host filesystem access is the Downloads folder, for user-initiated JSON/CSV
+exports and database backups. The only session-bus name is
+`org.freedesktop.Notifications` (local reminders).
 
 ### Known limitations
 
 * **Architecture**: the bundle is built for the host architecture (`x86_64`
-  here). Cross-arch Flatpaks need a matching Electron build and an
-  arch-specific manifest; CI builds x86_64 only.
-* **Runtime EOL**: `org.freedesktop.Platform//24.08` is the last runtime the
-  Electron2 BaseApp 24.08 supports and prints an end-of-life warning. When
-  Flathub ships an Electron2 BaseApp for 25.08/26.08, bump `runtime-version`,
-  `base-version` and `RUNTIME_VERSION` in `flatpak/build.sh` together.
+  here). Cross-arch Flatpaks need a matching Tauri build; CI builds x86_64 only.
+* **Runtime pinning**: `org.gnome.Platform//48` is the runtime that ships
+  WebKitGTK 4.1; when bumping it, update `runtime-version` in
+  `flatpak/org.deurge.DeUrge.yml` and `RUNTIME_VERSION` in `flatpak/build.sh`
+  together (the Tauri binary must link the runtime's
+  `libwebkit2gtk-4.1.so.0`).
 * **AppStream workaround**: some distributions ship `appstreamcli` linked
   against libvips without JPEG-XL, which makes `appstreamcli compose` fail with
   `media-worker-error`. `flatpak/build.sh` detects this, retries the compose
-  step through the AppStream shipped in the org.freedesktop.Sdk runtime, and
-  logs the retry in `flatpak/build/flatpak-builder.log`. CI does not need this.
+  step through the AppStream shipped in `org.gnome.Sdk//48`, and logs the retry
+  in `flatpak/build/flatpak-builder.log`. CI installs a working `appstream` and
+  does not need the shim.
 * **AppStream**: the metainfo intentionally references no remote URLs or
   screenshots (offline bundle). A Flathub submission would add project URLs and
   screenshots.
@@ -404,15 +468,22 @@ Generated assets are committed so normal builds and CI need no image tooling:
 ```bash
 node scripts/gen-icons.mjs           # all: web + desktop + android + ios
 node scripts/gen-icons.mjs web       # PWA + favicon PNGs
-node scripts/gen-icons.mjs desktop   # 1024 png, sizes, .ico, .icns
+node scripts/gen-icons.mjs desktop   # Tauri icons (32/128/256/1024, .ico, .icns)
 node scripts/gen-icons.mjs android   # adaptive/legacy launcher + splash PNGs
 node scripts/gen-icons.mjs ios       # 1024 AppIcon + 2732 splash images
+
+# Canonical Tauri icon set (always produces the RGBA PNGs Tauri requires):
+pnpm --filter @deurge/desktop exec tauri icon ../web/public/icons/icon-1024.png
 ```
+
+> Tauri rejects icon PNGs without an alpha channel (`icon … is not RGBA`).
+> After regenerating icons, verify with `file apps/desktop/src-tauri/icons/32x32.png`
+> (must say `RGBA`) or simply re-run the `tauri icon` command above.
 
 | Output | Consumer |
 | --- | --- |
 | `apps/web/public/icons/icon-{192,512}.png`, `icon-maskable-512.png`, `apple-touch-icon-180.png`, `apps/web/public/favicon-32.png` | PWA manifest / `index.html` |
-| `apps/desktop/build/icon.png`, `icon.ico`, `icon.icns`, `icons/*.png` | electron-builder |
+| `apps/desktop/src-tauri/icons/**` (RGBA PNGs, `icon.ico`, `icon.icns`) | Tauri bundles + Flatpak |
 | `apps/mobile/android/app/src/main/res/mipmap-*`, `drawable-*/splash_icon.png` | Android launcher + splash |
 | `apps/mobile/ios/App/App/Assets.xcassets/**` | iOS AppIcon + launch screen |
 
@@ -445,18 +516,20 @@ time. It complements the design rule: no network calls in product code.
 
 ## 9. Reproducibility
 
-* Toolchain versions are pinned: `packageManager: pnpm@10.15.0`, Electron
-  `44.9.0`, electron-builder `26.18.0`, Capacitor `8.6.0`, AGP `8.13.0`,
-  Gradle `8.14.3` (wrapper), `pnpm-lock.yaml` committed; CI installs with
-  `--frozen-lockfile`.
-* Icons, desktop files, manifest and native project files are committed, so
-  packaging does not depend on local image tooling or machine paths. Machine
+* Toolchain versions are pinned: `packageManager: pnpm@10.15.0`, Tauri CLI
+  `2.12.4`, the Rust `tauri` crate resolved by the committed
+  `apps/desktop/src-tauri/Cargo.lock`, Capacitor `8.6.0`, AGP `8.13.0`, Gradle
+  `8.14.3` (wrapper), `pnpm-lock.yaml` committed; CI installs with
+  `--frozen-lockfile` and builds the Rust side with `--locked`.
+* Icons, desktop files, Flatpak manifest, `Cargo.lock`, capabilities, desktop
+  files and native project files are committed, so packaging does not depend on
+  local image tooling or machine paths. Machine
   paths (`local.properties`, `JAVA_HOME`, `ANDROID_HOME`, signing files) are
   git-ignored or environment variables.
 * The same inputs produce the same *content* on every machine. Byte-identical
-  artifacts are not guaranteed (ASAR/ZIP metadata timestamps differ); therefore
-  every release publishes `SHA256SUMS.txt` next to the binaries so any artifact
-  can be verified against the recorded hash.
+  artifacts are not guaranteed (AppImage/deb/rpm/NSIS/dmg metadata timestamps
+  differ); therefore every release publishes `SHA256SUMS.txt` next to the
+  binaries so any artifact can be verified against the recorded hash.
 * CI uses Node 22 + pnpm 10.15.0 everywhere; keep local versions aligned to
   reproduce CI failures.
 
@@ -469,9 +542,13 @@ time. It complements the design rule: no network calls in product code.
 | `JAVA_HOME is not set` / wrong Java version | Point `JAVA_HOME` at JDK 21; `java -version` must report 21. |
 | `Android SDK not found` | Set `ANDROID_HOME` or create the git-ignored `apps/mobile/android/local.properties` with `sdk.dir=…`. |
 | `sdkmanager: command not found` | Install `cmdline-tools;latest` in the SDK, or use Android Studio's SDK manager; CI uses `android-actions/setup-android`. |
-| Electron binary download fails / is slow | Cache `~/.cache/electron`; Electron is a dev dependency (`electron` package) and electron-builder has its own cache (`~/.cache/electron-builder`). CI caches both. |
-| `Electron failed to install correctly` | Run `node node_modules/electron/install.js` inside `apps/desktop`, or re-run `pnpm install` with the electron build script allowed. |
-| White window in Electron | Build the web app first (`pnpm --filter @deurge/web build`); the shell serves `apps/web/dist`. Check the console for `[deurge] blocked navigation`. |
+| `tauri: command not found` | Run `pnpm install` (the CLI is a devDependency of `apps/desktop`) and use the pnpm scripts, not a global `tauri`. |
+| `error: failed to run custom build command for …` (webkit2gtk-sys / glib-sys) | Install the Tauri Linux libraries from §1 (pkg-config must find `webkit2gtk-4.1`, `gtk+-3.0`, `libsoup-3.0`). |
+| `icon … is not RGBA` at `generate_context!` | Regenerate the Tauri icon set (all PNGs must have an alpha channel), see §7. |
+| Blank/white Tauri window | Build the web app first (`pnpm --filter @deurge/web build`) — `frontendDist` embeds it at compile time; after changing the web bundle re-run `tauri build`. Check the WebView inspector (debug builds) for CSP errors. |
+| Rust release build is slow the first time | Normal: ~2–5 min for the Tauri/Wry dependency graph with LTO. CI caches `target/` via `Swatinem/rust-cache`. |
+| `cargo build` fails with `Unsupported class file` / linker errors | The Tauri Linux prerequisites (build-essential, pkg-config, webkit2gtk-4.1-dev) are missing; the macOS/Windows runners build natively in CI. |
+| `flatpak` runs the old Electron build | Uninstall the previous bundle first: `flatpak uninstall --user org.deurge.DeUrge`, then install the new `.flatpak`. |
 | `cap sync` says web assets missing | Run `pnpm --filter @deurge/web build` first (or use the `sync:android`/`sync:ios` scripts, which do it for you). |
 | Flatpak `appstreamcli compose failed … media-worker-error` | See §6: `build.sh` retries with the SDK's AppStream automatically. |
 | Flatpak `Refspec … not found` | Old flatpak-builder default branch; `build.sh` passes `--default-branch=stable`. Use the provided script. |
@@ -484,12 +561,12 @@ time. It complements the design rule: no network calls in product code.
 
 | Workflow | Trigger | Result |
 | --- | --- | --- |
-| `ci.yml` | push/PR | typecheck, unit tests, web build, privacy audit, Electron linux unpacked smoke packaging |
+| `ci.yml` | push/PR | typecheck, unit tests, web build, privacy audit, Tauri release binary build + WebKitGTK linkage check, Rust command tests |
 | `android.yml` | push/PR (app paths), tags, manual | debug APK, or signed APK+AAB when secrets are configured |
 | `flatpak.yml` | push/PR (flatpak/desktop paths), tags, manual | `deUrge-<version>-<arch>.flatpak` |
-| `desktop-linux.yml` | push/PR, tags | AppImage |
-| `desktop-windows.yml` | push/PR, tags | NSIS installer |
-| `desktop-macos.yml` | push/PR, tags | DMG |
+| `desktop-linux.yml` | push/PR, tags | AppImage + deb + rpm (Tauri) |
+| `desktop-windows.yml` | push/PR, tags | NSIS installer + MSI (Tauri) |
+| `desktop-macos.yml` | push/PR, tags | DMG (Tauri, unsigned) |
 | `ios.yml` | push/PR (ios paths), tags | unsigned simulator app + unsigned `.xcarchive` |
 | `release.yml` | tag `v*` | builds everything, writes `SHA256SUMS.txt`, creates a **draft** GitHub release |
 

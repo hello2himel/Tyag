@@ -1,7 +1,14 @@
-name: Desktop Windows (NSIS)
+name: Desktop Windows (Tauri)
 
-# electron-builder Windows installer (unsigned; signing is configured in CI
-# secrets for real releases — see docs/RELEASING.md).
+# Tauri 2 Windows installers: NSIS (.exe) + MSI, using the system WebView2
+# runtime. Builds are unsigned: no code-signing secrets are required. To sign a
+# real release, provide the standard Tauri variables in CI (see
+# docs/RELEASING.md) — they are never committed.
+#
+# Output (normalised by scripts/collect-tauri-artifacts.mjs):
+#   apps/desktop/release/deUrge-Setup-<version>-x64.exe
+#   apps/desktop/release/deUrge-<version>-x64.msi
+#   apps/desktop/release/SHA256SUMS.txt
 
 on:
   push:
@@ -11,11 +18,14 @@ on:
       - 'apps/desktop/**'
       - 'apps/web/**'
       - 'packages/core/**'
+      - 'scripts/collect-tauri-artifacts.mjs'
       - 'pnpm-lock.yaml'
       - '.github/workflows/desktop-windows.yml'
   pull_request:
     paths:
       - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'scripts/collect-tauri-artifacts.mjs'
       - '.github/workflows/desktop-windows.yml'
   workflow_dispatch:
 
@@ -29,13 +39,10 @@ permissions:
 env:
   NODE_VERSION: '22'
   PNPM_VERSION: '10.15.0'
-  # No code-signing certificate is committed: build unsigned unless CI secrets
-  # provide CSC_LINK/CSC_KEY_PASSWORD (electron-builder picks them up).
-  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
 jobs:
   windows:
-    name: NSIS installer
+    name: NSIS / MSI
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,44 +56,53 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
-      - name: Cache Electron / electron-builder downloads
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust / Tauri build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+          key: desktop-windows-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+
+      - name: Cache Tauri bundler tools (NSIS, WiX)
         uses: actions/cache@v4
         with:
-          path: |
-            ~/AppData/Local/electron/Cache
-            ~/AppData/Local/electron-builder/Cache
-          key: electron-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
-          restore-keys: electron-${{ runner.os }}-
+          path: ~/AppData/Local/tauri
+          key: tauri-bundler-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
+          restore-keys: tauri-bundler-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build web app
-        run: pnpm --filter @deurge/web build
-
-      - name: Package NSIS installer
+      - name: Build Windows installers
         run: pnpm --filter @deurge/desktop dist:win
 
-      - name: Verify + checksums
+      - name: Verify installers + checksums
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $installers = Get-ChildItem apps/desktop/release/*.exe
-          if ($installers.Count -eq 0) { throw 'No NSIS installer produced' }
-          $installers | ForEach-Object { Write-Host $_.FullName, $_.Length }
-          $lines = $installers | ForEach-Object {
-            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
-            "$hash  $($_.Name)"
+          Get-ChildItem apps/desktop/release | Format-Table Name, Length
+          $exe = Get-ChildItem apps/desktop/release/*.exe
+          $msi = Get-ChildItem apps/desktop/release/*.msi
+          if ($exe.Count -ne 1) { throw "Expected one NSIS installer, got $($exe.Count)" }
+          if ($msi.Count -ne 1) { throw "Expected one MSI, got $($msi.Count)" }
+          Push-Location apps/desktop/release
+          $sums = Get-Content SHA256SUMS.txt
+          foreach ($line in $sums) {
+            $hash, $file = $line -split '\s+', 2
+            $actual = (Get-FileHash (Join-Path $PWD $file) -Algorithm SHA256).Hash.ToLower()
+            if ($actual -ne $hash) { throw "Checksum mismatch for $file" }
           }
-          Set-Content -Path apps/desktop/release/SHA256SUMS.txt -Value $lines
-          Get-Content apps/desktop/release/SHA256SUMS.txt
+          Pop-Location
 
-      - name: Upload installer
+      - name: Upload installers
         uses: actions/upload-artifact@v4
         with:
           name: desktop-windows-${{ github.ref_name }}-${{ github.sha }}
           path: |
             apps/desktop/release/*.exe
+            apps/desktop/release/*.msi
             apps/desktop/release/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14

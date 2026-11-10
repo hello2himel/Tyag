@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="deUrge">
-  <rect width="64" height="64" rx="16" fill="#0071E3"/>
-  <path d="M32 13a19 19 0 1 0 0 38 19 19 0 0 0 0-38Zm0 6.5a12.5 12.5 0 1 1 0 25 12.5 12.5 0 0 1 0-25Z" fill="#fff"/>
-  <path d="M32 23v9l6 4" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="deUrge"><style>.m{fill:#000}@media(prefers-color-scheme:dark){.m{fill:#fff}}</style><path d="M13.00,23.10A60.53 60.53 0 0 1 96.90,107.00A88.24 88.24 0 0 0 13.00,23.10Z" fill="#000" class="m"/></svg>

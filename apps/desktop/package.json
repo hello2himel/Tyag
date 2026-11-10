@@ -3,22 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "deUrge desktop shell (Electron) \u2014 offline, local-only recovery tracker.",
-  "desktopName": "deurge.desktop",
+  "description": "deUrge desktop shell (Tauri 2 + system WebView) \u2014 offline, local-only recovery tracker.",
   "author": "deUrge contributors",
-  "license": "MIT",
-  "main": "src/main.js",
+  "license": "AGPL-3.0-only",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron . --dev",
-    "icons": "node ../../scripts/gen-icons.mjs desktop",
-    "build": "electron-builder --config electron-builder.yml --linux dir",
-    "dist:linux": "electron-builder --config electron-builder.yml --linux AppImage",
-    "dist:win": "electron-builder --config electron-builder.yml --win nsis",
-    "dist:mac": "electron-builder --config electron-builder.yml --mac dmg"
+    "dev": "tauri dev",
+    "build": "tauri build --no-bundle",
+    "dist:linux": "pnpm --filter @deurge/web build && tauri build --bundles appimage,deb,rpm && node ../../scripts/collect-tauri-artifacts.mjs linux",
+    "dist:win": "pnpm --filter @deurge/web build && tauri build --bundles nsis,msi && node ../../scripts/collect-tauri-artifacts.mjs windows",
+    "dist:mac": "pnpm --filter @deurge/web build && tauri build --bundles dmg && node ../../scripts/collect-tauri-artifacts.mjs macos",
+    "icons": "node ../../scripts/gen-icons.mjs desktop"
   },
   "devDependencies": {
-    "electron": "44.9.0",
-    "electron-builder": "26.18.0"
+    "@tauri-apps/cli": "2.12.4"
   }
 }

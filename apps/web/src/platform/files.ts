@@ -5,6 +5,8 @@
  * is uploaded anywhere.
  */
 import { Capacitor } from '@capacitor/core';
+import { invoke } from '@tauri-apps/api/core';
+import { isTauriDesktop } from './db';
 
 export interface SavedFile {
   filename: string;
@@ -20,6 +22,16 @@ export async function saveTextFile(
   content: string,
   mimeType = 'application/json',
 ): Promise<SavedFile> {
+  if (isTauriDesktop()) {
+    // The desktop shell writes through a Rust command into the user's
+    // Downloads folder — no remote handling, no dialogs blocking the renderer.
+    try {
+      const location = await invoke<string>('save_text_file', { filename, content });
+      return { filename, location };
+    } catch {
+      // Fall through to the browser download path if the command is missing.
+    }
+  }
   if (isNative()) {
     const { Directory, Filesystem } = await import('@capacitor/filesystem');
     const path = `deUrge/${filename}`;

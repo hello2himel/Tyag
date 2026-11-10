@@ -2,10 +2,10 @@
  * Thin, typed wrapper around SQLite (compiled to WebAssembly via sql.js).
  *
  * The same driver runs in the browser (including the Capacitor WebViews and
- * Electron) and under Node during tests, which is why the production database
- * code is what the test suite exercises. Persistence is separate: the database
+ * Tauri's system WebView) and under Node during tests, which is why the
+ * production database code is what the test suite exercises. Persistence is separate: the database
  * lives in memory and is exported as bytes after each committed transaction,
- * then stored by a platform adapter (IndexedDB / filesystem / Electron IPC).
+ * then stored by a platform adapter (IndexedDB / filesystem / Tauri IPC).
  */
 import initSqlJs from 'sql.js';
 import type { Database as SqlJsDatabase, SqlJsStatic } from 'sql.js';

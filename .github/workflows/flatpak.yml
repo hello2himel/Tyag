@@ -1,8 +1,9 @@
 name: Linux Flatpak
 
-# Builds the Flatpak bundle from the Electron linux-unpacked payload.
-# The finished .flatpak is self-contained and only references the Flathub
-# runtime repository for the shared 24.08 runtime.
+# Builds the Flatpak bundle from the prebuilt Tauri binary. The app runs on the
+# WebKitGTK 4.1 shipped by org.gnome.Platform//48 (no Electron base app, no
+# zypak). The finished .flatpak only references the Flathub runtime repository
+# so the shared runtime can be resolved at install time.
 #
 # Local equivalent: bash flatpak/build.sh
 
@@ -52,10 +53,33 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
-      - name: Install flatpak tooling
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust / Tauri build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+          key: flatpak-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+
+      - name: Install native build + flatpak tooling
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libxdo-dev \
+            build-essential \
+            pkg-config \
+            flatpak \
+            flatpak-builder \
+            appstream \
+            desktop-file-utils
           flatpak --version
           flatpak-builder --version
 
@@ -63,25 +87,32 @@ jobs:
         run: |
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
-      - name: Cache Electron downloads
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-          key: electron-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
-          restore-keys: electron-${{ runner.os }}-
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Validate AppStream + desktop metadata
+        run: |
+          appstreamcli validate --no-net flatpak/org.deurge.DeUrge.metainfo.xml
+          desktop-file-validate flatpak/org.deurge.DeUrge.desktop
 
       - name: Build Flatpak bundle
         run: BUILD=direct bash flatpak/build.sh
 
-      - name: Show bundle
+      - name: Verify sandbox metadata + checksum
+        # Installing the produced bundle lets us assert the actual exported
+        # metadata: no network, no host/home filesystem, xdg-download only.
         run: |
+          set -euo pipefail
           ls -lh flatpak/dist
           cat flatpak/dist/SHA256SUMS.txt
+          (cd flatpak/dist && sha256sum -c SHA256SUMS.txt)
+          flatpak install --user -y --bundle flatpak/dist/deUrge-*.flatpak
+          flatpak info --user --show-permissions org.deurge.DeUrge | tee /tmp/permissions.txt
+          ! grep -qiE 'network|host|home' /tmp/permissions.txt
+          flatpak info --user --show-metadata org.deurge.DeUrge | tee /tmp/metadata.txt
+          grep -qi 'runtime=org.gnome.Platform/x86_64/48' /tmp/metadata.txt
+          grep -q 'deurge-wrapper' /tmp/metadata.txt
+          echo "Flatpak bundle OK"
 
       - name: Upload Flatpak bundle
         uses: actions/upload-artifact@v4

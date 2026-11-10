@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "deUrge",
+  "version": "1.0.0",
+  "identifier": "app.deurge.DeUrge",
+  "build": {
+    "beforeDevCommand": "pnpm --filter @deurge/web dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "",
+    "frontendDist": "../../web/dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [],
+    "security": {
+      "capabilities": [
+        "default"
+      ],
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "devCsp": "default-src 'self' http://localhost:5173; script-src 'self' 'wasm-unsafe-eval' http://localhost:5173; style-src 'self' 'unsafe-inline' http://localhost:5173; img-src 'self' data: blob: http://localhost:5173; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost http://localhost:5173 ws://localhost:5173; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "copyright": "Copyright \u00a9 2026 deUrge contributors",
+    "category": "Utility",
+    "shortDescription": "Local-first addiction and habit recovery tracker",
+    "longDescription": "deUrge is a private, offline recovery tracker. Log urges, habits and sessions, watch your streaks grow and understand your patterns \u2014 without ever creating an account or sending data anywhere. Everything is stored locally in a single SQLite database on this device; the app never touches the network.",
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "signingIdentity": null
+    }
+  }
+}

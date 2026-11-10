@@ -3,7 +3,7 @@
 ## 1.0.0 — 2026-11-10
 
 First complete release of deUrge: a private, local-first, cross-platform
-abstinence and habit recovery tracker.
+abstinence and habit recovery tracker. Licensed under **AGPL-3.0-only**.
 
 ### Product
 
@@ -41,9 +41,9 @@ abstinence and habit recovery tracker.
   INTERNET permission, app-private SQLite snapshot, local notifications.
 - **iOS**: committed Xcode/SPM project; unsigned simulator/archive builds in
   CI on macOS.
-- **Windows/macOS/Linux desktop** (Electron 44): custom `app://` protocol,
-  hardened preload bridge, atomic local database writes, NSIS/DMG builds in
-  CI, AppImage and Flatpak for Linux.
+- **Windows/macOS/Linux desktop** (Tauri 2 + Rust, system WebView): minimal
+  Rust command bridge, atomic local database writes, NSIS/MSI/DMG builds in
+  CI, AppImage/deb/rpm and Flatpak for Linux.
 
 ### Quality
 
@@ -54,7 +54,7 @@ abstinence and habit recovery tracker.
 - End-to-end browser verification: onboarding, all record types, lifecycle
   transitions, settings persistence, exports, merge/replace imports, restart
   persistence, production offline reload, zero external network requests.
-- Electron end-to-end smoke test, Android signing verification, Flatpak
+- Tauri build validation, Android signing verification, Flatpak
   sandbox/metadata verification, privacy audit of the shipped web bundle.
 
 ### Known limitations

@@ -45,3 +45,13 @@ Dark:  --bg #000  --card #1C1C1E  --fill rgba(120,120,128,.32)  --ink #fff
 All screens are responsive: a single component tree renders both mobile and
 desktop layouts via CSS breakpoints (980px desktop shell, 700px for wider
 sheets/grids).
+
+## Brand
+
+The supplied skeleton used a placeholder clock mark. The final product uses the
+official **deUrge logo kit** committed in `assets/brand/` (SVG icon light/dark,
+mark, lockup and favicon). `apps/web/src/ui/logo.tsx` wraps the kit for the UI,
+while `scripts/gen-icons.mjs` generates every platform icon (PWA, Android, iOS,
+Tauri) from the same source SVGs. The app icon is a white/black rounded square
+with the deUrge mark; the lockup is used for the sidebar, onboarding and boot
+screens.

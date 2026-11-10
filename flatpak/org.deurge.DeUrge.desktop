@@ -8,5 +8,5 @@ Icon=org.deurge.DeUrge
 Terminal=false
 Categories=Utility;
 Keywords=habit;recovery;addiction;tracker;offline;privacy;
-StartupWMClass=deUrge
+StartupWMClass=deurge
 X-GNOME-UsesNotifications=true

@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 /**
- * The same static bundle ships to Netlify, Electron and the Capacitor WebViews.
- * `base: './'` keeps every asset relative so it works from a custom Electron
+ * The same static bundle ships to Netlify, Tauri and the Capacitor WebViews.
+ * `base: './'` keeps every asset relative so it works from Tauri's asset
  * protocol, a Capacitor https origin, and an ordinary web host alike.
  */
 export default defineConfig({

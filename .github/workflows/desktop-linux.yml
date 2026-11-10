@@ -1,7 +1,14 @@
-name: Desktop Linux (AppImage)
+name: Desktop Linux (Tauri)
 
-# electron-builder Linux artifacts: AppImage + unpacked dir.
+# Tauri 2 Linux bundles: AppImage + deb + rpm, built from the same embedded
+# React/Vite bundle as the web app and rendered by the system WebKitGTK.
 # The Flatpak is built separately in flatpak.yml.
+#
+# Output (normalised by scripts/collect-tauri-artifacts.mjs):
+#   apps/desktop/release/deUrge-<version>-x86_64.AppImage
+#   apps/desktop/release/deUrge-<version>-amd64.deb
+#   apps/desktop/release/deUrge-<version>-x86_64.rpm
+#   apps/desktop/release/SHA256SUMS.txt
 
 on:
   push:
@@ -11,11 +18,14 @@ on:
       - 'apps/desktop/**'
       - 'apps/web/**'
       - 'packages/core/**'
+      - 'scripts/collect-tauri-artifacts.mjs'
       - 'pnpm-lock.yaml'
       - '.github/workflows/desktop-linux.yml'
   pull_request:
     paths:
       - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'scripts/collect-tauri-artifacts.mjs'
       - '.github/workflows/desktop-linux.yml'
   workflow_dispatch:
 
@@ -32,7 +42,7 @@ env:
 
 jobs:
   linux:
-    name: AppImage
+    name: AppImage / deb / rpm
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,42 +56,72 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
-      - name: Cache Electron / electron-builder downloads
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust / Tauri build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+          key: desktop-linux-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+
+      - name: Cache Tauri bundler tools (linuxdeploy, AppImage runtime)
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-          key: electron-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
-          restore-keys: electron-${{ runner.os }}-
+          path: ~/.cache/tauri
+          key: tauri-bundler-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
+          restore-keys: tauri-bundler-${{ runner.os }}-
+
+      - name: Install Tauri Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libxdo-dev \
+            build-essential \
+            pkg-config \
+            curl \
+            wget \
+            file \
+            patchelf \
+            rpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build web app
-        run: pnpm --filter @deurge/web build
-
-      - name: Package AppImage
+      - name: Build Linux bundles
         run: pnpm --filter @deurge/desktop dist:linux
 
-      - name: Verify + checksums
+      - name: Verify bundles + checksums
         run: |
           set -euo pipefail
           ls -lh apps/desktop/release
-          test -d apps/desktop/release/linux-unpacked
           shopt -s nullglob
           appimages=(apps/desktop/release/*.AppImage)
-          test ${#appimages[@]} -gt 0
-          cd apps/desktop/release
-          sha256sum *.AppImage > SHA256SUMS.txt
-          cat SHA256SUMS.txt
+          debs=(apps/desktop/release/*.deb)
+          rpms=(apps/desktop/release/*.rpm)
+          test ${#appimages[@]} -eq 1
+          test ${#debs[@]} -eq 1
+          test ${#rpms[@]} -eq 1
+          (cd apps/desktop/release && sha256sum -c SHA256SUMS.txt)
+          ldd apps/desktop/src-tauri/target/release/deurge | tee /tmp/ldd.txt
+          grep -E 'webkit2gtk-4\.1|javascriptcoregtk-4\.1' /tmp/ldd.txt
+          file apps/desktop/release/*.AppImage apps/desktop/release/*.deb
 
-      - name: Upload AppImage
+      - name: Upload AppImage / deb / rpm
         uses: actions/upload-artifact@v4
         with:
           name: desktop-linux-${{ github.ref_name }}-${{ github.sha }}
           path: |
             apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+            apps/desktop/release/*.rpm
             apps/desktop/release/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14

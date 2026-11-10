@@ -47,6 +47,16 @@ jobs:
               exit 1
             }
           fi
+          TAURI_VERSION="$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")"
+          CARGO_VERSION="$(sed -n 's/^version = "\(.*\)"$/\1/p' apps/desktop/src-tauri/Cargo.toml | head -1)"
+          test "$TAURI_VERSION" = "$VERSION" || {
+            echo "tauri.conf.json version $TAURI_VERSION does not match package.json $VERSION" >&2
+            exit 1
+          }
+          test "$CARGO_VERSION" = "$VERSION" || {
+            echo "src-tauri/Cargo.toml version $CARGO_VERSION does not match package.json $VERSION" >&2
+            exit 1
+          }
           echo "Releasing deUrge $VERSION"
 
   web:
@@ -129,39 +139,48 @@ jobs:
           path: apps/mobile/dist
           retention-days: 7
 
-  linux-appimage:
-    name: Linux AppImage
+  linux:
+    name: Linux AppImage / deb / rpm
     needs: version
     runs-on: ubuntu-latest
-    env:
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with: { version: '10.15.0' }
       - uses: actions/setup-node@v4
         with: { node-version: '22', cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+          key: release-linux-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
       - uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-          key: electron-linux-${{ hashFiles('apps/desktop/package.json') }}
+          path: ~/.cache/tauri
+          key: tauri-bundler-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
+      - name: Install Tauri Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev libayatana-appindicator3-dev \
+            librsvg2-dev libssl-dev libxdo-dev build-essential pkg-config \
+            curl wget file patchelf rpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @deurge/web build
       - run: pnpm --filter @deurge/desktop dist:linux
       - name: Checksums
         run: |
           set -euo pipefail
           cd apps/desktop/release
-          shopt -s nullglob
-          sha256sum *.AppImage > SHA256SUMS.txt
           cat SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: linux-appimage
+          name: linux
           path: |
             apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+            apps/desktop/release/*.rpm
             apps/desktop/release/SHA256SUMS.txt
           retention-days: 7
 
@@ -175,18 +194,27 @@ jobs:
         with: { version: '10.15.0' }
       - uses: actions/setup-node@v4
         with: { node-version: '22', cache: pnpm }
-      - run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder
-          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-      - uses: actions/cache@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-          key: electron-linux-${{ hashFiles('apps/desktop/package.json') }}
+          workspaces: apps/desktop/src-tauri -> target
+          key: release-flatpak-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+      - name: Install native build + flatpak tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev libayatana-appindicator3-dev \
+            librsvg2-dev libssl-dev libxdo-dev build-essential pkg-config \
+            flatpak flatpak-builder appstream
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
       - run: pnpm install --frozen-lockfile
       - run: BUILD=direct bash flatpak/build.sh
+      - name: Verify bundle
+        run: |
+          set -euo pipefail
+          ls -lh flatpak/dist
+          (cd flatpak/dist && sha256sum -c SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4
         with:
           name: flatpak
@@ -196,41 +224,45 @@ jobs:
           retention-days: 7
 
   windows:
-    name: Windows installer
+    name: Windows installers
     needs: version
     runs-on: windows-latest
-    env:
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with: { version: '10.15.0' }
       - uses: actions/setup-node@v4
         with: { node-version: '22', cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+          key: release-windows-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
       - uses: actions/cache@v4
         with:
-          path: |
-            ~/AppData/Local/electron/Cache
-            ~/AppData/Local/electron-builder/Cache
-          key: electron-windows-${{ hashFiles('apps/desktop/package.json') }}
+          path: ~/AppData/Local/tauri
+          key: tauri-bundler-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @deurge/web build
       - run: pnpm --filter @deurge/desktop dist:win
       - name: Checksums
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $exes = Get-ChildItem apps/desktop/release/*.exe
-          if ($exes.Count -eq 0) { throw 'No installer produced' }
-          $lines = $exes | ForEach-Object {
-            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
+          Push-Location apps/desktop/release
+          $sums = Get-Content SHA256SUMS.txt
+          foreach ($line in $sums) {
+            $hash, $file = $line -split '\s+', 2
+            $actual = (Get-FileHash (Join-Path $PWD $file) -Algorithm SHA256).Hash.ToLower()
+            if ($actual -ne $hash) { throw "Checksum mismatch for $file" }
           }
-          Set-Content apps/desktop/release/SHA256SUMS.txt $lines
+          Get-Content SHA256SUMS.txt
+          Pop-Location
       - uses: actions/upload-artifact@v4
         with:
           name: windows
           path: |
             apps/desktop/release/*.exe
+            apps/desktop/release/*.msi
             apps/desktop/release/SHA256SUMS.txt
           retention-days: 7
 
@@ -238,30 +270,25 @@ jobs:
     name: macOS DMG
     needs: version
     runs-on: macos-latest
-    env:
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with: { version: '10.15.0' }
       - uses: actions/setup-node@v4
         with: { node-version: '22', cache: pnpm }
-      - uses: actions/cache@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/Library/Caches/electron
-            ~/Library/Caches/electron-builder
-          key: electron-macos-${{ hashFiles('apps/desktop/package.json') }}
+          workspaces: apps/desktop/src-tauri -> target
+          key: release-macos-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @deurge/web build
       - run: pnpm --filter @deurge/desktop dist:mac
       - name: Checksums
         run: |
           set -euo pipefail
           cd apps/desktop/release
-          shopt -s nullglob
-          shasum -a 256 *.dmg > SHA256SUMS.txt
           cat SHA256SUMS.txt
+          shasum -a 256 -c SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: macos
@@ -301,7 +328,7 @@ jobs:
 
   publish:
     name: Publish draft GitHub release
-    needs: [version, web, android, linux-appimage, flatpak, windows, macos, ios]
+    needs: [version, web, android, linux, flatpak, windows, macos, ios]
     runs-on: ubuntu-latest
     permissions:
       contents: write

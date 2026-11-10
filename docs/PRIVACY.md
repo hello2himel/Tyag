@@ -25,8 +25,8 @@ airplane mode after installation/first load.
 | --- | --- | --- |
 | Web / PWA | IndexedDB database `deurge-local` (plus a rolling backup copy). Service worker cache holds only the app bundle. | Files you download (`deurge-*.json`, `.csv`, `.deurge-backup`) |
 | Android / iOS | App-private storage via Capacitor Filesystem: `deurge.sqlite` (and `deurge.backup.sqlite`) in the app's data directory | Files you export via the system file picker / Documents |
-| Windows / macOS / Linux (Electron) | `app.getPath('userData')/deurge.db` with a rolling backup under `userData/backups/` | Files you export |
-| Linux Flatpak | Inside the Flatpak sandbox: `~/.var/app/app.deurge.DeUrge/config/deUrge/` | Files you export via the portal |
+| Windows / macOS / Linux (Tauri) | App data directory: `deurge.db` (Linux: `~/.local/share/app.deurge.DeUrge/`, macOS: `~/Library/Application Support/app.deurge.DeUrge/`, Windows: `%APPDATA%/app.deurge.DeUrge/`) with rolling backups under `backups/` | Files you export to Downloads |
+| Linux Flatpak | Inside the Flatpak sandbox under `~/.var/app/org.deurge.DeUrge/data/` | Files you export to `xdg-download` |
 
 The app requests only the sandbox permissions it needs. In particular, the
 Flatpak manifest does **not** request network access.
@@ -44,9 +44,10 @@ Flatpak manifest does **not** request network access.
   external hosts, remote assets, sockets, beacons or known third-party SDKs.
 - The dependency list is small and reviewed (see [DEPENDENCIES.md](DEPENDENCIES.md));
   none of the runtime dependencies includes networking or telemetry code.
-- Electron: `nodeIntegration` is off, `contextIsolation` is on, navigation to
-  external URLs is blocked, the preload exposes only the local database
-  read/write functions, and no auto-updater or analytics is included.
+- Tauri: the desktop shell links only the three database commands (and a
+  text-export command); no filesystem, shell, HTTP, opener or updater plugin is
+  registered. Capabilities are minimal, external navigation/popups are denied,
+  the CSP mirrors the web app, and no auto-updater or analytics is included.
 - Capacitor: the WebView loads only the bundled app over `https://localhost`;
   no server URL is configured and no cloud plugin is installed.
 
@@ -71,7 +72,7 @@ Protected:
 - Data stays within the app's sandbox / browser origin and is never transmitted.
 - Exported encrypted backups are confidential without the password (AES-GCM,
   authenticated encryption; a wrong password fails loudly).
-- The app's CSP and Electron/Capacitor hardening reduce remote-code injection
+- The app's CSP and Tauri/Capacitor hardening reduce remote-code injection
   risk.
 
 Not protected by deUrge itself:

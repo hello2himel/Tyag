@@ -111,17 +111,19 @@ CSV is intended for spreadsheets/analysis; JSON is the backup format.
 | App reinstalled / device changed | Install deUrge, skip onboarding, open **Data & Backups → Import**, choose your backup. |
 | Import fails validation | The local database was not modified. The report names the offending collection/record without exposing unrelated personal data. |
 | Local database fails the integrity check at startup | deUrge refuses to silently start empty, shows a recovery screen, and asks you to restore a backup. |
-| Electron database file corrupted | Restore `deurge.db` from `userData/backups/` or re-import an export. |
+| Tauri/desktop database file corrupted | Restore `deurge.db` from the app data directory's `backups/` folder or re-import an export. |
 | Forgot encrypted-backup password | Not recoverable by design. Use a plain JSON export if you have one. |
 
 ### Platform locations
 
 - Web/PWA: IndexedDB `deurge-local`; clearing site data deletes it.
 - Android/iOS: app-private `deurge.sqlite`; uninstalling deletes it.
-- Electron: `userData/deurge.db` (`~/.config/deUrge` on Linux,
-  `%APPDATA%/deUrge` on Windows, `~/Library/Application Support/deUrge` on
-  macOS) and `userData/backups/`.
-- Flatpak: `~/.var/app/app.deurge.DeUrge/config/deUrge/`.
+- Tauri desktop: the app data directory (`~/.local/share/app.deurge.DeUrge/`
+  on Linux, `%APPDATA%/app.deurge.DeUrge/` on Windows,
+  `~/Library/Application Support/app.deurge.DeUrge/` on macOS) with
+  `deurge.db`, `deurge.backup.db` and `backups/`.
+- Flatpak: the sandboxed app data directory under
+  `~/.var/app/org.deurge.DeUrge/`.
 
 ## 6. Data ownership
 

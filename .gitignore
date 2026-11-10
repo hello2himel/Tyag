@@ -7,8 +7,6 @@ dist-ssr/
 .env.*
 !.env.example
 coverage/
-apps/desktop/release/
-apps/desktop/out/
 apps/mobile/android/.gradle/
 apps/mobile/android/app/build/
 apps/mobile/android/build/
@@ -50,9 +48,8 @@ apps/mobile/ios/App/Pods/
 apps/mobile/ios/App/build/
 apps/mobile/ios/DerivedData/
 
-# --- Electron build resources are committed; packaged output is not ----------
+# --- Tauri desktop: committed icons/config, generated bundles ignored ----
 apps/desktop/release/
-apps/desktop/out/
 
 # --- Flatpak build output ----------------------------------------------------
 flatpak/build/

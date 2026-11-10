@@ -1,6 +1,6 @@
 # Third-party notices
 
-deUrge is MIT-licensed. It is built with the following open-source packages
+deUrge itself is licensed under the GNU Affero General Public License v3.0 (`AGPL-3.0-only`, see `LICENSE`). It is built with the following open-source packages
 (see `pnpm-lock.yaml` for exact resolved versions). Each is used under its own
 license; no package includes advertising, tracking or cloud functionality.
 
@@ -12,7 +12,7 @@ license; no package includes advertising, tracking or cloud functionality.
 | sql.js (SQLite compiled to WebAssembly) | MIT (SQLite is public domain) | local database |
 | @js-temporal/polyfill | Apache-2.0 | timezone-aware calendar math |
 | Capacitor core/Android/Filesystem/LocalNotifications | MIT | Android/iOS shell |
-| Electron, electron-builder | MIT | desktop shell and packaging |
+| Tauri 2, @tauri-apps/api, @tauri-apps/cli | MIT / Apache-2.0 | desktop shell using the OS WebView, packaging |
 | TypeScript | Apache-2.0 | type system/build |
 | Vitest | MIT | tests |
 

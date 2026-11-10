@@ -1,5 +1,5 @@
-/** Tiny hash router: works identically on Netlify, Electron's custom
- * protocol and the Capacitor WebViews (no server-side rewrites needed). */
+/** Tiny hash router: works identically on Netlify, the Tauri asset protocol
+ * and the Capacitor WebViews (no server-side rewrites needed). */
 import { useCallback, useEffect, useState } from 'react';
 
 export type RouteName = 'trackers' | 'tracker' | 'journal' | 'insights' | 'settings' | 'data';
