@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { AppProvider, useApp } from './store/app';
 import { navigate, useRoute, type RouteName } from './router';
 import { Icon, type IconName } from './ui/components';
@@ -9,6 +10,7 @@ import { JournalScreen } from './features/journal/JournalScreen';
 import { InsightsScreen } from './features/insights/InsightsScreen';
 import { SettingsScreen } from './features/settings/SettingsScreen';
 import { DataScreen } from './features/data/DataScreen';
+import { LockScreen, SetPasswordScreen } from './features/lock/AppLock';
 
 const NAV: { name: RouteName; label: string; icon: IconName; path: string }[] = [
   { name: 'trackers', label: 'Trackers', icon: 'clock', path: '/trackers' },
@@ -25,10 +27,53 @@ export function App() {
   );
 }
 
+const AUTO_LOCK_AFTER_MS = 60_000;
+
 function Root() {
   const app = useApp();
+  const [hasPassword, setHasPassword] = useState(() => app.core.security.hasPassword());
+  const [unlocked, setUnlocked] = useState(false);
+  const hiddenSince = useRef<number | null>(null);
+
+  // Lock again after a minute in the background, and support an explicit
+  // "Lock now" action from Settings.
+  useEffect(() => {
+    function onVisibility(): void {
+      if (document.hidden) {
+        hiddenSince.current = Date.now();
+        return;
+      }
+      if (hiddenSince.current !== null && Date.now() - hiddenSince.current >= AUTO_LOCK_AFTER_MS) {
+        setUnlocked(false);
+      }
+      hiddenSince.current = null;
+    }
+    function onLock(): void {
+      setUnlocked(false);
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('deurge:lock', onLock);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('deurge:lock', onLock);
+    };
+  }, []);
+
   if (!app.settings.onboarded) {
     return <OnboardingScreen onComplete={() => app.refresh()} />;
+  }
+  if (!hasPassword) {
+    return (
+      <SetPasswordScreen
+        onDone={() => {
+          setHasPassword(true);
+          setUnlocked(true);
+        }}
+      />
+    );
+  }
+  if (!unlocked) {
+    return <LockScreen onUnlock={() => setUnlocked(true)} />;
   }
   return <Shell />;
 }

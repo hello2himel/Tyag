@@ -5,6 +5,16 @@
          INTERNET permission is intentionally NOT requested. Capacitor serves
          the web bundle through the local WebViewAssetLoader (https://localhost)
          and all data lives in the app-private directory. -->
+
+    <!-- App-password lock: optional biometric unlock via the system prompt
+         (androidx.biometric). No credential data ever leaves the device and no
+         network is involved. USE_FINGERPRINT is only needed by the compat
+         implementation on Android 9 (API 28) and older. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission
+        android:name="android.permission.USE_FINGERPRINT"
+        android:maxSdkVersion="28" />
+
     <application
         android:allowBackup="false"
         android:fullBackupContent="false"

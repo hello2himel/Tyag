@@ -38,6 +38,11 @@ cloud, no tracking, no internet required.
   sample sizes and honest “not enough data” states.
 - **Continuous progress recognition** derived from real elapsed time — no
   milestones, badges, levels or completion targets anywhere.
+- **App lock**: a password is required every time deUrge opens (it re-locks after
+  60 seconds in the background). Android can use fingerprint/face biometrics
+  instead of typing it. Forgetting the password means erasing local data and
+  re-importing a backup; the lock hash never leaves the device and is not
+  included in backups.
 - **Ownership**: full JSON export/import, CSV export, encrypted backups
   (PBKDF2 + AES-GCM), merge/replace import with duplicate and conflict
   reporting, and database migrations.

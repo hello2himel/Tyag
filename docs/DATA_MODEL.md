@@ -99,7 +99,11 @@ Applied migration versions (`version`, `name`, `applied_at`). Migrations are
 append-only and applied in order inside transactions.
 
 ### `meta`
-Internal key/value metadata (database identity/format hints).
+Internal key/value metadata (database identity/format hints, and local-only
+app-lock state under `security.*`: PBKDF2 password hash, salt, iteration count
+and the biometric preference). `meta` is deliberately **not** part of JSON
+backups, so app-lock credentials never leave the device and a restored database
+gets a fresh password.
 
 ## Invariants
 

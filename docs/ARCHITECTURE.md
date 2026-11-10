@@ -83,6 +83,10 @@ deUrge/
   in UTC epoch milliseconds plus the local zone/offset that recorded them.
 - **Persistence** (`db/`, `repos/`): SQLite schema, migrations and typed
   repositories. Business logic never speaks SQL outside these files.
+- **App lock** (`services/security.ts` + `apps/web/src/features/lock`): a
+  password gate rendered by the React root before any records; PBKDF2-SHA-256
+  hash in the local `meta` table, Android biometric unlock through a small local
+  Capacitor plugin, and a 60-second background auto-lock.
 - **Business logic** (`services/`): validation, lifecycle rules (pause/resume/
   archive/restore/delete), history recording, transactions + snapshot persist.
 - **Streak engine** (`engine/streak.ts`): pure deterministic calculation from

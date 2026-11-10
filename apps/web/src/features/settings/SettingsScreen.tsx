@@ -5,7 +5,7 @@
  * trigger/reason category service) and re-renders without a reload. Errors are reported with
  * the core's user-safe messages. Nothing here talks to a server.
  */
-import { useCallback, useId, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import {
   MS_PER_DAY,
   MS_PER_HOUR,
@@ -34,6 +34,8 @@ import {
 import { useFormatters } from '../../ui/format';
 import { cancelNativeAcknowledgement, notificationAvailability, requestNotificationPermission } from '../../platform/notifications';
 import { CategoriesSection } from './CategoriesSection';
+import { ChangePasswordDialog } from '../lock/AppLock';
+import { authenticateBiometrics, biometricsAvailable, biometricsSupported } from '../../platform/biometrics';
 import './settings.css';
 
 const DATE_FORMATS: DateFormat[] = ['MMM d, yyyy', 'd MMM yyyy', 'MM/dd/yyyy', 'dd/MM/yyyy', 'yyyy-MM-dd'];
@@ -127,6 +129,37 @@ export function SettingsScreen() {
   const toast = useToast();
   const fmt = useFormatters();
   const { settings, timeZone } = app;
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [biometricAvailability, setBiometricAvailability] = useState<{ available: boolean; reason?: string } | null>(null);
+  const [lockConfig, setLockConfig] = useState(() => app.core.security.config());
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!biometricsSupported()) return undefined;
+    void biometricsAvailable().then((result) => {
+      if (!cancelled) setBiometricAvailability(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function toggleBiometrics(enabled: boolean): Promise<void> {
+    try {
+      if (enabled) {
+        const result = await authenticateBiometrics();
+        if (!result.success) {
+          toast.error(result.error ?? 'Biometric authentication failed.');
+          return;
+        }
+      }
+      await app.core.security.setBiometricsEnabled(enabled);
+      setLockConfig(app.core.security.config());
+      toast.show(enabled ? 'Biometric unlock enabled.' : 'Biometric unlock disabled.');
+    } catch (failure) {
+      toast.error(isDeUrgeError(failure) ? userMessage(failure) : 'Biometric unlock could not be changed.');
+    }
+  }
 
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [checkingNotifications, setCheckingNotifications] = useState(false);
@@ -418,6 +451,38 @@ export function SettingsScreen() {
         </SettingSection>
 
         <SettingSection
+          label="App lock"
+          note="deUrge asks for your password every time it opens and locks again after 60 seconds in the background. The password is stored only as a salted hash on this device and is never included in backups."
+        >
+          <ListGroup aria-label="App lock">
+            <ListRow label="Password" value="Set" chevron onClick={() => setChangePasswordOpen(true)} />
+            {biometricsSupported() ? (
+              biometricAvailability?.available ? (
+                <Toggle
+                  label="Biometric unlock"
+                  description="Use your fingerprint or face instead of typing the password."
+                  checked={lockConfig.biometricsEnabled}
+                  onChange={(value) => void toggleBiometrics(value)}
+                />
+              ) : (
+                <ListRow label="Biometric unlock" value="Unavailable on this device" />
+              )
+            ) : (
+              <ListRow label="Biometric unlock" value="Android app only" />
+            )}
+            <ListRow
+              label="Lock now"
+              chevron
+              onClick={() => window.dispatchEvent(new Event('deurge:lock'))}
+            />
+          </ListGroup>
+          <p className="setting-note">
+            Reset is the only recovery: forgetting the password means erasing the local data and re-importing a backup. Turn on
+            biometric unlock to avoid typing the password on this Android device.
+          </p>
+        </SettingSection>
+
+        <SettingSection
           label="Triggers & reasons"
           note="Manage the lists offered when you record a lapse or an urge."
         >
@@ -446,9 +511,9 @@ export function SettingsScreen() {
             network request that carries your data. Files leave the app only when you export a backup or spreadsheet yourself.
           </div>
           <div className="notice warn" style={{ marginTop: 8 }}>
-            Only backup files you create can be encrypted. The live database on this device is not encrypted by deUrge — rely
-            on your device passcode, biometric lock and disk encryption. Anyone who can open this app on this device can read
-            your records.
+            The app password and biometric unlock gate access to deUrge, but the live database itself is not encrypted by
+            deUrge. Rely on your device passcode and disk encryption as well; someone with access to the app's private storage or
+            a device backup could read the database file.
           </div>
         </SettingSection>
 
@@ -471,6 +536,14 @@ export function SettingsScreen() {
           <p className="setting-note">Plain-text links are shown for reference only; deUrge never opens external pages for you.</p>
         </SettingSection>
       </div>
+
+      <ChangePasswordDialog
+        open={changePasswordOpen}
+        onClose={() => {
+          setChangePasswordOpen(false);
+          setLockConfig(app.core.security.config());
+        }}
+      />
 
       <div className="tiny settings-footer">
         <span>All preferences are saved automatically.</span>

@@ -79,9 +79,10 @@ Not protected by deUrge itself:
 
 - An unlocked, compromised or rooted device (OS-level malware, screen capture).
   Use the operating system's disk encryption and device lock.
-- The live database is not application-level encrypted; rely on OS full-disk
-  encryption and app-private storage. Encrypt exported backups if you store
-  them elsewhere.
+- The live database is not application-level encrypted; the app lock gates
+  access to the app, not to the SQLite file. Rely on OS full-disk encryption and
+  app-private storage (and do not root/jailbreak the device or share app
+  backups). Encrypt exported backups if you store them elsewhere.
 - Browser/PWA storage can be cleared by the user or by "clear site data"
   actions; keep exported backups.
 

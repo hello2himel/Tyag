@@ -24,6 +24,7 @@ import { CheckInService, JournalService } from './services/journal';
 import { CategoryService } from './services/categories';
 import { SettingsService } from './services/settings';
 import { HistoryService } from './services/history';
+import { SecurityService } from './services/security';
 import { AnalyticsService } from './analytics/service';
 import { InsightsService } from './insights/service';
 import { BackupService } from './backup/service';
@@ -46,6 +47,7 @@ export class DeUrgeCore {
   readonly categories: CategoryService;
   readonly settings: SettingsService;
   readonly history: HistoryService;
+  readonly security: SecurityService;
   readonly analytics: AnalyticsService;
   readonly insights: InsightsService;
   readonly backup: BackupService;
@@ -84,6 +86,7 @@ export class DeUrgeCore {
     this.settings = new SettingsService(ctx);
     settingsService = this.settings;
     this.history = new HistoryService(ctx);
+    this.security = new SecurityService(ctx);
     this.analytics = new AnalyticsService(ctx, this.settings);
     this.insights = new InsightsService(ctx, this.settings, this.analytics);
     this.backup = new BackupService(ctx, this.settings, this.analytics, persistence);
