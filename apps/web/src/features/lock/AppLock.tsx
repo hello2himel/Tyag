@@ -210,8 +210,11 @@ function MobileCreateOrConfirm({
       : stage === 'confirm'
         ? 'Enter the same PIN once more.'
         : 'You will use it to open deUrge. It stays on this device.';
+  // "PIN options" only has the biometrics toggle, so it is not shown at all on
+  // devices where biometrics is unavailable. The 60-second background lock is a
+  // fixed privacy behaviour, not a user setting, so there is no "Lock after" row.
   const bottomAction =
-    stage === 'confirm' ? 'Start over' : stage === 'new' && mode === 'change' ? null : 'PIN options';
+    stage === 'confirm' ? 'Start over' : stage === 'new' && mode === 'create' && biometrics?.available ? 'PIN options' : null;
 
   function fail(message: string): void {
     setError(message);
@@ -301,18 +304,6 @@ function MobileCreateOrConfirm({
           <p className="pn-muted pn-bio-copy">
             Skip typing your PIN. Biometric data stays in the system. deUrge never sees it, and your PIN always works too.
           </p>
-          <div className="pn-group pn-bio-group">
-            <div className="pn-row">
-              <span>Require unlock</span>
-              <span className="pn-muted pn-row-value">Immediately</span>
-            </div>
-            <div className="pn-row">
-              <span>Hide in app switcher</span>
-              <span className="pn-switch on" role="switch" aria-checked="true" aria-label="Hide in app switcher">
-                <i />
-              </span>
-            </div>
-          </div>
           {bioError ? <p className="pn-error">{bioError}</p> : null}
           <button type="button" className="pn-btn pn-btn-primary" onClick={() => void enableBiometrics()}>
             Enable biometrics
@@ -394,10 +385,6 @@ function MobileCreateOrConfirm({
                   </button>
                 </div>
               ) : null}
-              <div className="pn-row">
-                <span>Lock after</span>
-                <span className="pn-muted pn-row-value">1 minute</span>
-              </div>
             </div>
             <button type="button" className="pn-btn pn-btn-primary" onClick={() => setOptionsOpen(false)}>
               Done
@@ -854,8 +841,8 @@ function DesktopSetPin({
             autoComplete="off"
           />
           {error ? <p className="pn-error">{error}</p> : null}
-          <div className="pn-group pn-desktop-options">
-            {availability?.available ? (
+          {availability?.available ? (
+            <div className="pn-group pn-desktop-options">
               <div className="pn-row">
                 <span>Unlock with biometrics</span>
                 <button
@@ -869,12 +856,8 @@ function DesktopSetPin({
                   <i />
                 </button>
               </div>
-            ) : null}
-            <div className="pn-row">
-              <span>Lock after</span>
-              <span className="pn-muted pn-row-value">1 minute</span>
             </div>
-          </div>
+          ) : null}
           <div className="pn-desktop-footer">
             {onCancel ? (
               <button type="button" className="pn-btn-text" onClick={onCancel}>
