@@ -20,6 +20,7 @@ import {
   type TextareaHTMLAttributes,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { curves, durations, haptic, project, reducedMotion, rubberBand } from './motion';
 import type { StreakInterval } from '@deurge/core';
 
 /* --------------------------------- icons --------------------------------- */
@@ -253,7 +254,7 @@ export function Segmented<T extends string>({
           role="tab"
           aria-selected={option.value === value}
           className={option.value === value ? 'on' : ''}
-          onClick={() => onChange(option.value)}
+          onClick={() => { haptic('selection'); onChange(option.value); }}
         >
           {option.label}
         </button>
@@ -370,7 +371,7 @@ export function Toggle({
       role="switch"
       aria-checked={checked}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
+      onClick={() => { haptic('selection'); onChange(!checked); }}
     >
       <span>
         <span style={{ display: 'block' }}>{label}</span>
@@ -468,16 +469,194 @@ export function Sheet({
 }) {
   useOverlayBehaviour(open, onClose);
   const titleId = useId();
-  if (!open) return null;
+  const [mounted, setMounted] = useState(open);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const drag = useRef({ active: false, pointerId: 0, startY: 0, lastY: 0, lastT: 0, dy: 0, velocity: 0 });
+  const animations = useRef<Animation[]>([]);
+  const closing = useRef(false);
+
+  function cancelAnimations(): void {
+    for (const animation of animations.current) animation.cancel();
+    animations.current = [];
+  }
+
+  function animateIn(): void {
+    const panel = panelRef.current;
+    const backdrop = backdropRef.current;
+    if (!panel || !backdrop) return;
+    cancelAnimations();
+    closing.current = false;
+    panel.style.transform = '';
+    if (reducedMotion()) {
+      panel.style.opacity = '1';
+      backdrop.style.opacity = '0.4';
+      return;
+    }
+    const desktop = window.matchMedia('(pointer: fine)').matches && window.innerWidth >= 700;
+    animations.current.push(
+      panel.animate(
+        desktop
+          ? [{ transform: 'translateY(-24px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }]
+          : [{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }],
+        { duration: desktop ? 300 : durations.sheet, easing: desktop ? curves.easeOut : curves.sheet, fill: 'both' },
+      ),
+      backdrop.animate([{ opacity: 0 }, { opacity: 0.4 }], {
+        duration: desktop ? 300 : durations.sheet,
+        easing: curves.easeOut,
+        fill: 'both',
+      }),
+    );
+  }
+
+  function animateOut(after?: () => void): void {
+    if (closing.current) return;
+    closing.current = true;
+    const panel = panelRef.current;
+    const backdrop = backdropRef.current;
+    if (!panel || !backdrop || reducedMotion()) {
+      setMounted(false);
+      after?.();
+      return;
+    }
+    cancelAnimations();
+    const desktop = window.matchMedia('(pointer: fine)').matches && window.innerWidth >= 700;
+    animations.current.push(
+      panel.animate(
+        desktop
+          ? [{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-24px)', opacity: 0 }]
+          : [{ transform: 'translateY(0)' }, { transform: 'translateY(100%)' }],
+        { duration: desktop ? 200 : durations.standard, easing: curves.easeIn, fill: 'both' },
+      ),
+      backdrop.animate([{ opacity: 0.4 }, { opacity: 0 }], {
+        duration: desktop ? 200 : durations.standard,
+        easing: curves.easeIn,
+        fill: 'both',
+      }),
+    );
+    window.setTimeout(() => {
+      setMounted(false);
+      after?.();
+    }, desktop ? 210 : durations.standard + 10);
+  }
+
+  useEffect(() => {
+    if (open) {
+      closing.current = false;
+      setMounted(true);
+    } else if (mounted) {
+      animateOut();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    if (!mounted || !open) return;
+    panelRef.current?.style.setProperty('opacity', '0');
+    const frame = requestAnimationFrame(() => animateIn());
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, open]);
+
+  useEffect(
+    () => () => {
+      cancelAnimations();
+    },
+    [],
+  );
+
+  if (!mounted) return null;
+
+  function onPointerDown(event: React.PointerEvent<HTMLDivElement>): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.sheet-grip, .sheet-head')) return;
+    if (target.closest('button, input, textarea, a')) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    cancelAnimations();
+    panel.style.transform = '';
+    drag.current = {
+      active: true,
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      lastY: event.clientY,
+      lastT: performance.now(),
+      dy: 0,
+      velocity: 0,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function onPointerMove(event: React.PointerEvent<HTMLDivElement>): void {
+    if (!drag.current.active) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const height = panel.offsetHeight;
+    const raw = event.clientY - drag.current.startY;
+    const dy = raw > 0 ? raw : rubberBand(raw, height);
+    drag.current.dy = raw;
+    const now = performance.now();
+    drag.current.velocity = ((event.clientY - drag.current.lastY) / Math.max(now - drag.current.lastT, 1)) * 1000;
+    drag.current.lastY = event.clientY;
+    drag.current.lastT = now;
+    panel.style.transform = `translateY(${dy}px)`;
+    if (backdropRef.current) backdropRef.current.style.opacity = String(Math.max(0, 0.4 * (1 - dy / height)));
+  }
+
+  function onPointerUp(): void {
+    if (!drag.current.active) return;
+    drag.current.active = false;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const height = panel.offsetHeight;
+    const projected = drag.current.dy + project(drag.current.velocity);
+    if (projected > height * 0.5 || drag.current.velocity > 1000) {
+      animateOut(() => onClose());
+    } else {
+      const from = drag.current.dy;
+      const animation = panel.animate(
+        [{ transform: `translateY(${from}px)` }, { transform: 'translateY(0)' }],
+        { duration: durations.sheet, easing: curves.sheet, fill: 'both' },
+      );
+      animations.current.push(animation);
+      if (backdropRef.current) {
+        animations.current.push(
+          backdropRef.current.animate([{ opacity: backdropRef.current.style.opacity || '0.4' }, { opacity: 0.4 }], {
+            duration: durations.sheet,
+            easing: curves.sheet,
+            fill: 'both',
+          }),
+        );
+      }
+      panel.style.transform = '';
+    }
+  }
+
+  function dismiss(): void {
+    animateOut(() => onClose());
+  }
+
   return createPortal(
     <div
       className="sheet-backdrop"
       role="presentation"
+      ref={backdropRef}
+      style={{ opacity: 0 }}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) dismiss();
       }}
     >
-      <div className="sheet" role="dialog" aria-modal="true" aria-labelledby={labelledBy ?? titleId}>
+      <div
+        className="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy ?? titleId}
+        ref={panelRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
         <div className="sheet-grip" aria-hidden="true" />
         <div className="sheet-head">
           <span>{left}</span>

@@ -265,7 +265,7 @@
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
-  transition: left 0.15s ease;
+  transition: left var(--motion-duration-fast) var(--motion-curve-ease-out);
 }
 .pn-switch.on i { left: 22px; }
 .pn-switch:disabled { opacity: 0.45; }
@@ -503,4 +503,20 @@
   .pn-desktop-card { height: 560px; }
   .pn-desktop-main { padding: 32px 36px; }
   .pn-desktop-side { width: 270px; padding: 32px 26px; }
+}
+
+/* PIN motion: per the supplied motion spec. */
+.pn-dots i.err { background: var(--dg); border-color: var(--dg); }
+.pn-dots.shake { animation: pin-shake 500ms var(--motion-curve-ease-out); }
+.pn-lock-error { animation: pin-error-in 200ms var(--motion-curve-ease-out); }
+.pn-boxes.shake { animation: pin-shake 500ms var(--motion-curve-ease-out); }
+@keyframes pin-error-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pin-shake {
+  0% { transform: translateX(0); }
+  16% { transform: translateX(-12px); }
+  32% { transform: translateX(12px); }
+  48% { transform: translateX(-8px); }
+  64% { transform: translateX(8px); }
+  80% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
 }

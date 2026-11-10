@@ -73,6 +73,18 @@
   --logo-tile-bg: #000000;
   --logo-tile-fg: #ffffff;
   --max-mobile: 560px;
+  /* Motion tokens (see docs/MOTION.md + src/ui/motion.ts). */
+  --motion-duration-instant: 0ms;
+  --motion-duration-fast: 150ms;
+  --motion-duration-standard: 250ms;
+  --motion-duration-slow: 350ms;
+  --motion-duration-sheet: 500ms;
+  --motion-duration-unlock: 400ms;
+  --motion-duration-crossfade: 200ms;
+  --motion-curve-ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+  --motion-curve-ease-out: cubic-bezier(0, 0, 0.58, 1);
+  --motion-curve-ease-in: cubic-bezier(0.42, 0, 1, 1);
+  --motion-curve-sheet: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 :root[data-theme='dark'] {
@@ -291,7 +303,7 @@ p {
   padding: 14px 16px;
 }
 .clickable {
-  transition: transform 0.06s ease, opacity 0.15s ease;
+  transition: transform var(--motion-duration-slow) var(--motion-curve-ease-out), opacity var(--motion-duration-fast) var(--motion-curve-ease-out);
 }
 .clickable:active {
   transform: scale(0.995);
@@ -313,7 +325,7 @@ p {
   font-weight: 600;
   font-size: 17px;
   text-decoration: none;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition: background var(--motion-duration-standard) var(--motion-curve-ease-out), opacity var(--motion-duration-fast) var(--motion-curve-ease-out);
   white-space: nowrap;
 }
 .btn:hover {
@@ -579,7 +591,7 @@ p {
   background: var(--fill-strong);
   position: relative;
   flex: 0 0 auto;
-  transition: background 0.18s ease;
+  transition: background var(--motion-duration-standard) var(--motion-curve-ease-out);
 }
 .switch::after {
   content: '';
@@ -591,7 +603,7 @@ p {
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: transform 0.18s ease;
+  transition: transform var(--motion-duration-standard) var(--motion-curve-ease-out);
 }
 .switch.on {
   background: var(--g);
@@ -609,7 +621,6 @@ p {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  animation: fade-in 0.15s ease;
 }
 .sheet {
   width: 100%;
@@ -619,7 +630,6 @@ p {
   background: var(--e1);
   border-radius: 28px 28px 0 0;
   padding: 8px 20px calc(24px + env(safe-area-inset-bottom));
-  animation: sheet-up 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
   position: relative;
 }
 .sheet-grip {
@@ -685,7 +695,7 @@ p {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  animation: fade-in 0.15s ease;
+  animation: fade-in var(--motion-duration-fast) var(--motion-curve-ease-out);
 }
 .modal {
   background: var(--card);
@@ -940,7 +950,7 @@ p {
   border-radius: 6px;
   background: var(--g);
   min-height: 3px;
-  transition: height 0.25s ease;
+  transition: height var(--motion-duration-slow) var(--motion-curve-ease-out);
 }
 .bar.lapse {
   background: var(--a);
@@ -1110,7 +1120,7 @@ p {
   font-size: 14px;
   line-height: 1.35;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-  animation: sheet-up 0.2s ease;
+  animation: sheet-up var(--motion-duration-sheet) var(--motion-curve-sheet);
 }
 .toast.error {
   background: var(--danger);
@@ -1150,21 +1160,28 @@ p {
   border-radius: 50%;
   border: 2.5px solid var(--fill-strong);
   border-top-color: var(--bf);
-  animation: spin 0.8s linear infinite;
+  animation: none; border-top-color: var(--bf);
 }
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
+/* Reduce Motion: cross-fades only, no slides/scales/staggers. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.001s !important;
-    transition-duration: 0.001s !important;
+    animation-duration: 200ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 200ms !important;
     scroll-behavior: auto !important;
+  }
+  .pn-dots.shake,
+  .rolling-char,
+  .screen-enter-push,
+  .screen-enter-pop,
+  .onb-welcome-stagger > * {
+    animation: none !important;
+  }
+  .screen-enter-push,
+  .screen-enter-pop {
+    animation: fade-in var(--motion-duration-crossfade) var(--motion-curve-ease-out) !important;
   }
 }
 
@@ -1213,3 +1230,109 @@ p {
 .about-brand .deurge-wordmark {
   display: block;
 }
+
+/* ==========================================================================
+   Motion augmentations (tokens in :root above; spec: docs/MOTION.md)
+   ========================================================================== */
+
+/* Press feedback — no scale, no ripple. */
+.btn { transition: opacity var(--motion-duration-fast) var(--motion-curve-ease-out), background var(--motion-duration-standard) var(--motion-curve-ease-out); }
+.btn:active { opacity: 0.4; transition-duration: var(--motion-duration-fast); }
+.btn-primary:active { opacity: 0.8; }
+.list-row { transition: background var(--motion-duration-standard) var(--motion-curve-ease-out); }
+.list-row:active, .list-row.pressed { background: rgba(120, 120, 128, 0.2); transition: none; }
+.clickable:active { transform: scale(0.97); }
+.chip:active { opacity: 0.6; }
+.sidebar .nav-item, .tabbar button { transition: background var(--motion-duration-fast) var(--motion-curve-ease-out), color var(--motion-duration-fast) var(--motion-curve-ease-out); }
+
+/* Desktop pointer hover/focus. */
+@media (hover: hover) {
+  .nav-item:hover, .list-row.selectable:hover { background: var(--fill); transition: background var(--motion-duration-fast) var(--motion-curve-ease-out); }
+}
+:focus-visible { outline: 3px solid var(--bf); outline-offset: 2px; }
+
+/* Screen transitions: tab switches instant; pushes/pops slide. */
+.screen-enter-push { animation: screen-push-in var(--motion-duration-sheet) var(--motion-curve-sheet); }
+.screen-enter-pop { animation: screen-pop-in var(--motion-duration-sheet) var(--motion-curve-sheet); }
+@keyframes screen-push-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes screen-pop-in { from { transform: translateX(-28%); opacity: 0.6; } to { transform: translateX(0); opacity: 1; } }
+
+/* Onboarding welcome stagger: mark, wordmark, tagline, actions 80ms apart. */
+.onb-welcome-stagger > * { animation: onb-rise var(--motion-duration-sheet) var(--motion-curve-ease-out) both; }
+.onb-welcome-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.onb-welcome-stagger > *:nth-child(2) { animation-delay: 80ms; }
+.onb-welcome-stagger > *:nth-child(3) { animation-delay: 160ms; }
+.onb-welcome-stagger > *:nth-child(4) { animation-delay: 240ms; }
+@keyframes onb-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* PIN dots / keys / shake. */
+.pin-dots i { transition: background var(--motion-duration-fast) var(--motion-curve-ease-out), border-color var(--motion-duration-fast) var(--motion-curve-ease-out); }
+.pn-dots i { transition: background 100ms var(--motion-curve-ease-out), border-color 100ms var(--motion-curve-ease-out); }
+.pn-dots.shake { animation: pin-shake var(--motion-duration-sheet) var(--motion-curve-ease-out); }
+@keyframes pin-shake {
+  0% { transform: translateX(0); }
+  16% { transform: translateX(-12px); }
+  32% { transform: translateX(12px); }
+  48% { transform: translateX(-8px); }
+  64% { transform: translateX(8px); }
+  80% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+.pn-key { transition: background 300ms var(--motion-curve-ease-out); }
+.pn-key:active { background: rgba(120, 120, 128, 0.36); transition: none; }
+.pn-keypad.locked { opacity: 0.4; pointer-events: none; transition: opacity var(--motion-duration-standard) var(--motion-curve-ease-out); }
+
+/* Lock/unlock layers. */
+.privacy-shield { position: fixed; inset: 0; z-index: 400; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+.lock-layer-exit { animation: lock-out var(--motion-duration-standard) var(--motion-curve-ease-out) forwards; }
+@keyframes lock-out { to { opacity: 0; transform: scale(1.04); } }
+.app-content-enter { animation: app-in var(--motion-duration-slow) var(--motion-curve-ease-out); }
+@keyframes app-in { from { opacity: 0.6; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+/* Rolling numerals. */
+.rolling-text { font-variant-numeric: tabular-nums; }
+.rolling-char { position: relative; display: inline-block; width: 1ch; height: 1em; vertical-align: -0.12em; overflow: hidden; }
+.rolling-old, .rolling-new { position: absolute; left: 0; right: 0; text-align: center; }
+.rolling-old { animation: roll-out var(--motion-duration-slow) var(--motion-curve-ease-out) forwards; }
+.rolling-new { animation: roll-in var(--motion-duration-slow) var(--motion-curve-ease-out) forwards; }
+.rolling-char.down .rolling-old { animation-name: roll-out-down; }
+.rolling-char.down .rolling-new { animation-name: roll-in-down; }
+.rolling-char.reduce .rolling-old, .rolling-char.reduce .rolling-new { animation-duration: 150ms; }
+.rolling-char.reduce .rolling-old { animation-name: roll-fade; }
+.rolling-char.reduce .rolling-new { animation-name: roll-fade-in; }
+@keyframes roll-out { to { transform: translateY(-0.4em); opacity: 0; } }
+@keyframes roll-in { from { transform: translateY(0.4em); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes roll-out-down { to { transform: translateY(0.4em); opacity: 0; } }
+@keyframes roll-in-down { from { transform: translateY(-0.4em); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes roll-fade { to { opacity: 0; } }
+@keyframes roll-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Charts + history bar: grow once on mount. */
+.bars .bar { transform-origin: bottom; animation: bar-grow var(--motion-duration-sheet) var(--motion-curve-sheet) both; }
+.bars .bar-col:nth-child(2) .bar { animation-delay: 25ms; }
+.bars .bar-col:nth-child(3) .bar { animation-delay: 50ms; }
+.bars .bar-col:nth-child(4) .bar { animation-delay: 75ms; }
+.bars .bar-col:nth-child(5) .bar { animation-delay: 100ms; }
+.bars .bar-col:nth-child(6) .bar { animation-delay: 125ms; }
+.bars .bar-col:nth-child(7) .bar { animation-delay: 150ms; }
+@keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.streakbar > i:not(.lapse-mark) { transform-origin: left center; animation: segment-grow var(--motion-duration-sheet) var(--motion-curve-sheet) both; }
+.streakbar > i:nth-child(2) { animation-delay: 30ms; }
+.streakbar > i:nth-child(3) { animation-delay: 60ms; }
+.streakbar > i:nth-child(4) { animation-delay: 90ms; }
+.streakbar > i:nth-child(5) { animation-delay: 120ms; }
+.streakbar > i:nth-child(6) { animation-delay: 150ms; }
+@keyframes segment-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .bars .bar, .streakbar > i { animation: none !important; }
+}
+
+/* Bottom sheets & modals: provided by JS spring where gestures are used; these
+   keyframes cover passive alert presentation. */
+.modal { animation: alert-in var(--motion-duration-standard) var(--motion-curve-ease-out); }
+@keyframes alert-in { from { opacity: 0; transform: scale(1.1); } to { opacity: 1; transform: scale(1); } }
+.pn-stage-enter { animation: pn-stage-in var(--motion-duration-standard) var(--motion-curve-ease-out); }
+@keyframes pn-stage-in { from { opacity: 0; } to { opacity: 1; } }
+.screen-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.onb-welcome-actions-stagger > * { animation: onb-rise var(--motion-duration-sheet) var(--motion-curve-ease-out) both; animation-delay: 240ms; }
+.onb-welcome-actions-stagger > *:nth-child(2) { animation-delay: 320ms; }

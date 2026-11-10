@@ -16,6 +16,7 @@ import {
 } from '@deurge/core';
 import { useApp } from '../../store/app';
 import { navigate } from '../../router';
+import { RollingText } from '../../ui/RollingText';
 import {
   BarChart,
   Button,
@@ -226,7 +227,7 @@ export function TrackerDetailScreen({ trackerId }: { trackerId: string }) {
             <div className="lb" style={{ padding: 0 }}>
               Current streak
             </div>
-            <div className="big detail-streak">{fmt.duration(metrics.currentStreakMs)}</div>
+            <div className="big detail-streak"><RollingText text={fmt.duration(metrics.currentStreakMs)} /></div>
             <p className="detail-recognition">{recognition.headline}</p>
             {recognition.accumulated ? <p className="sub">{recognition.accumulated}</p> : null}
             <div className="detail-record-actions">

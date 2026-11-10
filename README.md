@@ -39,7 +39,7 @@ cloud, no tracking, no internet required.
 - **Continuous progress recognition** derived from real elapsed time — no
   milestones, badges, levels or completion targets anywhere.
 - **App lock**: a 4-digit PIN is required every time deUrge opens (it
-  re-locks after 60 seconds in the background), entered with four centred dots
+  locks immediately when you leave the app), entered with four centred dots
   and an on-screen numeric keypad on a dedicated PIN screen. Android can use
   fingerprint/face biometrics instead of typing the PIN, and the biometric
   opt-in/settings only appear when the device actually supports it.

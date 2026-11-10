@@ -11,6 +11,7 @@ import { InsightsScreen } from './features/insights/InsightsScreen';
 import { SettingsScreen } from './features/settings/SettingsScreen';
 import { DataScreen } from './features/data/DataScreen';
 import { LockScreen, SetPinScreen } from './features/lock/AppLock';
+import { DeUrgeMark } from './ui/logo';
 
 const NAV: { name: RouteName; label: string; icon: IconName; path: string }[] = [
   { name: 'trackers', label: 'Trackers', icon: 'clock', path: '/trackers' },
@@ -27,27 +28,28 @@ export function App() {
   );
 }
 
-const AUTO_LOCK_AFTER_MS = 60_000;
-
 function Root() {
   const app = useApp();
   const [hasPassword, setHasPassword] = useState(() => app.core.security.hasPassword());
   const [unlocked, setUnlocked] = useState(false);
   const [changePinOpen, setChangePinOpen] = useState(false);
-  const hiddenSince = useRef<number | null>(null);
+  const [privacyShield, setPrivacyShield] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
+  const [justUnlocked, setJustUnlocked] = useState(false);
+  const unlockTimer = useRef<number | null>(null);
 
-  // Lock again after a minute in the background, and support an explicit
-  // "Lock now" action from Settings.
+  // Backgrounding shows the branded privacy shield immediately and arms the
+  // lock; the app switcher never captures content. On return the lock screen is
+  // already waiting.
   useEffect(() => {
     function onVisibility(): void {
       if (document.hidden) {
-        hiddenSince.current = Date.now();
+        setPrivacyShield(true);
+        setChangePinOpen(false);
+        if (hasPassword) setUnlocked(false);
         return;
       }
-      if (hiddenSince.current !== null && Date.now() - hiddenSince.current >= AUTO_LOCK_AFTER_MS) {
-        setUnlocked(false);
-      }
-      hiddenSince.current = null;
+      setPrivacyShield(false);
     }
     function onLock(): void {
       setUnlocked(false);
@@ -64,7 +66,25 @@ function Root() {
       window.removeEventListener('deurge:lock', onLock);
       window.removeEventListener('deurge:change-pin', onChangePin);
     };
-  }, []);
+  }, [hasPassword]);
+
+  useEffect(
+    () => () => {
+      if (unlockTimer.current !== null) window.clearTimeout(unlockTimer.current);
+    },
+    [],
+  );
+
+  function handleUnlock(): void {
+    if (unlocking) return;
+    setUnlocking(true);
+    unlockTimer.current = window.setTimeout(() => {
+      setUnlocked(true);
+      setUnlocking(false);
+      setJustUnlocked(true);
+      window.setTimeout(() => setJustUnlocked(false), 420);
+    }, 400);
+  }
 
   if (!app.settings.onboarded) {
     return <OnboardingScreen onComplete={() => app.refresh()} />;
@@ -75,16 +95,31 @@ function Root() {
         onDone={() => {
           setHasPassword(true);
           setUnlocked(true);
+          setJustUnlocked(true);
+          window.setTimeout(() => setJustUnlocked(false), 420);
         }}
       />
     );
   }
   if (!unlocked) {
-    return <LockScreen onUnlock={() => setUnlocked(true)} />;
+    return (
+      <>
+        {privacyShield ? (
+          <div className="privacy-shield" aria-hidden="true">
+            <DeUrgeMark size={40} />
+          </div>
+        ) : null}
+        <div className={unlocking ? 'lock-layer-exit' : ''}>
+          <LockScreen onUnlock={handleUnlock} />
+        </div>
+      </>
+    );
   }
   return (
     <>
-      <Shell />
+      <div className={justUnlocked ? 'app-content-enter' : ''}>
+        <Shell />
+      </div>
       {changePinOpen ? (
         <SetPinScreen
           mode="change"
@@ -121,6 +156,19 @@ function ScreenContent({ route }: { route: ReturnType<typeof useRoute> }) {
 function Shell() {
   const app = useApp();
   const route = useRoute();
+  const previousRoute = useRef(route);
+  const [transition, setTransition] = useState<'' | 'push' | 'pop'>('');
+  useEffect(() => {
+    const previous = previousRoute.current;
+    const changed = previous.name !== route.name || previous.trackerId !== route.trackerId;
+    if (!changed) return;
+    if (route.name === 'tracker') setTransition('push');
+    else if (previous.name === 'tracker') setTransition('pop');
+    else setTransition('');
+    previousRoute.current = route;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.name, route.trackerId]);
+  const screenKey = route.name === 'tracker' ? `tracker:${route.trackerId}` : route.name;
   const trackers = app.core.trackers.list();
   const isActive = (name: RouteName): boolean =>
     route.name === name || (name === 'trackers' && route.name === 'tracker');
@@ -170,7 +218,6 @@ function Shell() {
         >
           Settings
         </button>
-        <div className="sidebar-footer">Local only · no account</div>
       </aside>
 
       <div className="main">
@@ -179,7 +226,9 @@ function Shell() {
             {app.storageWarning}
           </div>
         ) : null}
-        <ScreenContent route={route} />
+        <div key={screenKey} className={`screen-wrap${transition ? ` screen-enter-${transition}` : ''}`}>
+          <ScreenContent route={route} />
+        </div>
       </div>
 
       <nav className="tabbar" aria-label="Main">

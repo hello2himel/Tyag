@@ -536,14 +536,14 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
 
   const welcome = (
     <div className="onb-screen onb-welcome">
-      <div className="onb-welcome-center">
+      <div className="onb-welcome-center onb-welcome-stagger">
         <DeUrgeAppIcon size={96} />
         <DeUrgeWordmark height={44} className="onb-welcome-wordmark" />
         <p className="onb-muted onb-welcome-tagline">
           Track what you are leaving behind. Every moment counts, and it all stays on this device.
         </p>
       </div>
-      <div className="onb-welcome-actions">
+      <div className="onb-welcome-actions onb-welcome-actions-stagger">
         <Button variant="primary" block onClick={() => setStep(1)}>Get Started</Button>
         <button type="button" className="onb-text-btn onb-center" onClick={() => void chooseRestoreFile()}>
           Restore from Backup
@@ -749,7 +749,6 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
               );
             })}
             <div className="onb-desktop-side-footer">
-              <span className="onb-chip onb-chip-centered">Local only · no account</span>
             </div>
           </aside>
           <div className="onb-desktop-content">

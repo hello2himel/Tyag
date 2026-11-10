@@ -86,7 +86,7 @@ deUrge/
 - **App lock** (`services/security.ts` + `apps/web/src/features/lock`): a
   4-digit PIN gate rendered by the React root before any records; PBKDF2-SHA-256
   hash in the local `meta` table, Android biometric unlock through a small local
-  Capacitor plugin, and a 60-second background auto-lock.
+  Capacitor plugin, and an immediate privacy-shield lock when the app is backgrounded.
 - **Business logic** (`services/`): validation, lifecycle rules (pause/resume/
   archive/restore/delete), history recording, transactions + snapshot persist.
 - **Streak engine** (`engine/streak.ts`): pure deterministic calculation from

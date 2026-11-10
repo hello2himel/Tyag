@@ -13,6 +13,7 @@ import { isDeUrgeError, userMessage } from '@deurge/core';
 import { useApp } from '../../store/app';
 import { ConfirmDialog } from '../../ui/components';
 import { DeUrgeMark } from '../../ui/logo';
+import { haptic } from '../../ui/motion';
 import { pickTextFile } from '../../platform/files';
 import {
   authenticateBiometrics,
@@ -105,9 +106,24 @@ function usePinKeyboard(onDigit: (digit: string) => void, onDelete: () => void, 
   }, [enabled, onDelete, onDigit]);
 }
 
-function PinDots({ length, error = false, size = 'sm' }: { length: number; error?: boolean; size?: 'sm' | 'md' }) {
+function PinDots({
+  length,
+  error = false,
+  shake = 0,
+  size = 'sm',
+}: {
+  length: number;
+  error?: boolean;
+  shake?: number;
+  size?: 'sm' | 'md';
+}) {
   return (
-    <div className={`pn-dots pn-dots-${size}`} role="img" aria-label={`${length} of ${PIN_LENGTH} digits entered`}>
+    <div
+      key={shake}
+      className={`pn-dots pn-dots-${size}${shake > 0 ? ' shake' : ''}`}
+      role="img"
+      aria-label={`${length} of ${PIN_LENGTH} digits entered`}
+    >
       {Array.from({ length: PIN_LENGTH }, (_, index) => (
         <i key={index} className={`${index < length ? 'on' : ''}${error ? ' err' : ''}`} />
       ))}
@@ -119,15 +135,15 @@ function Keypad({
   onDigit,
   onDelete,
   onBiometrics,
-  biometricsEnabled = false,
+  locked = false,
 }: {
   onDigit: (digit: string) => void;
   onDelete: () => void;
   onBiometrics?: () => void;
-  biometricsEnabled?: boolean;
+  locked?: boolean;
 }) {
   return (
-    <div className="pn-keypad">
+    <div className={`pn-keypad${locked ? ' locked' : ''}`}>
       {DIGITS.map(({ digit, letters }) => (
         <button key={digit} type="button" className="pn-key" onClick={() => onDigit(digit)} aria-label={digit}>
           <span className="pn-key-digit">{digit}</span>
@@ -138,8 +154,6 @@ function Keypad({
         <button type="button" className="pn-key pn-key-flat" onClick={onBiometrics} aria-label="Use biometrics">
           <BiometricsIcon size={32} />
         </button>
-      ) : biometricsEnabled ? (
-        <span />
       ) : (
         <span />
       )}
@@ -211,8 +225,8 @@ function MobileCreateOrConfirm({
         ? 'Enter the same PIN once more.'
         : 'You will use it to open deUrge. It stays on this device.';
   // "PIN options" only has the biometrics toggle, so it is not shown at all on
-  // devices where biometrics is unavailable. The 60-second background lock is a
-  // fixed privacy behaviour, not a user setting, so there is no "Lock after" row.
+  // devices where biometrics is unavailable. Backgrounding shows the privacy
+  // shield immediately; there is intentionally no configurable "Lock after" row.
   const bottomAction =
     stage === 'confirm' ? 'Start over' : stage === 'new' && mode === 'create' && biometrics?.available ? 'PIN options' : null;
 
@@ -255,7 +269,8 @@ function MobileCreateOrConfirm({
         setStage('confirm');
         setPin('');
       } else if (entered !== firstPin) {
-        setStage('confirm');
+        setStage('new');
+        setFirstPin('');
         setError('PINs did not match. Try again.');
         setPin('');
       } else {
@@ -340,7 +355,7 @@ function MobileCreateOrConfirm({
           <span />
         )}
       </div>
-      <div className="pn-mobile-head">
+      <div className="pn-mobile-head pn-stage-enter" key={stage}>
         <h1 className="pn-big pn-create-title">{title}</h1>
         <p className="pn-muted pn-mobile-subtitle">{subtitle}</p>
         <PinDots length={pin.length} error={Boolean(error)} />
@@ -487,6 +502,9 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
   const config = app.core.security.config();
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [errorFlash, setErrorFlash] = useState(false);
+  const [shake, setShake] = useState(0);
+  const [busy, setBusy] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [now, setNow] = useState(() => Date.now());
@@ -502,10 +520,12 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
       setAvailability(result);
       if (config.biometricsEnabled && result.available && !autoPrompted.current) {
         autoPrompted.current = true;
-        void (async () => {
-          const biometric = await authenticateBiometrics();
-          if (biometric.success) onUnlock();
-        })();
+        window.setTimeout(() => {
+          void (async () => {
+            const biometric = await authenticateBiometrics();
+            if (biometric.success) onUnlock();
+          })();
+        }, 250);
       }
     });
     return () => {
@@ -530,25 +550,34 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
   const cooldown = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
 
   async function verify(entered: string): Promise<void> {
-    if (cooldown > 0) return;
+    if (cooldown > 0 || busy) return;
+    setBusy(true);
     if (await app.core.security.verifyPassword(entered)) {
-      onUnlock();
+      window.setTimeout(onUnlock, 150);
       return;
     }
+    haptic('error');
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
-    setPin('');
-    if (nextAttempts >= MAX_ATTEMPTS) {
-      setCooldownUntil(Date.now() + COOLDOWN_MS);
-      setNow(Date.now());
-      setError('Too many attempts. Wait 30 seconds.');
-    } else {
-      setError(`Incorrect PIN. ${MAX_ATTEMPTS - nextAttempts} attempts left.`);
-    }
+    setError(null);
+    setErrorFlash(true);
+    setShake((count) => count + 1);
+    window.setTimeout(() => {
+      setPin('');
+      setErrorFlash(false);
+      setBusy(false);
+      if (nextAttempts >= MAX_ATTEMPTS) {
+        setCooldownUntil(Date.now() + COOLDOWN_MS);
+        setNow(Date.now());
+        setError('Too many attempts. Wait 30 seconds.');
+      } else {
+        setError(`Incorrect PIN. ${MAX_ATTEMPTS - nextAttempts} attempts left.`);
+      }
+    }, 500);
   }
 
   function addDigit(digit: string): void {
-    if (cooldown > 0 || pin.length >= PIN_LENGTH) return;
+    if (cooldown > 0 || busy || pin.length >= PIN_LENGTH) return;
     setError(null);
     const next = pin + digit;
     setPin(next);
@@ -562,7 +591,7 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
     setError(null);
   }
 
-  usePinKeyboard(addDigit, deleteDigit, !forgotOpen);
+  usePinKeyboard(addDigit, deleteDigit, !forgotOpen && !busy);
 
   async function handleBiometrics(): Promise<void> {
     const result = await authenticateBiometrics();
@@ -576,13 +605,14 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
         <h1 className="pn-big pn-lock-title">Enter PIN</h1>
         {error ? <p className="pn-error pn-lock-error">{error}</p> : <p className="pn-muted">deUrge is locked</p>}
         <div className="pn-lock-dots">
-          <PinDots length={pin.length} error={Boolean(error)} />
+          <PinDots length={pin.length} error={errorFlash} shake={shake} />
         </div>
       </div>
       <div className="pn-mobile-bottom">
         <Keypad
           onDigit={addDigit}
           onDelete={deleteDigit}
+          locked={cooldown > 0}
           onBiometrics={config.biometricsEnabled && availability?.available ? () => void handleBiometrics() : undefined}
         />
         <button type="button" className="pn-btn-text pn-bottom-link" onClick={() => setForgotOpen(true)}>
@@ -601,13 +631,21 @@ function DesktopPinBoxes({
   value,
   active,
   onFocus,
+  shake = 0,
 }: {
   value: string;
   active: boolean;
   onFocus: () => void;
+  shake?: number;
 }) {
   return (
-    <div className="pn-boxes" role="group" aria-label={`PIN, ${value.length} of ${PIN_LENGTH} digits entered`} onClick={onFocus}>
+    <div
+      key={shake}
+      className={`pn-boxes${shake > 0 ? ' shake' : ''}`}
+      role="group"
+      aria-label={`PIN, ${value.length} of ${PIN_LENGTH} digits entered`}
+      onClick={onFocus}
+    >
       {Array.from({ length: PIN_LENGTH }, (_, index) => (
         <span key={index} className={`pn-box${index < value.length ? ' filled' : ''}${active && index === Math.min(value.length, PIN_LENGTH - 1) ? ' active' : ''}`}>
           {index < value.length ? <i /> : null}
@@ -622,6 +660,8 @@ function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
   const config = app.core.security.config();
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [shake, setShake] = useState(0);
+  const [busy, setBusy] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [availability, setAvailability] = useState<BiometricAvailability | null>(null);
   const [focused, setFocused] = useState(true);
@@ -635,10 +675,12 @@ function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
       setAvailability(result);
       if (config.biometricsEnabled && result.available && !autoPrompted.current) {
         autoPrompted.current = true;
-        void (async () => {
-          const biometric = await authenticateBiometrics();
-          if (biometric.success) onUnlock();
-        })();
+        window.setTimeout(() => {
+          void (async () => {
+            const biometric = await authenticateBiometrics();
+            if (biometric.success) onUnlock();
+          })();
+        }, 250);
       }
     });
     return () => {
@@ -652,13 +694,20 @@ function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
   }, []);
 
   async function unlock(): Promise<void> {
+    if (busy || pin.length < PIN_LENGTH) return;
+    setBusy(true);
     if (await app.core.security.verifyPassword(pin)) {
-      onUnlock();
-    } else {
+      window.setTimeout(onUnlock, 150);
+      return;
+    }
+    haptic('error');
+    setShake((count) => count + 1);
+    window.setTimeout(() => {
       setPin('');
       setError('Incorrect PIN. Try again.');
+      setBusy(false);
       inputRef.current?.focus();
-    }
+    }, 500);
   }
 
   async function biometrics(): Promise<void> {
@@ -673,7 +722,7 @@ function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
         <DeUrgeMark size={52} />
         <h1 className="pn-big pn-desktop-title">deUrge is locked</h1>
         <p className="pn-muted">Type your PIN to unlock.</p>
-        <DesktopPinBoxes value={pin} active={focused} onFocus={() => inputRef.current?.focus()} />
+        <DesktopPinBoxes value={pin} active={focused} shake={shake} onFocus={() => inputRef.current?.focus()} />
         <input
           ref={inputRef}
           className="pn-hidden-input"
@@ -705,7 +754,6 @@ function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
           Forgot PIN?
         </button>
       </div>
-      <span className="pn-chip">Local only · no account</span>
       {forgotOpen ? (
         <ForgotSheet onClose={() => setForgotOpen(false)} onRestored={() => window.location.reload()} />
       ) : null}

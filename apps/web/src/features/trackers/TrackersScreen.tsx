@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { DeUrgeCore, Tracker } from '@deurge/core';
 import { useApp } from '../../store/app';
 import { navigate, useRoute } from '../../router';
+import { RollingText } from '../../ui/RollingText';
 import {
   Button,
   Card,
@@ -135,7 +136,7 @@ export function TrackersScreen() {
                       tracker.status === 'active' ? '' : tracker.status
                     }`.trim()}
                   >
-                    {fmt.duration(metrics.currentStreakMs, 'short')}
+                    <RollingText text={fmt.duration(metrics.currentStreakMs, 'short')} />
                   </span>
                   <span className="tracker-since">{statusLine(tracker, fmt, pausedDates.get(tracker.id) ?? null)}</span>
                   <StreakBar intervals={metrics.intervals} />

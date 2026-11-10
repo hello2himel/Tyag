@@ -36,7 +36,7 @@ Dark:  --bg #000  --card #1C1C1E  --fill rgba(120,120,128,.32)  --ink #fff
 - Radii: cards 20px, grouped lists 12px, sheets 28–32px, buttons 14px.
 - Spacing: 20px screen gutters, 16px card padding, 12px stack gaps.
 - Layout: mobile tab bar with Trackers / Journal / Insights / Settings;
-  desktop sidebar (trackers + library + “Local only · no account”) and a wide
+  desktop sidebar (trackers + library) and a wide
   content area. Tracker detail adds an Activity column on wide screens.
 - Motion: short sheet/fade transitions only; `prefers-reduced-motion` respected.
 - Colour semantics: green = abstinence/active, amber = lapses, purple = urges,
