@@ -5,7 +5,7 @@
  * save helper (browser download / native Documents). Nothing is uploaded.
  */
 import { useState } from 'react';
-import type { CsvDataset, ExportCounts } from '@deurge/core';
+import type { CsvDataset, ExportCounts } from '@tyag/core';
 import { useApp } from '../../store/app';
 import { saveTextFile } from '../../platform/files';
 import { Button, Card, Field, Input, Select, useToast } from '../../ui/components';
@@ -121,7 +121,7 @@ export function ExportSection() {
       const file = await saveTextFile(result.filename, result.content, 'text/csv');
       return {
         filename: file.filename,
-        detail: `Saved ${file.filename} (${CSV_LABEL.get(dataset) ?? dataset}, ${result.rows} row${result.rows === 1 ? '' : 's'}) to ${file.location}. CSV files are for spreadsheets and cannot be imported back into deUrge.`,
+        detail: `Saved ${file.filename} (${CSV_LABEL.get(dataset) ?? dataset}, ${result.rows} row${result.rows === 1 ? '' : 's'}) to ${file.location}. CSV files are for spreadsheets and cannot be imported back into Tyag.`,
         remember: 'export' as const,
       };
     });
@@ -133,7 +133,7 @@ export function ExportSection() {
       </h2>
       <Card className="card-pad data-card">
         <p className="sub">
-          Create a copy of everything you have recorded. Exports are written locally by your browser or device — deUrge never
+          Create a copy of everything you have recorded. Exports are written locally by your browser or device — Tyag never
           uploads them.
         </p>
 
@@ -207,7 +207,7 @@ export function ExportSection() {
         <div className="data-block">
           <div className="data-block-title">Spreadsheet export (CSV)</div>
           <p className="data-block-body">
-            Plain-text tables for spreadsheets. Choose one dataset per file. CSV files cannot be imported back into deUrge, so
+            Plain-text tables for spreadsheets. Choose one dataset per file. CSV files cannot be imported back into Tyag, so
             keep a JSON or encrypted backup as well.
           </p>
           <Field label="Dataset" hint={CSV_DESCRIPTION.get(dataset)}>

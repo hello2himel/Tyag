@@ -1,6 +1,6 @@
 /**
- * deUrge onboarding — implemented 1:1 from the supplied onboarding kit
- * (`deurge-onboarding/light|dark/01-welcome … 05-ready` and `06-desktop`):
+ * Tyag onboarding — implemented 1:1 from the supplied onboarding kit
+ * (`tyag-onboarding/light|dark/01-welcome … 05-ready` and `06-desktop`):
  * same copy, hierarchy, chips, grouped rows, dots and desktop step shell.
  * Behaviour is wired to the real core services (create tracker, local
  * reminder preference, restore from backup, open the app).
@@ -8,16 +8,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   ENCRYPTED_BACKUP_FORMAT,
-  isDeUrgeError,
+  isTyagError,
   userMessage,
   type Tracker,
-} from '@deurge/core';
+} from '@tyag/core';
 import { navigate } from '../../router';
 import { useApp } from '../../store/app';
 import { Button, Sheet, useToast } from '../../ui/components';
 import { useFormatters } from '../../ui/format';
 import { Keypad, PinDots } from '../lock/AppLock';
-import { DeUrgeAppIcon, DeUrgeMark, DeUrgeWordmark } from '../../ui/logo';
+import { TyagAppIcon, TyagMark, TyagWordmark } from '../../ui/logo';
 import { pickTextFile } from '../../platform/files';
 import {
   notificationAvailability,
@@ -339,7 +339,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
       setStep(3);
       app.refresh();
     } catch (writeError) {
-      setError(isDeUrgeError(writeError) ? writeError.message : userMessage(writeError));
+      setError(isTyagError(writeError) ? writeError.message : userMessage(writeError));
     } finally {
       setSaving(false);
     }
@@ -350,7 +350,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     if (enable) {
       if (notificationAvailability() === 'unsupported') {
         enabled = false;
-        toast.show('This platform does not support local notifications. deUrge works without them.');
+        toast.show('This platform does not support local notifications. Tyag works without them.');
       } else if (!(await requestNotificationPermission())) {
         enabled = false;
         toast.show('Notifications were not allowed. You can enable them later in Settings.');
@@ -398,7 +398,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
         setStep(5);
       }
     } catch (failure) {
-      setPinError(isDeUrgeError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
+      setPinError(isTyagError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
       setPinValue('');
     } finally {
       setPinSaving(false);
@@ -423,7 +423,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
       await app.core.security.setPassword(desktopPin, { biometricsEnabled: app.core.security.biometricsEnabled() });
       setStep(5);
     } catch (failure) {
-      setPinError(isDeUrgeError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
+      setPinError(isTyagError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
     } finally {
       setPinSaving(false);
     }
@@ -598,10 +598,10 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
       </p>
       <div className="onb-label onb-label-flush">Preview</div>
       <div className="onb-preview">
-        <div className="onb-preview-mark"><DeUrgeMark size={22} /></div>
+        <div className="onb-preview-mark"><TyagMark size={22} /></div>
         <div className="onb-preview-body">
           <div className="onb-preview-head">
-            <b>deUrge</b>
+            <b>Tyag</b>
             <span className="onb-muted">now</span>
           </div>
           <p>You have stayed away from social media for 3 days, 4 hours. Your progress continues.</p>
@@ -646,8 +646,8 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const welcome = (
     <div className="onb-screen onb-welcome">
       <div className="onb-welcome-center onb-welcome-stagger">
-        <DeUrgeAppIcon size={96} />
-        <DeUrgeWordmark height={44} className="onb-welcome-wordmark" />
+        <TyagAppIcon size={96} />
+        <TyagWordmark height={44} className="onb-welcome-wordmark" />
         <p className="onb-muted onb-welcome-tagline">
           Track recovery from addictions. Private, local-first, and always on this device.
         </p>
@@ -674,7 +674,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
       <p className="onb-footnote onb-ready-note">
         If you lapse, record it. Your earlier progress stays in your history.
       </p>
-      <Button variant="primary" block onClick={() => void finish()}>Open deUrge</Button>
+      <Button variant="primary" block onClick={() => void finish()}>Open Tyag</Button>
     </div>
   ) : null;
 
@@ -745,7 +745,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     <div className="onb-pin-body">
       <h1 className="onb-title">{pinStage === 'create' ? 'Create a PIN' : 'Confirm your PIN'}</h1>
       <p className="onb-muted onb-subtitle">
-        {pinStage === 'create' ? 'You will use this to open deUrge. It stays on this device.' : 'Enter the same PIN once more.'}
+        {pinStage === 'create' ? 'You will use this to open Tyag. It stays on this device.' : 'Enter the same PIN once more.'}
       </p>
       <PinDots length={pinValue.length} error={Boolean(pinError)} shake={pinShake} />
       {pinError ? <p className="onb-error onb-pin-error" role="alert">{pinError}</p> : null}
@@ -979,8 +979,8 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     <div className="onb-desktop onb-desktop-welcome-shell">
       <div className="onb-desktop-welcome-card">
         <div className="onb-desktop-welcome-brand">
-          <DeUrgeAppIcon size={72} />
-          <DeUrgeWordmark height={26} />
+          <TyagAppIcon size={72} />
+          <TyagWordmark height={26} />
         </div>
         <h1 className="onb-desktop-welcome-title">Track recovery from addictions</h1>
         <p className="onb-muted onb-desktop-welcome-subtitle">
@@ -1004,8 +1004,8 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
       <div className="onb-desktop">
         <div className="onb-desktop-card">
           <aside className="onb-desktop-side">
-            <DeUrgeAppIcon size={44} />
-            <DeUrgeWordmark height={22} className="onb-desktop-wordmark" />
+            <TyagAppIcon size={44} />
+            <TyagWordmark height={22} className="onb-desktop-wordmark" />
             {desktopSteps.map((item, index) => {
               const done = step > item.value;
               const active = step === item.value;
@@ -1043,8 +1043,6 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
         open={restoreOpen}
         onClose={() => setRestoreOpen(false)}
         title="Restore from backup"
-        left={<Button variant="plain" onClick={() => setRestoreOpen(false)} disabled={restoring}>Cancel</Button>}
-        right={<Button variant="plain" onClick={() => void runRestore()} disabled={restoring}>{restoring ? 'Restoring…' : 'Restore'}</Button>}
       >
         <p className="onb-muted">
           {restoreKind === 'encrypted'
@@ -1063,6 +1061,14 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
           />
         ) : null}
         {restoreError ? <p className="onb-error" role="alert">{restoreError}</p> : null}
+        <div className="onb-restore-primary">
+          <Button variant="primary" block onClick={() => void runRestore()} disabled={restoring}>
+            {restoring ? 'Restoring…' : 'Restore Backup'}
+          </Button>
+          <Button variant="plain" block onClick={() => setRestoreOpen(false)} disabled={restoring}>
+            Cancel
+          </Button>
+        </div>
       </Sheet>
     </>
   );

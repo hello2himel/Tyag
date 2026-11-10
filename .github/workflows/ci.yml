@@ -1,6 +1,6 @@
 name: CI
 
-# Quality gates for the local-first deUrge app:
+# Quality gates for the local-first Tyag app:
 #   - typecheck all workspaces
 #   - unit tests (packages/core)
 #   - production web build
@@ -55,7 +55,7 @@ jobs:
         run: pnpm test
 
       - name: Build web app
-        run: pnpm --filter @deurge/web build
+        run: pnpm --filter @tyag/web build
 
       - name: Privacy audit (offline-only bundle)
         run: pnpm audit:privacy
@@ -111,7 +111,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build web app
-        run: pnpm --filter @deurge/web build
+        run: pnpm --filter @tyag/web build
 
       - name: Rust tests (persistence commands + navigation guard)
         working-directory: apps/desktop/src-tauri
@@ -127,7 +127,7 @@ jobs:
           test "$CARGO_VERSION" = "$VERSION"
 
       - name: Build Tauri release binary (no bundle)
-        run: pnpm --filter @deurge/desktop build
+        run: pnpm --filter @tyag/desktop build
 
       - name: Verify packaged binary
         # A full headless WebKitGTK boot is display-dependent and flaky on CI
@@ -136,7 +136,7 @@ jobs:
         # Real launch/persistence validation is documented in docs/BUILDING.md.
         run: |
           set -euo pipefail
-          binary=apps/desktop/src-tauri/target/release/deurge
+          binary=apps/desktop/src-tauri/target/release/tyag
           test -x "$binary"
           ldd "$binary" | tee /tmp/ldd.txt
           grep -E 'webkit2gtk-4\.1' /tmp/ldd.txt
@@ -149,7 +149,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tauri-linux-binary
-          path: apps/desktop/src-tauri/target/release/deurge
+          path: apps/desktop/src-tauri/target/release/tyag
           retention-days: 7
 
 # Web deployment notes:
@@ -157,5 +157,5 @@ jobs:
 #   * GitHub Pages is optional; if you enable it, add a deploy job using
 #     actions/configure-pages + actions/upload-pages-artifact + actions/deploy-pages
 #     with `permissions: pages: write, id-token: write` and publish apps/web/dist.
-#   * Netlify's build command is `pnpm --filter @deurge/web build`; no environment
+#   * Netlify's build command is `pnpm --filter @tyag/web build`; no environment
 #     variables or secrets are required (the app is static and local-only).

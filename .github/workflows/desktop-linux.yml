@@ -5,9 +5,9 @@ name: Desktop Linux (Tauri)
 # The Flatpak is built separately in flatpak.yml.
 #
 # Output (normalised by scripts/collect-tauri-artifacts.mjs):
-#   apps/desktop/release/deUrge-<version>-x86_64.AppImage
-#   apps/desktop/release/deUrge-<version>-amd64.deb
-#   apps/desktop/release/deUrge-<version>-x86_64.rpm
+#   apps/desktop/release/Tyag-<version>-x86_64.AppImage
+#   apps/desktop/release/Tyag-<version>-amd64.deb
+#   apps/desktop/release/Tyag-<version>-x86_64.rpm
 #   apps/desktop/release/SHA256SUMS.txt
 
 on:
@@ -96,7 +96,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Linux bundles
-        run: pnpm --filter @deurge/desktop dist:linux
+        run: pnpm --filter @tyag/desktop dist:linux
 
       - name: Verify bundles + checksums
         run: |
@@ -110,7 +110,7 @@ jobs:
           test ${#debs[@]} -eq 1
           test ${#rpms[@]} -eq 1
           (cd apps/desktop/release && sha256sum -c SHA256SUMS.txt)
-          ldd apps/desktop/src-tauri/target/release/deurge | tee /tmp/ldd.txt
+          ldd apps/desktop/src-tauri/target/release/tyag | tee /tmp/ldd.txt
           grep -E 'webkit2gtk-4\.1|javascriptcoregtk-4\.1' /tmp/ldd.txt
           file apps/desktop/release/*.AppImage apps/desktop/release/*.deb
 

@@ -25,7 +25,7 @@ export class InsightsService {
    * single `insufficient-data` insight explains that, always citing the period
    * and the number of records considered.
    *
-   * @throws DeUrgeError `NOT_FOUND` when the tracker does not exist.
+   * @throws TyagError `NOT_FOUND` when the tracker does not exist.
    */
   forTracker(trackerId: string): Insight[] {
     return buildTrackerInsights(this.ctx, this.settings, this.analytics, trackerId);

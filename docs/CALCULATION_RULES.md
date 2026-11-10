@@ -1,4 +1,4 @@
-# deUrge — Streak and statistics calculation rules
+# Tyag — Streak and statistics calculation rules
 
 All calculations are deterministic functions of the stored records and the
 current timestamp. Nothing is cached as a source of truth, and no calculation
@@ -86,7 +86,7 @@ in accumulated abstinence, longest streak, averages and analytics.
 
 ## 5. Percentages (denominator defined)
 
-deUrge reports:
+Tyag reports:
 
 ```
 abstinent share of elapsed time = accumulatedAbstinenceMs ÷ elapsedSinceStartMs

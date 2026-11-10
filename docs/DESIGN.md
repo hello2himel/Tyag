@@ -1,6 +1,6 @@
-# deUrge — UI/UX implementation notes
+# Tyag — UI/UX implementation notes
 
-The interface is implemented from the supplied **deUrge UI/UX skeleton**
+The interface is implemented from the supplied **Tyag UI/UX skeleton**
 (light and dark, 390×844 mobile boards and a 1440×900 desktop board). The
 rendered reference boards live in `docs/design/`:
 
@@ -49,7 +49,7 @@ sheets/grids).
 ## Typography and platform fidelity
 
 The kit's font stack is SF Pro on Apple platforms with Inter as the fallback.
-deUrge bundles the Inter WOFF2 files locally (SIL OFL, no remote fonts) and uses
+Tyag bundles the Inter WOFF2 files locally (SIL OFL, no remote fonts) and uses
 the same stack, so non-Apple platforms match the iOS boards. Tracker-name search
 suggestions follow the iOS inset grouped search-results pattern on mobile, while
 the desktop card keeps the same inline list. The optional tracker Category row
@@ -60,7 +60,7 @@ reset are applied for an app-like iOS feel.
 ## Brand
 
 The supplied skeleton used a placeholder clock mark. The final product uses the
-official **deUrge brand kit (November 2026)** committed in `assets/brand/`:
+official **Tyag brand kit (November 2026)** committed in `assets/brand/`:
 black/white peak symbol tiles, glyph, lockup and prebuilt app icons for web,
 Android and iOS. `apps/web/src/ui/logo.tsx` wraps the kit for the UI (tile,
 glyph, and a live Inter-set wordmark), while `scripts/gen-icons.mjs` derives

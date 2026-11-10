@@ -14,7 +14,7 @@ import {
   type ExportCounts,
   type ImportOptions,
   type ImportReport,
-} from '@deurge/core';
+} from '@tyag/core';
 import { useApp } from '../../store/app';
 import { pickTextFile } from '../../platform/files';
 import {
@@ -180,11 +180,11 @@ export function ImportSection() {
       try {
         raw = JSON.parse(file.text);
       } catch {
-        setFileError('That file is not valid JSON. Choose a deUrge backup file (.json).');
+        setFileError('That file is not valid JSON. Choose a Tyag backup file (.json).');
         return;
       }
       if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
-        setFileError('That file does not look like a deUrge backup.');
+        setFileError('That file does not look like a Tyag backup.');
         return;
       }
       const record = raw as Record<string, unknown>;
@@ -283,7 +283,7 @@ export function ImportSection() {
       </h2>
       <Card className="card-pad data-card">
         <p className="sub">
-          Restore a backup file from this device. deUrge validates the whole file before it writes anything, then shows a
+          Restore a backup file from this device. Tyag validates the whole file before it writes anything, then shows a
           preview so you can choose merge or replace.
         </p>
 
@@ -312,7 +312,7 @@ export function ImportSection() {
               <span className="import-kind">{preview.kind === 'encrypted' ? 'Encrypted backup' : 'JSON export'}</span>
             </div>
             <div className="import-meta">
-              {preview.appVersion ? <span>Made with deUrge {preview.appVersion}</span> : null}
+              {preview.appVersion ? <span>Made with Tyag {preview.appVersion}</span> : null}
               {preview.exportedAt !== null ? <span>Exported {fmt.dateTime(preview.exportedAt)}</span> : null}
               {preview.timeZone ? <span>Time zone: {preview.timeZone}</span> : null}
               {preview.schemaVersion !== null ? <span>File schema {preview.schemaVersion} (app schema {SCHEMA_VERSION})</span> : null}

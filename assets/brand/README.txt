@@ -1,8 +1,8 @@
-deUrge BRAND KIT  v1.0  (November 2026)
+Tyag BRAND KIT  v1.0  (November 2026)
 =======================================
 
 START HERE
-  deUrge-brand-guidelines.pdf   10-page guide: construction, clear space, versions, colour, type, don'ts
+  Tyag-brand-guidelines.pdf   10-page guide: construction, clear space, versions, colour, type, don'ts
   what-changed.png              before / after of your original upload
 
 WHICH FILE DO I USE?

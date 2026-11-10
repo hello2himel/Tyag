@@ -2,7 +2,7 @@
 
 ## 1.0.0 — 2026-11-10
 
-First complete release of deUrge: a private, local-first, cross-platform
+First complete release of Tyag: a private, local-first, cross-platform
 abstinence and habit recovery tracker. Licensed under **AGPL-3.0-only**.
 
 ### Product

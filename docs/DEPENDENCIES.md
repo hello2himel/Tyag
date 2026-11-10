@@ -1,12 +1,12 @@
-# deUrge — Dependencies
+# Tyag — Dependencies
 
-deUrge itself is licensed under **AGPL-3.0-only** (see `LICENSE`). Its dependency surface is intentionally small. Each direct dependency
+Tyag itself is licensed under **AGPL-3.0-only** (see `LICENSE`). Its dependency surface is intentionally small. Each direct dependency
 has a technical justification; none includes telemetry, advertising or cloud
 synchronisation. Versions are pinned in `pnpm-lock.yaml`.
 
 ## Runtime dependencies
 
-### `packages/core` (`@deurge/core`)
+### `packages/core` (`@tyag/core`)
 
 | Package | Version | Why |
 | --- | --- | --- |

@@ -6,7 +6,7 @@
  * unsuitable because object key order is insertion order; `canonicalJson`
  * sorts keys recursively, so the same data always hashes to the same digest.
  */
-import type { DeUrgeExport, DeUrgeExportData, ExportCounts } from '../domain';
+import type { TyagExport, TyagExportData, ExportCounts } from '../domain';
 import { EXPORT_FORMAT, EXPORT_FORMAT_VERSION } from '../domain';
 import { SCHEMA_VERSION } from '../db/migrations';
 import { zonedAt } from '../time/temporal';
@@ -46,13 +46,13 @@ export function canonicalJson(value: unknown): string {
 
 /** SHA-256 integrity block over canonical JSON of the export data. */
 export async function computeIntegrity(
-  data: DeUrgeExportData,
+  data: TyagExportData,
 ): Promise<{ algorithm: 'SHA-256'; hash: string }> {
   return { algorithm: 'SHA-256', hash: await sha256Hex(canonicalJson(data)) };
 }
 
 /** Counts for every exported collection (also validated on import). */
-export function countExportData(data: DeUrgeExportData): ExportCounts {
+export function countExportData(data: TyagExportData): ExportCounts {
   return {
     trackers: data.trackers.length,
     sessions: data.sessions.length,
@@ -70,8 +70,8 @@ export function countExportData(data: DeUrgeExportData): ExportCounts {
 export async function buildExport(
   data: AllData,
   meta: { appVersion: string; exportedAt: number; timeZone: string },
-): Promise<DeUrgeExport> {
-  const exportData: DeUrgeExportData = {
+): Promise<TyagExport> {
+  const exportData: TyagExportData = {
     trackers: data.trackers,
     sessions: data.sessions,
     lapses: data.lapses,

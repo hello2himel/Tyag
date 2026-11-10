@@ -57,7 +57,7 @@ jobs:
             echo "src-tauri/Cargo.toml version $CARGO_VERSION does not match package.json $VERSION" >&2
             exit 1
           }
-          echo "Releasing deUrge $VERSION"
+          echo "Releasing Tyag $VERSION"
 
   web:
     name: Web PWA
@@ -72,18 +72,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm --filter @deurge/web build
+      - run: pnpm --filter @tyag/web build
       - run: pnpm audit:privacy
       - name: Zip web build
         run: |
           set -euo pipefail
           cd apps/web/dist
-          zip -qr "$RUNNER_TEMP/deUrge-${{ needs.version.outputs.version }}-web.zip" .
-          cp "$RUNNER_TEMP/deUrge-${{ needs.version.outputs.version }}-web.zip" .
+          zip -qr "$RUNNER_TEMP/Tyag-${{ needs.version.outputs.version }}-web.zip" .
+          cp "$RUNNER_TEMP/Tyag-${{ needs.version.outputs.version }}-web.zip" .
       - uses: actions/upload-artifact@v4
         with:
           name: web
-          path: apps/web/dist/deUrge-*-web.zip
+          path: apps/web/dist/Tyag-*-web.zip
           retention-days: 7
 
   android:
@@ -113,7 +113,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           if [ -n "${KEYSTORE_BASE64}" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/deurge-release.jks"
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/tyag-release.jks"
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
@@ -122,17 +122,17 @@ jobs:
       - name: Build signed release
         if: steps.signing.outputs.available == 'true'
         env:
-          DEURGE_KEYSTORE: ${{ runner.temp }}/deurge-release.jks
-          DEURGE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          DEURGE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          DEURGE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: pnpm --filter @deurge/mobile build:android:release
+          TYAG_KEYSTORE: ${{ runner.temp }}/tyag-release.jks
+          TYAG_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TYAG_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          TYAG_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: pnpm --filter @tyag/mobile build:android:release
       - name: Build debug APK (fallback)
         if: steps.signing.outputs.available != 'true'
-        run: pnpm --filter @deurge/mobile build:android:debug
+        run: pnpm --filter @tyag/mobile build:android:debug
       - name: Remove keystore
         if: always()
-        run: rm -f "$RUNNER_TEMP/deurge-release.jks"
+        run: rm -f "$RUNNER_TEMP/tyag-release.jks"
       - uses: actions/upload-artifact@v4
         with:
           name: android
@@ -167,7 +167,7 @@ jobs:
             librsvg2-dev libssl-dev libxdo-dev build-essential pkg-config \
             curl wget file patchelf rpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @deurge/desktop dist:linux
+      - run: pnpm --filter @tyag/desktop dist:linux
       - name: Checksums
         run: |
           set -euo pipefail
@@ -243,7 +243,7 @@ jobs:
           path: ~/AppData/Local/tauri
           key: tauri-bundler-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @deurge/desktop dist:win
+      - run: pnpm --filter @tyag/desktop dist:win
       - name: Checksums
         shell: pwsh
         run: |
@@ -282,7 +282,7 @@ jobs:
           workspaces: apps/desktop/src-tauri -> target
           key: release-macos-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @deurge/desktop dist:mac
+      - run: pnpm --filter @tyag/desktop dist:mac
       - name: Checksums
         run: |
           set -euo pipefail
@@ -314,8 +314,8 @@ jobs:
           set -euo pipefail
           mkdir -p apps/mobile/dist/ios
           ditto -c -k --sequesterRsrc --keepParent \
-            apps/mobile/dist/ios/deUrge.xcarchive \
-            "apps/mobile/dist/ios/deUrge-${{ needs.version.outputs.version }}-unsigned.xcarchive.zip"
+            apps/mobile/dist/ios/Tyag.xcarchive \
+            "apps/mobile/dist/ios/Tyag-${{ needs.version.outputs.version }}-unsigned.xcarchive.zip"
           cd apps/mobile/dist/ios
           shasum -a 256 *.zip > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
@@ -374,16 +374,16 @@ jobs:
           else
             gh release create "$TAG" \
               --draft \
-              --title "deUrge $VERSION" \
+              --title "Tyag $VERSION" \
               --generate-notes \
-              --notes "Local-first, offline deUrge $VERSION. All artifacts are built from this tag; see SHA256SUMS.txt for checksums and docs/RELEASING.md for verification steps." \
+              --notes "Local-first, offline Tyag $VERSION. All artifacts are built from this tag; see SHA256SUMS.txt for checksums and docs/RELEASING.md for verification steps." \
               dist/*
           fi
 
       - name: Summary
         run: |
           {
-            echo "## deUrge ${{ needs.version.outputs.version }} draft release"
+            echo "## Tyag ${{ needs.version.outputs.version }} draft release"
             echo
             echo "Artifacts uploaded to release \`v${{ needs.version.outputs.version }}\`:"
             echo '```'

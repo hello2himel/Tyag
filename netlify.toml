@@ -1,4 +1,4 @@
-# deUrge — Netlify configuration
+# Tyag — Netlify configuration
 #
 # The whole product is a static, local-first PWA: the build produces a folder
 # of files that can be hosted anywhere. Nothing on this site talks to a
@@ -8,7 +8,7 @@
 # Netlify build image: Node 22 + pnpm discovered from pnpm-lock.yaml.
 
 [build]
-  command = "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @deurge/web build"
+  command = "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @tyag/web build"
   publish = "apps/web/dist"
 
 [build.environment]

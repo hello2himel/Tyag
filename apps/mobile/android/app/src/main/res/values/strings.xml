@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">deUrge</string>
-    <string name="title_activity_main">deUrge</string>
-    <string name="package_name">app.deurge.DeUrge</string>
-    <string name="custom_url_scheme">app.deurge.DeUrge</string>
+    <string name="app_name">Tyag</string>
+    <string name="title_activity_main">Tyag</string>
+    <string name="package_name">app.tyag.Tyag</string>
+    <string name="custom_url_scheme">app.tyag.Tyag</string>
 </resources>

@@ -92,8 +92,8 @@ jobs:
 
       - name: Validate AppStream + desktop metadata
         run: |
-          appstreamcli validate --no-net flatpak/org.deurge.DeUrge.metainfo.xml
-          desktop-file-validate flatpak/org.deurge.DeUrge.desktop
+          appstreamcli validate --no-net flatpak/org.tyag.Tyag.metainfo.xml
+          desktop-file-validate flatpak/org.tyag.Tyag.desktop
 
       - name: Build Flatpak bundle
         run: BUILD=direct bash flatpak/build.sh
@@ -106,12 +106,12 @@ jobs:
           ls -lh flatpak/dist
           cat flatpak/dist/SHA256SUMS.txt
           (cd flatpak/dist && sha256sum -c SHA256SUMS.txt)
-          flatpak install --user -y --bundle flatpak/dist/deUrge-*.flatpak
-          flatpak info --user --show-permissions org.deurge.DeUrge | tee /tmp/permissions.txt
+          flatpak install --user -y --bundle flatpak/dist/Tyag-*.flatpak
+          flatpak info --user --show-permissions org.tyag.Tyag | tee /tmp/permissions.txt
           ! grep -qiE 'network|host|home' /tmp/permissions.txt
-          flatpak info --user --show-metadata org.deurge.DeUrge | tee /tmp/metadata.txt
+          flatpak info --user --show-metadata org.tyag.Tyag | tee /tmp/metadata.txt
           grep -qi 'runtime=org.gnome.Platform/x86_64/48' /tmp/metadata.txt
-          grep -q 'deurge-wrapper' /tmp/metadata.txt
+          grep -q 'tyag-wrapper' /tmp/metadata.txt
           echo "Flatpak bundle OK"
 
       - name: Upload Flatpak bundle

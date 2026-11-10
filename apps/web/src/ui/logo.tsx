@@ -1,5 +1,5 @@
 /**
- * deUrge brand components from the official November 2026 brand kit
+ * Tyag brand components from the official November 2026 brand kit
  * (`assets/brand/`): the black/white peak symbol tiles and glyph, with the
  * wordmark set in Inter — per the product decision to use Inter for type
  * instead of the kit's proposed Poppins wordmark.
@@ -19,7 +19,7 @@ const WORDMARK_STYLE = {
   color: 'inherit',
 };
 
-export function DeUrgeMark({ size = 24, className }: { size?: number; className?: string }) {
+export function TyagMark({ size = 24, className }: { size?: number; className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -37,16 +37,16 @@ export function DeUrgeMark({ size = 24, className }: { size?: number; className?
 }
 
 /** The wordmark as live text in the bundled Inter font. */
-export function DeUrgeWordmark({ height = 24, className }: { height?: number; className?: string }) {
+export function TyagWordmark({ height = 24, className }: { height?: number; className?: string }) {
   return (
-    <span className={className} style={{ ...WORDMARK_STYLE, fontSize: `${height}px` }} role="img" aria-label="deUrge">
-      deUrge
+    <span className={className} style={{ ...WORDMARK_STYLE, fontSize: `${height}px` }} role="img" aria-label="Tyag">
+      Tyag
     </span>
   );
 }
 
 /** Rounded-square app icon: black tile on light surfaces, white tile on dark. */
-export function DeUrgeAppIcon({ size = 64, className }: { size?: number; className?: string }) {
+export function TyagAppIcon({ size = 64, className }: { size?: number; className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -55,7 +55,7 @@ export function DeUrgeAppIcon({ size = 64, className }: { size?: number; classNa
       height={size}
       className={className}
       role="img"
-      aria-label="deUrge"
+      aria-label="Tyag"
     >
       <rect x="0" y="0" width="1024" height="1024" rx="225.28" fill="var(--logo-tile-bg, #000000)" />
       <path d={TILE_GLYPH_PATH} fill="var(--logo-tile-fg, #FFFFFF)" />
@@ -64,15 +64,15 @@ export function DeUrgeAppIcon({ size = 64, className }: { size?: number; classNa
 }
 
 /** Horizontal lockup: symbol tile + Inter wordmark. */
-export function DeUrgeLockup({ height = 24, className }: { height?: number; className?: string }) {
+export function TyagLockup({ height = 24, className }: { height?: number; className?: string }) {
   const tile = height * (200 / 288);
   return (
     <span
       className={className}
       style={{ display: 'inline-flex', alignItems: 'center', gap: `${height * (87 / 288)}px`, color: 'inherit' }}
     >
-      <DeUrgeAppIcon size={tile} />
-      <DeUrgeWordmark height={height * 0.8} />
+      <TyagAppIcon size={tile} />
+      <TyagWordmark height={height * 0.8} />
     </span>
   );
 }

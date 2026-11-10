@@ -13,7 +13,7 @@ import {
   formatWeekdayForFirstDay,
   formatWeekdayShort,
   type AppSettings,
-} from '@deurge/core';
+} from '@tyag/core';
 import { useApp } from '../store/app';
 
 export function formatDurationFor(settings: AppSettings, ms: number, style?: 'short' | 'long' | 'compact'): string {

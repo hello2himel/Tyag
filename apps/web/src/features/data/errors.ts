@@ -1,5 +1,5 @@
 /** Map any thrown value to a user-safe message for the Data & Backups screen. */
-import { isDeUrgeError, userMessage } from '@deurge/core';
+import { isTyagError, userMessage } from '@tyag/core';
 
 export interface ActionFailure {
   message: string;
@@ -8,7 +8,7 @@ export interface ActionFailure {
 }
 
 export function describeFailure(error: unknown): ActionFailure {
-  if (isDeUrgeError(error)) {
+  if (isTyagError(error)) {
     return { message: userMessage(error), unavailable: error.code === 'UNAVAILABLE' };
   }
   const raw = error instanceof Error ? error.message : '';

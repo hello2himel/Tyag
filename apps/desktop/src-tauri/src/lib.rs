@@ -1,4 +1,4 @@
-//! deUrge desktop shell (Tauri 2).
+//! Tyag desktop shell (Tauri 2).
 //!
 //! Local-only by construction:
 //!   - the React/Vite bundle is embedded in the binary at compile time
@@ -48,8 +48,8 @@ const MAX_TEXT_EXPORT_BYTES: usize = 128 * 1024 * 1024;
 /// Longest accepted export filename stem (before the extension).
 const MAX_EXPORT_STEM_CHARS: usize = 96;
 
-const DB_FILE: &str = "deurge.db";
-const STABLE_BACKUP_FILE: &str = "deurge.backup.db";
+const DB_FILE: &str = "tyag.db";
+const STABLE_BACKUP_FILE: &str = "tyag.backup.db";
 const BACKUPS_DIR: &str = "backups";
 
 // ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ const BACKUPS_DIR: &str = "backups";
 /// The only privileged I/O in the process: a single SQLite snapshot inside the
 /// per-user application data directory (never a caller-provided path).
 struct Store {
-    /// `app_data_dir()` — e.g. `~/.local/share/app.deurge.DeUrge` on Linux.
+    /// `app_data_dir()` — e.g. `~/.local/share/app.tyag.Tyag` on Linux.
     dir: PathBuf,
     /// Serializes concurrent writes so temp-file + rename sequences never race.
     write_lock: Mutex<()>,
@@ -136,7 +136,7 @@ impl Store {
             .duration_since(UNIX_EPOCH)
             .map(|duration| duration.as_millis())
             .unwrap_or(0);
-        atomic_write(&backups_dir.join(format!("deurge-{stamp}.db")), bytes)
+        atomic_write(&backups_dir.join(format!("tyag-{stamp}.db")), bytes)
             .map_err(|_| db_error("db_backup_failed", "Could not write the database backup."))?;
         prune_backups(&backups_dir, MAX_BACKUP_HISTORY);
         Ok(())
@@ -228,7 +228,7 @@ fn sync_dir(dir: Option<&Path>) {
 #[cfg(not(unix))]
 fn sync_dir(_dir: Option<&Path>) {}
 
-/// Keep only the newest `keep` `deurge-*.db` files in `backups/`.
+/// Keep only the newest `keep` `tyag-*.db` files in `backups/`.
 fn prune_backups(backups_dir: &Path, keep: usize) {
     let Ok(entries) = fs::read_dir(backups_dir) else {
         return;
@@ -238,7 +238,7 @@ fn prune_backups(backups_dir: &Path, keep: usize) {
         .filter(|entry| {
             let name = entry.file_name();
             let name = name.to_string_lossy();
-            name.starts_with("deurge-") && name.ends_with(".db")
+            name.starts_with("tyag-") && name.ends_with(".db")
         })
         .filter_map(|entry| {
             entry
@@ -319,7 +319,7 @@ fn sanitize_export_filename(raw: &str) -> Result<String, String> {
         .collect();
     cleaned = cleaned.trim_matches(|character: char| character == '-' || character == ' ').to_string();
     if cleaned.is_empty() {
-        cleaned = "deurge-export".to_string();
+        cleaned = "tyag-export".to_string();
     }
     if cleaned.chars().count() > MAX_EXPORT_STEM_CHARS {
         cleaned = cleaned.chars().take(MAX_EXPORT_STEM_CHARS).collect();
@@ -327,7 +327,7 @@ fn sanitize_export_filename(raw: &str) -> Result<String, String> {
             .trim_matches(|character: char| character == '-' || character == ' ')
             .to_string();
         if cleaned.is_empty() {
-            cleaned = "deurge-export".to_string();
+            cleaned = "tyag-export".to_string();
         }
     }
 
@@ -441,7 +441,7 @@ fn create_main_window<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let downloads = app.path().download_dir().ok();
 
     WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-        .title("deUrge")
+        .title("Tyag")
         .inner_size(430.0, 900.0)
         .min_inner_size(360.0, 640.0)
         .resizable(true)
@@ -494,7 +494,7 @@ pub fn run() {
             save_text_file
         ])
         .run(tauri::generate_context!())
-        .expect("error while running deUrge");
+        .expect("error while running Tyag");
 }
 
 #[cfg(test)]
@@ -503,7 +503,7 @@ mod tests {
 
     fn store() -> (Store, PathBuf) {
         let dir = std::env::temp_dir().join(format!(
-            "deurge-store-test-{}-{}",
+            "tyag-store-test-{}-{}",
             std::process::id(),
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -599,8 +599,8 @@ mod tests {
     #[test]
     fn exports_are_limited_to_safe_json_or_csv_names() {
         assert_eq!(
-            sanitize_export_filename("deurge-export.json").unwrap(),
-            "deurge-export.json"
+            sanitize_export_filename("tyag-export.json").unwrap(),
+            "tyag-export.json"
         );
         assert_eq!(
             sanitize_export_filename("../../etc/passwd.csv").unwrap(),
@@ -627,28 +627,28 @@ mod tests {
     #[test]
     fn export_writes_into_downloads_without_overwriting() {
         let dir = std::env::temp_dir().join(format!(
-            "deurge-export-test-{}-{}",
+            "tyag-export-test-{}-{}",
             std::process::id(),
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_nanos()
         ));
-        let first = write_export_file(&dir, "../../deurge.json", "{\"a\":1}").unwrap();
-        assert_eq!(first, dir.join("deurge.json"));
+        let first = write_export_file(&dir, "../../tyag.json", "{\"a\":1}").unwrap();
+        assert_eq!(first, dir.join("tyag.json"));
         assert_eq!(fs::read_to_string(&first).unwrap(), "{\"a\":1}");
-        let second = write_export_file(&dir, "deurge.json", "{\"a\":2}").unwrap();
-        assert_eq!(second, dir.join("deurge (2).json"));
+        let second = write_export_file(&dir, "tyag.json", "{\"a\":2}").unwrap();
+        assert_eq!(second, dir.join("tyag (2).json"));
         assert_eq!(fs::read_to_string(&second).unwrap(), "{\"a\":2}");
         assert_eq!(fs::read_to_string(&first).unwrap(), "{\"a\":1}");
-        assert!(write_export_file(&dir, "deurge.txt", "nope").is_err());
+        assert!(write_export_file(&dir, "tyag.txt", "nope").is_err());
         cleanup(&dir);
     }
 
     #[test]
     fn download_destination_is_redirected_into_downloads() {
         let dir = std::env::temp_dir().join(format!(
-            "deurge-download-test-{}-{}",
+            "tyag-download-test-{}-{}",
             std::process::id(),
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -656,13 +656,13 @@ mod tests {
                 .as_nanos()
         ));
         fs::create_dir_all(&dir).unwrap();
-        let mut destination = PathBuf::from("/tmp/deurge-export.json");
+        let mut destination = PathBuf::from("/tmp/tyag-export.json");
         resolve_download_destination(Some(&dir), &mut destination);
-        assert_eq!(destination, dir.join("deurge-export.json"));
+        assert_eq!(destination, dir.join("tyag-export.json"));
         fs::write(&destination, b"{}").unwrap();
-        let mut second = PathBuf::from("/tmp/deurge-export.json");
+        let mut second = PathBuf::from("/tmp/tyag-export.json");
         resolve_download_destination(Some(&dir), &mut second);
-        assert_eq!(second, dir.join("deurge-export (2).json"));
+        assert_eq!(second, dir.join("tyag-export (2).json"));
         cleanup(&dir);
     }
 }

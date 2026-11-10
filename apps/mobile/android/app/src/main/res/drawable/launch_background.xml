@@ -2,7 +2,7 @@
 <!-- Branded launch background for Android 7-11 (Android 12+ uses the system
      splash-screen API from values/styles.xml). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/deurge_brand" />
+    <item android:drawable="@color/tyag_brand" />
     <item
         android:drawable="@drawable/splash_icon"
         android:gravity="center" />

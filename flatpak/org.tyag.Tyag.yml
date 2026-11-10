@@ -1,4 +1,4 @@
-# deUrge — Flatpak manifest (Tauri 2 + WebKitGTK).
+# Tyag — Flatpak manifest (Tauri 2 + WebKitGTK).
 #
 # This packages the *prebuilt* Tauri binary (built outside the sandbox by
 # flatpak/build.sh, because the web + Rust toolchain is not available inside
@@ -7,21 +7,21 @@
 #
 #   runtime : org.gnome.Platform //48   (WebKitGTK 4.1 + GTK 3)
 #   sdk     : org.gnome.Sdk      //48   (build sandbox only; never shipped)
-#   command : deurge-wrapper -> /app/bin/deurge (the Tauri binary)
+#   command : tyag-wrapper -> /app/bin/tyag (the Tauri binary)
 #
-# Sandbox policy (deliberately minimal — deUrge is fully offline):
+# Sandbox policy (deliberately minimal — Tyag is fully offline):
 #   * no --share=network: the app can never reach the network
 #   * no --filesystem=home: the database stays inside the app sandbox
 #   * xdg-download is the only filesystem grant, so user-initiated JSON/CSV
 #     exports and backups can reach the real Downloads folder
 #   * notifications via the session bus notification service
 #
-# Build: `bash flatpak/build.sh`   Bundle: flatpak/dist/deUrge-<version>-<arch>.flatpak
-app-id: org.deurge.DeUrge
+# Build: `bash flatpak/build.sh`   Bundle: flatpak/dist/Tyag-<version>-<arch>.flatpak
+app-id: org.tyag.Tyag
 runtime: org.gnome.Platform
 runtime-version: '48'
 sdk: org.gnome.Sdk
-command: deurge-wrapper
+command: tyag-wrapper
 separate-locales: false
 
 finish-args:
@@ -37,20 +37,20 @@ finish-args:
   - --talk-name=org.freedesktop.Notifications
 
 modules:
-  - name: deurge
+  - name: tyag
     buildsystem: simple
     # The Tauri binary is built and tested on the host; do not strip it here.
     build-options:
       strip: false
       no-debuginfo: true
     build-commands:
-      - install -Dm755 deurge /app/bin/deurge
-      - install -Dm755 deurge-wrapper.sh /app/bin/deurge-wrapper
-      - install -Dm644 org.deurge.DeUrge.desktop /app/share/applications/org.deurge.DeUrge.desktop
-      - install -Dm644 org.deurge.DeUrge.metainfo.xml /app/share/metainfo/org.deurge.DeUrge.metainfo.xml
-      - install -Dm644 icon-128.png /app/share/icons/hicolor/128x128/apps/org.deurge.DeUrge.png
-      - install -Dm644 icon-256.png /app/share/icons/hicolor/256x256/apps/org.deurge.DeUrge.png
-      - install -Dm644 icon-512.png /app/share/icons/hicolor/512x512/apps/org.deurge.DeUrge.png
+      - install -Dm755 tyag /app/bin/tyag
+      - install -Dm755 tyag-wrapper.sh /app/bin/tyag-wrapper
+      - install -Dm644 org.tyag.Tyag.desktop /app/share/applications/org.tyag.Tyag.desktop
+      - install -Dm644 org.tyag.Tyag.metainfo.xml /app/share/metainfo/org.tyag.Tyag.metainfo.xml
+      - install -Dm644 icon-128.png /app/share/icons/hicolor/128x128/apps/org.tyag.Tyag.png
+      - install -Dm644 icon-256.png /app/share/icons/hicolor/256x256/apps/org.tyag.Tyag.png
+      - install -Dm644 icon-512.png /app/share/icons/hicolor/512x512/apps/org.tyag.Tyag.png
     sources:
       - type: dir
         path: build/stage

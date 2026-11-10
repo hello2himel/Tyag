@@ -1,4 +1,4 @@
-package app.deurge.DeUrge;
+package app.tyag.Tyag;
 
 import android.os.Bundle;
 

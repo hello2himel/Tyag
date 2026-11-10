@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AppProvider, useApp } from './store/app';
 import { navigate, useRoute, type RouteName } from './router';
 import { Icon, type IconName } from './ui/components';
-import { DeUrgeLockup } from './ui/logo';
+import { TyagLockup } from './ui/logo';
 import { TrackersScreen } from './features/trackers/TrackersScreen';
 import { TrackerDetailScreen } from './features/trackers/TrackerDetailScreen';
 import { OnboardingScreen } from './features/onboarding/OnboardingScreen';
@@ -11,7 +11,7 @@ import { InsightsScreen } from './features/insights/InsightsScreen';
 import { SettingsScreen } from './features/settings/SettingsScreen';
 import { DataScreen } from './features/data/DataScreen';
 import { LockScreen, SetPinScreen } from './features/lock/AppLock';
-import { DeUrgeMark } from './ui/logo';
+import { TyagMark } from './ui/logo';
 
 const NAV: { name: RouteName; label: string; icon: IconName; path: string }[] = [
   { name: 'trackers', label: 'Trackers', icon: 'clock', path: '/trackers' },
@@ -59,12 +59,12 @@ function Root() {
       setChangePinOpen(true);
     }
     document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('deurge:lock', onLock);
-    window.addEventListener('deurge:change-pin', onChangePin);
+    window.addEventListener('tyag:lock', onLock);
+    window.addEventListener('tyag:change-pin', onChangePin);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('deurge:lock', onLock);
-      window.removeEventListener('deurge:change-pin', onChangePin);
+      window.removeEventListener('tyag:lock', onLock);
+      window.removeEventListener('tyag:change-pin', onChangePin);
     };
   }, [hasPassword]);
 
@@ -119,7 +119,7 @@ function Root() {
       <>
         {privacyShield ? (
           <div className="privacy-shield" aria-hidden="true">
-            <DeUrgeMark size={40} />
+            <TyagMark size={40} />
           </div>
         ) : null}
         <div className={unlocking ? 'lock-layer-exit' : ''}>
@@ -204,9 +204,9 @@ function Shell() {
           type="button"
           className="sidebar-brand"
           onClick={() => navigate('/trackers')}
-          aria-label="deUrge — Trackers"
+          aria-label="Tyag — Trackers"
         >
-          <DeUrgeLockup height={26} />
+          <TyagLockup height={26} />
         </button>
         <div className="sidebar-label">Trackers</div>
         {trackers.map((tracker) => (

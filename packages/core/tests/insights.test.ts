@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DeUrgeError, MS_PER_DAY } from '../src/index';
+import { TyagError, MS_PER_DAY } from '../src/index';
 import type { Insight } from '../src/index';
 import { createTestCore, type TestCore } from './helpers';
 import { seedRichCore } from './helpers/engines';
@@ -159,11 +159,11 @@ describe('insights: single tracker', () => {
 
   it('rejects unknown trackers', async () => {
     const test = await createTestCore({ now: NOW });
-    expect(() => test.core.insights.forTracker('missing')).toThrow(DeUrgeError);
+    expect(() => test.core.insights.forTracker('missing')).toThrow(TyagError);
     try {
       test.core.insights.forTracker('missing');
     } catch (error) {
-      expect((error as DeUrgeError).code).toBe('NOT_FOUND');
+      expect((error as TyagError).code).toBe('NOT_FOUND');
     }
   });
 

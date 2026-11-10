@@ -8,7 +8,7 @@
  * (paused time is never counted; archived history is kept).
  */
 import { useState } from 'react';
-import { userMessage, type Tracker } from '@deurge/core';
+import { userMessage, type Tracker } from '@tyag/core';
 import { useApp } from '../../store/app';
 import { Button, ConfirmDialog, useToast } from '../../ui/components';
 

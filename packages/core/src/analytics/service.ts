@@ -36,7 +36,7 @@ export class AnalyticsService {
   /**
    * Analytics for one tracker.
    *
-   * @throws DeUrgeError `NOT_FOUND` when the tracker does not exist and
+   * @throws TyagError `NOT_FOUND` when the tracker does not exist and
    *   `VALIDATION` for invalid chart options.
    */
   forTracker(trackerId: string, options: TrackerAnalyticsOptions = {}): TrackerAnalytics {

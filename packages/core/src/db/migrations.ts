@@ -210,7 +210,7 @@ export const MIGRATIONS: Migration[] = [
  * change `PRAGMA foreign_keys` inside a transaction, and the migration-2 table
  * rebuilds must not trigger `ON DELETE CASCADE` on child tables while the old
  * tables are dropped. Enforcement is restored (and violations would surface via
- * `PRAGMA foreign_key_check` in `DeUrgeCore.open`) before anything else runs.
+ * `PRAGMA foreign_key_check` in `TyagCore.open`) before anything else runs.
  */
 export function migrate(db: SqlDatabase, appliedAt: number): number {
   db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (

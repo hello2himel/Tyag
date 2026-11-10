@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DeUrgeError, MemoryPersistence, ENCRYPTED_BACKUP_FORMAT } from '../src/index';
+import { TyagError, MemoryPersistence, ENCRYPTED_BACKUP_FORMAT } from '../src/index';
 import { canonicalJson } from '../src/backup/serialize';
 import { sha256Hex } from '../src/backup/crypto';
 import { seedRichCore } from './helpers/engines';
@@ -9,9 +9,9 @@ describe('backup: JSON export', () => {
     const seeded = await seedRichCore();
     const result = await seeded.core.backup.exportJson();
 
-    expect(result.filename).toMatch(/^deurge-export-\d{8}-\d{6}\.json$/);
+    expect(result.filename).toMatch(/^tyag-export-\d{8}-\d{6}\.json$/);
     const document = JSON.parse(result.content) as Record<string, unknown>;
-    expect(document.format).toBe('deurge-export');
+    expect(document.format).toBe('tyag-export');
     expect(document.formatVersion).toBe(1);
     expect(document.schemaVersion).toBe(2);
     expect(document.appVersion).toBe(seeded.core.appVersion);
@@ -64,15 +64,15 @@ describe('backup: JSON export', () => {
     expect(parsed.integrity).toEqual(document.integrity);
   });
 
-  it('rejects invalid JSON and non-deUrge files', async () => {
+  it('rejects invalid JSON and non-Tyag files', async () => {
     const seeded = await seedRichCore();
-    expect(() => seeded.core.backup.parseExport('{oops')).toThrow(DeUrgeError);
-    expect(() => seeded.core.backup.parseExport('')).toThrow(DeUrgeError);
-    expect(() => seeded.core.backup.parseExport('{"format":"other"}')).toThrow(DeUrgeError);
+    expect(() => seeded.core.backup.parseExport('{oops')).toThrow(TyagError);
+    expect(() => seeded.core.backup.parseExport('')).toThrow(TyagError);
+    expect(() => seeded.core.backup.parseExport('{"format":"other"}')).toThrow(TyagError);
     try {
       seeded.core.backup.parseExport('{oops');
     } catch (error) {
-      expect((error as DeUrgeError).code).toBe('IMPORT_INVALID');
+      expect((error as TyagError).code).toBe('IMPORT_INVALID');
     }
   });
 });
@@ -81,7 +81,7 @@ describe('backup: encrypted backups', () => {
   it('seals a backup with PBKDF2 + AES-GCM and restores it', async () => {
     const seeded = await seedRichCore();
     const encrypted = await seeded.core.backup.exportEncrypted('correct horse battery staple');
-    expect(encrypted.filename).toMatch(/^deurge-encrypted-backup-\d{8}-\d{6}\.json$/);
+    expect(encrypted.filename).toMatch(/^tyag-encrypted-backup-\d{8}-\d{6}\.json$/);
     expect(encrypted.createdAt).toBe(seeded.clock.now());
 
     const envelope = JSON.parse(encrypted.content) as {

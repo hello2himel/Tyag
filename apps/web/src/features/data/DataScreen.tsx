@@ -35,7 +35,7 @@ export function DataScreen() {
           <Card className="card-pad data-card">
             <ul className="data-list">
               <li>
-                <strong>Pre-import snapshot.</strong> Before a replace import, deUrge asks the storage layer to keep a snapshot
+                <strong>Pre-import snapshot.</strong> Before a replace import, Tyag asks the storage layer to keep a snapshot
                 of the current local database. That snapshot is a safety net for the storage layer — it is not a backup file you
                 can export from this build, so export a JSON or encrypted backup if the current data matters to you.
               </li>

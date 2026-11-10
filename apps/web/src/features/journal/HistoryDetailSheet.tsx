@@ -5,14 +5,14 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import {
-  isDeUrgeError,
+  isTyagError,
   userMessage,
   type CheckIn,
   type HistoryItem,
   type JournalEntry,
   type LapseEvent,
   type UrgeEvent,
-} from '@deurge/core';
+} from '@tyag/core';
 import { useApp } from '../../store/app';
 import { Button, ConfirmDialog, Sheet, useToast } from '../../ui/components';
 import { useFormatters } from '../../ui/format';
@@ -72,7 +72,7 @@ export function HistoryDetailSheet({
         setLoaded({ kind: 'missing' });
       }
     } catch (error) {
-      setLoadError(isDeUrgeError(error) ? userMessage(error) : 'This record could not be opened.');
+      setLoadError(isTyagError(error) ? userMessage(error) : 'This record could not be opened.');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item, refreshKey]);
@@ -103,7 +103,7 @@ export function HistoryDetailSheet({
       setConfirmDelete(false);
       onClose();
     } catch (error) {
-      toast.error(isDeUrgeError(error) ? userMessage(error) : 'That record could not be deleted.');
+      toast.error(isTyagError(error) ? userMessage(error) : 'That record could not be deleted.');
     } finally {
       setDeleting(false);
     }

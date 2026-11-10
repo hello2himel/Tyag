@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DeUrgeError, MemoryPersistence, SqlDatabase } from '../src/index';
-import type { CustomCategory, DeUrgeExport, DeUrgeExportData, ImportReport, Tracker } from '../src/index';
+import { TyagError, MemoryPersistence, SqlDatabase } from '../src/index';
+import type { CustomCategory, TyagExport, TyagExportData, ImportReport, Tracker } from '../src/index';
 import { EXPORT_DATA_MIGRATIONS, applyExportMigrations } from '../src/backup/schema';
 import { canonicalJson } from '../src/backup/serialize';
 import { sha256Hex } from '../src/backup/crypto';
@@ -9,17 +9,17 @@ import { seedRichCore, type SeededCore } from './helpers/engines';
 
 interface ExportedSource {
   seeded: SeededCore;
-  document: DeUrgeExport;
+  document: TyagExport;
   text: string;
 }
 
 async function exportSource(seeded: SeededCore): Promise<ExportedSource> {
   const result = await seeded.core.backup.exportJson();
-  return { seeded, document: JSON.parse(result.content) as DeUrgeExport, text: result.content };
+  return { seeded, document: JSON.parse(result.content) as TyagExport, text: result.content };
 }
 
-function mutateExport<T>(text: string, mutate: (document: DeUrgeExport) => T): { text: string; result: T } {
-  const document = JSON.parse(text) as DeUrgeExport;
+function mutateExport<T>(text: string, mutate: (document: TyagExport) => T): { text: string; result: T } {
+  const document = JSON.parse(text) as TyagExport;
   const result = mutate(document);
   return { text: JSON.stringify(document), result };
 }
@@ -31,9 +31,9 @@ function mutateExport<T>(text: string, mutate: (document: DeUrgeExport) => T): {
 async function buildV1Export(
   source: ExportedSource,
   options: { withIntegrity: boolean },
-): Promise<{ text: string; data: DeUrgeExportData }> {
-  const document = JSON.parse(source.text) as DeUrgeExport;
-  const data = JSON.parse(JSON.stringify(document.data)) as DeUrgeExportData;
+): Promise<{ text: string; data: TyagExportData }> {
+  const document = JSON.parse(source.text) as TyagExport;
+  const data = JSON.parse(JSON.stringify(document.data)) as TyagExportData;
   // v1 tracker records carried a tracker-category reference.
   const trackers = data.trackers.map((tracker, index) => ({
     ...tracker,
@@ -50,8 +50,8 @@ async function buildV1Export(
     updatedAt: T0,
   } as unknown as CustomCategory;
   const categories = [...data.categories, legacyCategory];
-  const v1Data = { ...data, trackers, categories } as unknown as DeUrgeExportData;
-  const v1Document: DeUrgeExport = {
+  const v1Data = { ...data, trackers, categories } as unknown as TyagExportData;
+  const v1Document: TyagExport = {
     ...document,
     schemaVersion: 1,
     counts: { ...document.counts, categories: categories.length },
@@ -69,7 +69,7 @@ function allImportedZero(report: ImportReport): void {
   for (const count of Object.values(report.imported)) expect(count).toBe(0);
 }
 
-function totalRecordCount(document: DeUrgeExport): number {
+function totalRecordCount(document: TyagExport): number {
   return Object.values(document.counts).reduce((sum, count) => sum + count, 0);
 }
 
@@ -79,7 +79,7 @@ async function expectDataRestored(
   source: ExportedSource,
   mode: 'merge' | 'replace',
 ): Promise<void> {
-  const targetDocument = JSON.parse((await target.core.backup.exportJson()).content) as DeUrgeExport;
+  const targetDocument = JSON.parse((await target.core.backup.exportJson()).content) as TyagExport;
   expect(targetDocument.data.trackers).toEqual(source.document.data.trackers);
   expect(targetDocument.data.sessions).toEqual(source.document.data.sessions);
   expect(targetDocument.data.lapses).toEqual(source.document.data.lapses);
@@ -137,7 +137,7 @@ describe('import: merge round-trip', () => {
 
     await expectDataRestored(target, source, 'merge');
     const importedEvent = (
-      JSON.parse((await target.core.backup.exportJson()).content) as DeUrgeExport
+      JSON.parse((await target.core.backup.exportJson()).content) as TyagExport
     ).data.historyEvents.find((event) => event.type === 'data_imported');
     expect(importedEvent?.metadata?.mode).toBe('merge');
     expect(typeof importedEvent?.metadata?.summary).toBe('string');
@@ -354,10 +354,10 @@ describe('import: validation failures never write', () => {
     const source = await exportSource(await seedRichCore());
     const target = await createTestCore({ now: source.seeded.clock.now() });
     for (const mutate of [
-      (document: DeUrgeExport) => {
+      (document: TyagExport) => {
         document.schemaVersion = 99;
       },
-      (document: DeUrgeExport) => {
+      (document: TyagExport) => {
         document.formatVersion = 99;
       },
     ]) {
@@ -402,9 +402,9 @@ describe('import: validation failures never write', () => {
       await target.core.backup.importJson(text, { mode: 'merge' });
       throw new Error('expected import to fail');
     } catch (error) {
-      expect(error).toBeInstanceOf(DeUrgeError);
-      expect((error as DeUrgeError).code).toBe('IMPORT_INVALID');
-      expect((error as DeUrgeError).message).toContain('integrity');
+      expect(error).toBeInstanceOf(TyagError);
+      expect((error as TyagError).code).toBe('IMPORT_INVALID');
+      expect((error as TyagError).message).toContain('integrity');
     }
     expect(target.core.trackers.list()).toHaveLength(0);
   });
@@ -493,7 +493,7 @@ describe('import: v1 export upconversion', () => {
     expect(report.warnings.some((warning) => warning.includes('schema version 1'))).toBe(true);
     expect(report.warnings.some((warning) => warning.includes('Tracker categories'))).toBe(true);
 
-    const targetDocument = JSON.parse((await target.core.backup.exportJson()).content) as DeUrgeExport;
+    const targetDocument = JSON.parse((await target.core.backup.exportJson()).content) as TyagExport;
     expect(targetDocument.schemaVersion).toBe(2);
     expect(targetDocument.data.trackers).toEqual(source.document.data.trackers);
     expect(targetDocument.data.sessions).toEqual(source.document.data.sessions);
@@ -517,14 +517,14 @@ describe('import: v1 export upconversion', () => {
     const source = await exportSource(seeded);
     const v1 = await buildV1Export(source, { withIntegrity: true });
     const target = await createTestCore({ now: seeded.clock.now() });
-    const tampered = JSON.parse(v1.text) as DeUrgeExport;
+    const tampered = JSON.parse(v1.text) as TyagExport;
     tampered.data.trackers[0]!.name = 'Tampered name';
     try {
       await target.core.backup.importJson(JSON.stringify(tampered), { mode: 'merge' });
       throw new Error('expected import to fail');
     } catch (error) {
-      expect((error as DeUrgeError).code).toBe('IMPORT_INVALID');
-      expect((error as DeUrgeError).message).toContain('integrity');
+      expect((error as TyagError).code).toBe('IMPORT_INVALID');
+      expect((error as TyagError).message).toContain('integrity');
     }
     expect(target.core.trackers.list()).toHaveLength(0);
   });
@@ -544,7 +544,7 @@ describe('import: v1 export upconversion', () => {
     const seeded = await seedRichCore();
     const source = await exportSource(seeded);
     const v1 = await buildV1Export(source, { withIntegrity: false });
-    const document = JSON.parse(v1.text) as DeUrgeExport;
+    const document = JSON.parse(v1.text) as TyagExport;
     document.counts.categories += 1;
     const target = await createTestCore({ now: seeded.clock.now() });
     await expect(target.core.backup.importJson(JSON.stringify(document), { mode: 'merge' })).rejects.toMatchObject({
@@ -582,11 +582,11 @@ describe('import: schema migration registry', () => {
     } finally {
       delete EXPORT_DATA_MIGRATIONS[2];
     }
-    expect(() => applyExportMigrations(data, 2, 3)).toThrow(DeUrgeError);
+    expect(() => applyExportMigrations(data, 2, 3)).toThrow(TyagError);
     try {
       applyExportMigrations(data, 2, 3);
     } catch (error) {
-      expect((error as DeUrgeError).code).toBe('IMPORT_UNSUPPORTED_VERSION');
+      expect((error as TyagError).code).toBe('IMPORT_UNSUPPORTED_VERSION');
     }
   });
 });

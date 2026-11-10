@@ -1,5 +1,5 @@
-/** Error taxonomy for deUrge. Messages are safe to show to users. */
-export type DeUrgeErrorCode =
+/** Error taxonomy for Tyag. Messages are safe to show to users. */
+export type TyagErrorCode =
   | 'VALIDATION'
   | 'NOT_FOUND'
   | 'CONFLICT'
@@ -10,33 +10,33 @@ export type DeUrgeErrorCode =
   | 'CRYPTO'
   | 'UNAVAILABLE';
 
-export interface DeUrgeErrorDetails {
+export interface TyagErrorDetails {
   [field: string]: string;
 }
 
-export class DeUrgeError extends Error {
-  readonly code: DeUrgeErrorCode;
-  readonly details: DeUrgeErrorDetails;
+export class TyagError extends Error {
+  readonly code: TyagErrorCode;
+  readonly details: TyagErrorDetails;
 
-  constructor(code: DeUrgeErrorCode, message: string, details: DeUrgeErrorDetails = {}) {
+  constructor(code: TyagErrorCode, message: string, details: TyagErrorDetails = {}) {
     super(message);
-    this.name = 'DeUrgeError';
+    this.name = 'TyagError';
     this.code = code;
     this.details = details;
   }
 }
 
-export function isDeUrgeError(error: unknown): error is DeUrgeError {
-  return error instanceof DeUrgeError;
+export function isTyagError(error: unknown): error is TyagError {
+  return error instanceof TyagError;
 }
 
-export function fail(code: DeUrgeErrorCode, message: string, details?: DeUrgeErrorDetails): never {
-  throw new DeUrgeError(code, message, details);
+export function fail(code: TyagErrorCode, message: string, details?: TyagErrorDetails): never {
+  throw new TyagError(code, message, details);
 }
 
 /** Convert any thrown value into a user-safe message (never leaks file paths). */
 export function userMessage(error: unknown): string {
-  if (isDeUrgeError(error)) return error.message;
+  if (isTyagError(error)) return error.message;
   if (error instanceof Error && /quota|storage/i.test(error.message)) {
     return 'Your device could not save the change. Free up some storage space and try again.';
   }

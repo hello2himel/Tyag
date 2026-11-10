@@ -1,4 +1,4 @@
-# deUrge — Data model and database schema
+# Tyag — Data model and database schema
 
 Storage: **SQLite** (via sql.js WebAssembly) with foreign keys enabled,
 CHECK constraints, a migration table and one open session per tracker enforced

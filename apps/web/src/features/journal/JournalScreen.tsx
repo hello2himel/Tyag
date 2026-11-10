@@ -9,14 +9,14 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import {
-  isDeUrgeError,
+  isTyagError,
   localDateKey,
   userMessage,
   type HistoryEventType,
   type HistoryFilter,
   type HistoryItem,
   type JournalEntry,
-} from '@deurge/core';
+} from '@tyag/core';
 import { useApp } from '../../store/app';
 import { navigate, useRoute } from '../../router';
 import {
@@ -159,7 +159,7 @@ export function JournalScreen() {
       return {
         items: [] as HistoryItem[],
         total: 0,
-        error: isDeUrgeError(caught)
+        error: isTyagError(caught)
           ? userMessage(caught)
           : 'Your history could not be read. Your data is still on this device.',
       };

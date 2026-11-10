@@ -1,6 +1,6 @@
 /**
- * App lock — implemented 1:1 from the supplied deUrge PIN screen kit
- * (`deurge-pin-screens`): mobile create/confirm/lock/forgot sheets, a
+ * App lock — implemented 1:1 from the supplied Tyag PIN screen kit
+ * (`tyag-pin-screens`): mobile create/confirm/lock/forgot sheets, a
  * biometrics opt-in, and the desktop lock/set-PIN cards.
  *
  * Product decisions layered on the kit: the PIN is exactly 4 digits (so every
@@ -9,10 +9,10 @@
  * biometric prompt; other platforms use the PIN only.
  */
 import { useEffect, useRef, useState } from 'react';
-import { isDeUrgeError, userMessage } from '@deurge/core';
+import { isTyagError, userMessage } from '@tyag/core';
 import { useApp } from '../../store/app';
 import { ConfirmDialog } from '../../ui/components';
-import { DeUrgeMark } from '../../ui/logo';
+import { TyagMark } from '../../ui/logo';
 import { haptic } from '../../ui/motion';
 import { pickTextFile } from '../../platform/files';
 import {
@@ -223,7 +223,7 @@ function MobileCreateOrConfirm({
       ? 'Enter your current PIN to change it.'
       : stage === 'confirm'
         ? 'Enter the same PIN once more.'
-        : 'You will use it to open deUrge. It stays on this device.';
+        : 'You will use it to open Tyag. It stays on this device.';
   // "PIN options" only has the biometrics toggle, so it is not shown at all on
   // devices where biometrics is unavailable. Backgrounding shows the privacy
   // shield immediately; there is intentionally no configurable "Lock after" row.
@@ -285,7 +285,7 @@ function MobileCreateOrConfirm({
         }
       }
     } catch (failure) {
-      setError(isDeUrgeError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
+      setError(isTyagError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
       setPin('');
     } finally {
       setSaving(false);
@@ -317,7 +317,7 @@ function MobileCreateOrConfirm({
           </div>
           <h1 className="pn-big">Unlock with biometrics?</h1>
           <p className="pn-muted pn-bio-copy">
-            Skip typing your PIN. Biometric data stays in the system. deUrge never sees it, and your PIN always works too.
+            Skip typing your PIN. Biometric data stays in the system. Tyag never sees it, and your PIN always works too.
           </p>
           {bioError ? <p className="pn-error">{bioError}</p> : null}
           <button type="button" className="pn-btn pn-btn-primary" onClick={() => void enableBiometrics()}>
@@ -432,7 +432,7 @@ function ForgotSheet({
       const file = await pickTextFile('.json,application/json');
       if (!file) return;
       const parsed = JSON.parse(file.text) as { format?: string };
-      if (parsed.format === 'deurge-encrypted-backup') {
+      if (parsed.format === 'tyag-encrypted-backup') {
         setError('This is an encrypted backup. Use a plain JSON backup to restore while locked.');
         return;
       }
@@ -440,7 +440,7 @@ function ForgotSheet({
       await app.core.security.clearPassword();
       onRestored();
     } catch (failure) {
-      setError(isDeUrgeError(failure) ? userMessage(failure) : 'That backup could not be restored.');
+      setError(isTyagError(failure) ? userMessage(failure) : 'That backup could not be restored.');
     } finally {
       setBusy(false);
     }
@@ -452,7 +452,7 @@ function ForgotSheet({
       await app.core.security.wipeAllData();
       window.location.reload();
     } catch {
-      setError('The app could not be reset. Close deUrge and try again.');
+      setError('The app could not be reset. Close Tyag and try again.');
       setBusy(false);
     }
   }
@@ -465,7 +465,7 @@ function ForgotSheet({
           <div className="pn-sheet-grabber" />
           <h2 className="pn-sheet-title" id="pn-forgot-title">Forgot your PIN?</h2>
           <p className="pn-muted pn-sheet-copy">
-            deUrge has no account, so nobody can reset your PIN for you. That is what keeps your data private. You have two
+            Tyag has no account, so nobody can reset your PIN for you. That is what keeps your data private. You have two
             options.
           </p>
           <div className="pn-group">
@@ -601,9 +601,9 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
   return (
     <div className="pin-ui pn-screen">
       <div className="pn-lock-head">
-        <DeUrgeMark size={44} />
+        <TyagMark size={44} />
         <h1 className="pn-big pn-lock-title">Enter PIN</h1>
-        {error ? <p className="pn-error pn-lock-error">{error}</p> : <p className="pn-muted">deUrge is locked</p>}
+        {error ? <p className="pn-error pn-lock-error">{error}</p> : <p className="pn-muted">Tyag is locked</p>}
         <div className="pn-lock-dots">
           <PinDots length={pin.length} error={errorFlash} shake={shake} />
         </div>
@@ -719,8 +719,8 @@ function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
   return (
     <div className="pin-ui pn-desktop-stage">
       <div className="pn-desktop-lock">
-        <DeUrgeMark size={52} />
-        <h1 className="pn-big pn-desktop-title">deUrge is locked</h1>
+        <TyagMark size={52} />
+        <h1 className="pn-big pn-desktop-title">Tyag is locked</h1>
         <p className="pn-muted">Type your PIN to unlock.</p>
         <DesktopPinBoxes value={pin} active={focused} shake={shake} onFocus={() => inputRef.current?.focus()} />
         <input
@@ -833,7 +833,7 @@ function DesktopSetPin({
       });
       onDone();
     } catch (failure) {
-      setError(isDeUrgeError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
+      setError(isTyagError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
     } finally {
       setSaving(false);
     }
@@ -843,7 +843,7 @@ function DesktopSetPin({
     <div className="pin-ui pn-desktop-stage">
       <div className="pn-desktop-card">
         <aside className="pn-desktop-side">
-          <DeUrgeMark size={44} />
+          <TyagMark size={44} />
           <div className="pn-desktop-wordmark">
             <span>de</span>
             <b>Urge</b>
@@ -852,7 +852,7 @@ function DesktopSetPin({
             <b>Why a PIN?</b>
             <p>It locks the app when you step away.</p>
             <b>Where it lives</b>
-            <p>Only as a salted hash in your device's secure storage. deUrge cannot read or recover it.</p>
+            <p>Only as a salted hash in your device's secure storage. Tyag cannot read or recover it.</p>
             <b>If you forget it</b>
             <p>Restore from a backup or erase this device. Keep a backup.</p>
           </div>

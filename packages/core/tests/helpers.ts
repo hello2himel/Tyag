@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import {
-  DeUrgeCore,
+  TyagCore,
   MemoryPersistence,
   loadSqlJs,
   type Clock,
@@ -54,7 +54,7 @@ export const HOUR = 3_600_000;
 export const MINUTE = 60_000;
 
 export interface TestCore {
-  core: DeUrgeCore;
+  core: TyagCore;
   persistence: PersistenceAdapter & { snapshot: () => Uint8Array | null };
   clock: TestClock;
 }
@@ -66,7 +66,7 @@ export async function createTestCore(
   const now = options.now ?? T0;
   const clock = new TestClock(now, options.timeZone ?? 'UTC');
   const persistence = options.persistence ?? new MemoryPersistence();
-  const core = await DeUrgeCore.open({ SQL, persistence, clock });
+  const core = await TyagCore.open({ SQL, persistence, clock });
   return { core, persistence, clock };
 }
 
@@ -75,6 +75,6 @@ export async function reopenTestCore(
   persistence: MemoryPersistence = test.persistence as MemoryPersistence,
 ): Promise<TestCore> {
   const SQL = await loadSqlWasm();
-  const core = await DeUrgeCore.open({ SQL, persistence, clock: test.clock });
+  const core = await TyagCore.open({ SQL, persistence, clock: test.clock });
   return { core, persistence, clock: test.clock };
 }

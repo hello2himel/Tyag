@@ -27,8 +27,8 @@ export default defineConfig({
         'og-image-1200x630.png',
       ],
       manifest: {
-        name: 'deUrge',
-        short_name: 'deUrge',
+        name: 'Tyag',
+        short_name: 'Tyag',
         description: 'A private, local-first tracker for abstinence, lapses, urges and progress.',
         lang: 'en',
         dir: 'ltr',

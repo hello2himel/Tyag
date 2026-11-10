@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DeUrgeError,
+  TyagError,
   Temporal,
   MS_PER_DAY,
   MS_PER_HOUR,
@@ -315,23 +315,23 @@ describe('analytics: insufficient data', () => {
 
   it('rejects unknown trackers and invalid options', async () => {
     const test = await createTestCore({ now: NOW });
-    expect(() => test.core.analytics.forTracker('missing-tracker')).toThrow(DeUrgeError);
+    expect(() => test.core.analytics.forTracker('missing-tracker')).toThrow(TyagError);
     try {
       test.core.analytics.forTracker('missing-tracker');
     } catch (error) {
-      expect((error as DeUrgeError).code).toBe('NOT_FOUND');
+      expect((error as TyagError).code).toBe('NOT_FOUND');
     }
     const tracker = await test.core.trackers.create({ name: 'New', startedAt: NOW });
 
     expect(() =>
       test.core.analytics.forTracker(tracker.id, { granularity: 'hour' as unknown as Granularity }),
-    ).toThrow(DeUrgeError);
+    ).toThrow(TyagError);
     expect(() =>
       test.core.analytics.forTracker(tracker.id, { from: Number.NaN }),
-    ).toThrow(DeUrgeError);
+    ).toThrow(TyagError);
     expect(() =>
       test.core.analytics.forTracker(tracker.id, { periodLimit: Number.POSITIVE_INFINITY }),
-    ).toThrow(DeUrgeError);
+    ).toThrow(TyagError);
   });
 });
 

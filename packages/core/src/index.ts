@@ -1,16 +1,16 @@
 /**
- * Public API of @deurge/core.
+ * Public API of @tyag/core.
  * UI code only needs this module; persistence/analytics/backup internals stay
- * behind the DeUrgeCore facade.
+ * behind the TyagCore facade.
  */
 export * from './domain';
-export { DeUrgeCore, type CoreOpenOptions } from './core';
+export { TyagCore, type CoreOpenOptions } from './core';
 export { loadSqlJs, SqlDatabase, type LoadSqlJsOptions } from './db/sqlite';
 export { SCHEMA_VERSION, MIGRATIONS, migrate, currentSchemaVersion } from './db/migrations';
 export { MemoryPersistence, type PersistenceAdapter } from './persistence';
 export { APP_NAME, APP_VERSION, APP_SLUG, APP_ID, REPOSITORY_URL } from './constants';
 export { systemClock, fixedClock, type Clock } from './util/clock';
-export { DeUrgeError, isDeUrgeError, userMessage, type DeUrgeErrorCode } from './util/errors';
+export { TyagError, isTyagError, userMessage, type TyagErrorCode } from './util/errors';
 export { newId, isUuid } from './util/ids';
 export {
   splitDuration,

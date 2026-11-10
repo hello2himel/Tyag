@@ -1,10 +1,10 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "deUrge",
+  "productName": "Tyag",
   "version": "1.0.0",
-  "identifier": "app.deurge.DeUrge",
+  "identifier": "app.tyag.Tyag",
   "build": {
-    "beforeDevCommand": "pnpm --filter @deurge/web dev",
+    "beforeDevCommand": "pnpm --filter @tyag/web dev",
     "devUrl": "http://localhost:5173",
     "beforeBuildCommand": "",
     "frontendDist": "../../web/dist"
@@ -30,10 +30,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "copyright": "Copyright \u00a9 2026 deUrge contributors",
+    "copyright": "Copyright \u00a9 2026 Tyag contributors",
     "category": "Utility",
     "shortDescription": "Local-first addiction and habit recovery tracker",
-    "longDescription": "deUrge is a private, offline recovery tracker. Log urges, habits and sessions, watch your streaks grow and understand your patterns \u2014 without ever creating an account or sending data anywhere. Everything is stored locally in a single SQLite database on this device; the app never touches the network.",
+    "longDescription": "Tyag is a private, offline recovery tracker. Log urges, habits and sessions, watch your streaks grow and understand your patterns \u2014 without ever creating an account or sending data anywhere. Everything is stored locally in a single SQLite database on this device; the app never touches the network.",
     "linux": {
       "appimage": {
         "bundleMediaFramework": false

@@ -6,12 +6,12 @@
  * sheet stays open with an inline error if the core rejects the input.
  */
 import { useEffect, useState, type FormEvent } from 'react';
-import { isDeUrgeError, LIMITS, userMessage, type Tracker } from '@deurge/core';
+import { isTyagError, LIMITS, userMessage, type Tracker } from '@tyag/core';
 import { useApp } from '../../store/app';
 import { Button, Field, Input, Sheet, Textarea, useToast } from '../../ui/components';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../record/localDateTime';
 
-const FORM_ID = 'deurge-tracker-form';
+const FORM_ID = 'tyag-tracker-form';
 
 export interface TrackerSheetProps {
   open: boolean;
@@ -98,7 +98,7 @@ function TrackerSheetDialog({ tracker, onClose, onSaved }: Omit<TrackerSheetProp
       }
     } catch (writeError) {
       setError(userMessage(writeError));
-      if (isDeUrgeError(writeError) && writeError.details['startedAt']) {
+      if (isTyagError(writeError) && writeError.details['startedAt']) {
         setStartError(userMessage(writeError));
       }
     } finally {

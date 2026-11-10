@@ -1,20 +1,20 @@
-# deUrge
+# Tyag
 
 **Progress, not perfection.** A private, local-first tracker for abstinence,
 lapses, urges and the progress that continues through all of it.
 
-deUrge is a complete cross-platform application: web/PWA, Android, iOS,
+Tyag is a complete cross-platform application: web/PWA, Android, iOS,
 Windows, macOS and Linux. It runs entirely on your device — no account, no
 cloud, no tracking, no internet required.
 
 <p align="center">
-  <img src="docs/screenshots/onboarding-welcome.png" width="240" alt="deUrge onboarding (mobile, light)" />
-  <img src="docs/screenshots/mobile-light-trackers.png" width="240" alt="deUrge trackers (mobile, light)" />
-  <img src="docs/screenshots/desktop-light-tracker-detail.png" width="560" alt="deUrge tracker detail (desktop, light)" />
+  <img src="docs/screenshots/onboarding-welcome.png" width="240" alt="Tyag onboarding (mobile, light)" />
+  <img src="docs/screenshots/mobile-light-trackers.png" width="240" alt="Tyag trackers (mobile, light)" />
+  <img src="docs/screenshots/desktop-light-tracker-detail.png" width="560" alt="Tyag tracker detail (desktop, light)" />
 </p>
 <p align="center">
-  <img src="docs/screenshots/mobile-dark-tracker-detail.png" width="240" alt="deUrge tracker detail (mobile, dark)" />
-  <img src="docs/screenshots/desktop-dark-insights.png" width="560" alt="deUrge insights (desktop, dark)" />
+  <img src="docs/screenshots/mobile-dark-tracker-detail.png" width="240" alt="Tyag tracker detail (mobile, dark)" />
+  <img src="docs/screenshots/desktop-dark-insights.png" width="560" alt="Tyag insights (desktop, dark)" />
 </p>
 
 > Screenshots are captured from the running app (not mockups). All boards and the
@@ -38,7 +38,7 @@ cloud, no tracking, no internet required.
   sample sizes and honest “not enough data” states.
 - **Continuous progress recognition** derived from real elapsed time — no
   milestones, badges, levels or completion targets anywhere.
-- **App lock**: a 4-digit PIN is required every time deUrge opens (it
+- **App lock**: a 4-digit PIN is required every time Tyag opens (it
   locks immediately when you leave the app), entered with four centred dots
   and an on-screen numeric keypad on a dedicated PIN screen. Android can use
   fingerprint/face biometrics instead of typing the PIN, and the biometric
@@ -86,7 +86,7 @@ full rationale and trade-offs.
 apps/web        React PWA (shared UI, Netlify deploy target)
 apps/mobile     Capacitor config + Android project (iOS via CI)
 apps/desktop    Tauri 2 desktop shell (Rust) + bundle/Flatpak icons
-packages/core   @deurge/core: domain, SQLite, services, streak/analytics/
+packages/core   @tyag/core: domain, SQLite, services, streak/analytics/
                 insights/backup engines (fully unit-tested, platform-free)
 flatpak         Flatpak manifest, AppStream metadata, build script
 docs            architecture, data model, calculation rules, privacy, backup,
@@ -118,17 +118,17 @@ No environment variables, accounts or network services are needed.
   build on their native runners; CI configuration is in
   [`.github/workflows`](.github/workflows).
 
-Releases are published on the **[Releases page](https://github.com/hello2himel/deUrge/releases/latest)**
+Releases are published on the **[Releases page](https://github.com/hello2himel/Tyag/releases/latest)**
 with the signed Android APK/AAB, Linux Flatpak, Linux AppImage and a
 Netlify-ready web zip attached. Details in [RELEASING.md](docs/RELEASING.md).
 
 ```bash
 # Android (sideload)
-adb install deUrge-1.0.0-release.apk
+adb install Tyag-1.0.0-release.apk
 # Linux
-flatpak install --user deUrge-1.0.0-x86_64.flatpak && flatpak run app.deurge.DeUrge
+flatpak install --user Tyag-1.0.0-x86_64.flatpak && flatpak run app.tyag.Tyag
 # Web (any static host)
-unzip deUrge-1.0.0-web.zip -d deurge-site
+unzip Tyag-1.0.0-web.zip -d tyag-site
 ```
 
 ## Testing
@@ -158,7 +158,7 @@ privacy behaviour. See [ARCHITECTURE.md §9](docs/ARCHITECTURE.md#9-testing-stra
 
 ## Data ownership
 
-Everything deUrge knows is in a local SQLite database plus the exports you
+Everything Tyag knows is in a local SQLite database plus the exports you
 create. There is no hidden copy anywhere else. Export a backup regularly from
 **Data & Backups**; the file is yours.
 
@@ -166,7 +166,7 @@ create. There is no hidden copy anywhere else. Export a backup regularly from
 
 **GNU Affero General Public License v3.0** (`AGPL-3.0-only`) — see [LICENSE](LICENSE).
 
-deUrge is free software: you can use, study, share and improve it. If you modify
+Tyag is free software: you can use, study, share and improve it. If you modify
 it and distribute it or make it available over a network, the AGPL requires the
 corresponding source to remain available under the same license. Your personal
 data is still entirely yours; the license covers the application code, not what

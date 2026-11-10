@@ -13,7 +13,7 @@ import {
   type HistoryEventType,
   type HistoryItem,
   type Tracker,
-} from '@deurge/core';
+} from '@tyag/core';
 import { useApp } from '../../store/app';
 import { navigate } from '../../router';
 import { RollingText } from '../../ui/RollingText';

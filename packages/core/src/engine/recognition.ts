@@ -2,7 +2,7 @@
  * Continuous progress recognition.
  *
  * There are no milestones, badges, levels or completion targets anywhere in
- * deUrge. The message below is generated from the same metrics the streak
+ * Tyag. The message below is generated from the same metrics the streak
  * engine produces, so it is accurate to the second and works for every
  * duration, from seconds to years. After a lapse the new streak is
  * acknowledged while accumulated progress is still stated.

@@ -1,13 +1,13 @@
 /**
  * `<input type="datetime-local">` speaks local wall-clock time, while every
- * deUrge record is stored as a UTC instant. These helpers convert between the
+ * Tyag record is stored as a UTC instant. These helpers convert between the
  * two through the app's *effective* timezone (device or fixed, as chosen in
  * Settings) using Temporal, so DST gaps and repeated hours behave exactly like
  * the calculation engines.
  *
  * They are shared by the record sheet, the tracker sheet and onboarding.
  */
-import { Temporal, zonedAt } from '@deurge/core';
+import { Temporal, zonedAt } from '@tyag/core';
 
 const pad = (value: number, length = 2): string => String(value).padStart(length, '0');
 

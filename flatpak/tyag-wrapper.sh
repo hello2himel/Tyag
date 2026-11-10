@@ -1,5 +1,5 @@
 #!/bin/sh
-# deUrge — Flatpak launcher.
+# Tyag — Flatpak launcher.
 #
 # Tauri renders the embedded React/Vite bundle with the GNOME runtime's
 # WebKitGTK 4.1; there is no Electron/Chromium here, so no zypak wrapper and no
@@ -9,8 +9,8 @@
 set -eu
 
 if [ -z "${TMPDIR:-}" ] || [ ! -d "${TMPDIR}" ]; then
-    export TMPDIR="${XDG_RUNTIME_DIR:-/tmp}/app/${FLATPAK_ID:-org.deurge.DeUrge}"
+    export TMPDIR="${XDG_RUNTIME_DIR:-/tmp}/app/${FLATPAK_ID:-org.tyag.Tyag}"
     mkdir -p "${TMPDIR}"
 fi
 
-exec /app/bin/deurge "$@"
+exec /app/bin/tyag "$@"

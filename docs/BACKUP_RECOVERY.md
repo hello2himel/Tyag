@@ -1,17 +1,17 @@
-# deUrge — Backup, export, import and recovery
+# Tyag — Backup, export, import and recovery
 
-Your data belongs to you. deUrge provides plain JSON, encrypted JSON, and CSV
+Your data belongs to you. Tyag provides plain JSON, encrypted JSON, and CSV
 exports, plus a transactional import pipeline with duplicate detection and
 explicit merge/replace semantics.
 
 ## 1. JSON export (canonical backup)
 
 `Data & Backups → Export JSON` produces a single file, e.g.
-`deurge-export-2026-11-10T014500Z.json`:
+`tyag-export-2026-11-10T014500Z.json`:
 
 ```json
 {
-  "format": "deurge-export",
+  "format": "tyag-export",
   "formatVersion": 1,
   "schemaVersion": 2,
   "appVersion": "1.0.0",
@@ -39,11 +39,11 @@ explicit merge/replace semantics.
 ## 2. Encrypted backup
 
 `Export encrypted backup` asks for a password (minimum 8 characters) and writes
-a `deurge-backup-<timestamp>.deurge-backup` file:
+a `tyag-backup-<timestamp>.tyag-backup` file:
 
 ```json
 {
-  "format": "deurge-encrypted-backup",
+  "format": "tyag-encrypted-backup",
   "version": 1,
   "createdAt": 1794357900000,
   "appVersion": "1.0.0",
@@ -85,8 +85,8 @@ CSV is intended for spreadsheets/analysis; JSON is the backup format.
 
 ## 4. Import
 
-1. Choose a `.json` or `.deurge-backup` file.
-2. deUrge validates: file structure, format identifier, `schemaVersion`
+1. Choose a `.json` or `.tyag-backup` file.
+2. Tyag validates: file structure, format identifier, `schemaVersion`
    (migrating older versions when supported), per-record types/enums/limits,
    ID uniqueness, timestamps, and relationships (sessions/lapses/urges must
    reference existing or newly imported trackers; trigger/reason references
@@ -127,22 +127,22 @@ same as for a current backup.
 | Situation | What to do |
 | --- | --- |
 | Web browser data cleared | Re-import your latest JSON/encrypted backup. |
-| App reinstalled / device changed | Install deUrge, skip onboarding, open **Data & Backups → Import**, choose your backup. |
+| App reinstalled / device changed | Install Tyag, skip onboarding, open **Data & Backups → Import**, choose your backup. |
 | Import fails validation | The local database was not modified. The report names the offending collection/record without exposing unrelated personal data. |
-| Local database fails the integrity check at startup | deUrge refuses to silently start empty, shows a recovery screen, and asks you to restore a backup. |
-| Tauri/desktop database file corrupted | Restore `deurge.db` from the app data directory's `backups/` folder or re-import an export. |
+| Local database fails the integrity check at startup | Tyag refuses to silently start empty, shows a recovery screen, and asks you to restore a backup. |
+| Tauri/desktop database file corrupted | Restore `tyag.db` from the app data directory's `backups/` folder or re-import an export. |
 | Forgot encrypted-backup password | Not recoverable by design. Use a plain JSON export if you have one. |
 
 ### Platform locations
 
-- Web/PWA: IndexedDB `deurge-local`; clearing site data deletes it.
-- Android/iOS: app-private `deurge.sqlite`; uninstalling deletes it.
-- Tauri desktop: the app data directory (`~/.local/share/app.deurge.DeUrge/`
-  on Linux, `%APPDATA%/app.deurge.DeUrge/` on Windows,
-  `~/Library/Application Support/app.deurge.DeUrge/` on macOS) with
-  `deurge.db`, `deurge.backup.db` and `backups/`.
+- Web/PWA: IndexedDB `tyag-local`; clearing site data deletes it.
+- Android/iOS: app-private `tyag.sqlite`; uninstalling deletes it.
+- Tauri desktop: the app data directory (`~/.local/share/app.tyag.Tyag/`
+  on Linux, `%APPDATA%/app.tyag.Tyag/` on Windows,
+  `~/Library/Application Support/app.tyag.Tyag/` on macOS) with
+  `tyag.db`, `tyag.backup.db` and `backups/`.
 - Flatpak: the sandboxed app data directory under
-  `~/.var/app/org.deurge.DeUrge/`.
+  `~/.var/app/org.tyag.Tyag/`.
 
 ## 6. Data ownership
 

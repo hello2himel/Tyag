@@ -13,14 +13,14 @@ import {
   SCHEMA_VERSION,
   formatDate,
   formatUtcOffset,
-  isDeUrgeError,
+  isTyagError,
   userMessage,
   utcOffsetMinutesAt,
   type AppSettings,
   type DateFormat,
-} from '@deurge/core';
+} from '@tyag/core';
 import { useApp } from '../../store/app';
-import { DeUrgeLockup } from '../../ui/logo';
+import { TyagLockup } from '../../ui/logo';
 import { navigate } from '../../router';
 import {
   Button,
@@ -76,7 +76,7 @@ const STORAGE_INFO: Record<string, { label: string; note: string }> = {
   },
   localstorage: {
     label: 'This browser (limited local storage)',
-    note: 'IndexedDB was blocked, so deUrge is using smaller local storage. Export a backup regularly.',
+    note: 'IndexedDB was blocked, so Tyag is using smaller local storage. Export a backup regularly.',
   },
   filesystem: {
     label: 'App-private storage on this device',
@@ -155,7 +155,7 @@ export function SettingsScreen() {
       setLockConfig(app.core.security.config());
       toast.show(enabled ? 'Biometric unlock enabled.' : 'Biometric unlock disabled.');
     } catch (failure) {
-      toast.error(isDeUrgeError(failure) ? userMessage(failure) : 'Biometric unlock could not be changed.');
+      toast.error(isTyagError(failure) ? userMessage(failure) : 'Biometric unlock could not be changed.');
     }
   }
 
@@ -204,7 +204,7 @@ export function SettingsScreen() {
         await app.updateSettings(patch);
       } catch (error) {
         toast.error(
-          isDeUrgeError(error) ? userMessage(error) : 'That setting could not be saved. Your current settings are unchanged.',
+          isTyagError(error) ? userMessage(error) : 'That setting could not be saved. Your current settings are unchanged.',
         );
       } finally {
         setSavingKey(null);
@@ -220,7 +220,7 @@ export function SettingsScreen() {
         await app.updateSettings(patch);
       } catch (error) {
         toast.error(
-          isDeUrgeError(error) ? userMessage(error) : 'That notification setting could not be saved. Nothing was changed.',
+          isTyagError(error) ? userMessage(error) : 'That notification setting could not be saved. Nothing was changed.',
         );
       } finally {
         setSavingKey(null);
@@ -237,7 +237,7 @@ export function SettingsScreen() {
       return;
     }
     if (availability === 'unsupported') {
-      toast.error('This platform does not support local notifications. deUrge works the same without them.');
+      toast.error('This platform does not support local notifications. Tyag works the same without them.');
       return;
     }
     setCheckingNotifications(true);
@@ -249,7 +249,7 @@ export function SettingsScreen() {
         setNotificationPermission('unknown');
       }
       if (!granted) {
-        toast.error('Notifications are blocked. Allow them for deUrge in your device or browser settings, then try again.');
+        toast.error('Notifications are blocked. Allow them for Tyag in your device or browser settings, then try again.');
         return;
       }
       await applyNotificationSettings({ notificationsEnabled: true });
@@ -270,12 +270,12 @@ export function SettingsScreen() {
 
   const permissionNote =
     availability === 'unsupported'
-      ? 'Local notifications are not supported in this environment. deUrge works fully without them.'
+      ? 'Local notifications are not supported in this environment. Tyag works fully without them.'
       : availability === 'native'
         ? 'Scheduled on this device by the app itself. No push service, server or account is involved.'
         : notificationPermission === 'denied'
           ? 'Notifications are currently blocked for this site or device. Allow them in your browser or device settings to use this.'
-          : 'Shown locally while deUrge is open in this browser. No push service is used.';
+          : 'Shown locally while Tyag is open in this browser. No push service is used.';
 
   const durationSample = 2 * MS_PER_DAY + 4 * MS_PER_HOUR;
 
@@ -450,10 +450,10 @@ export function SettingsScreen() {
 
         <SettingSection
           label="App lock"
-          note="deUrge asks for your PIN every time it opens and locks when you leave. The 4-digit PIN is stored only as a salted hash; it is never included in backups."
+          note="Tyag asks for your PIN every time it opens and locks when you leave. The 4-digit PIN is stored only as a salted hash; it is never included in backups."
         >
           <ListGroup aria-label="App lock">
-            <ListRow label="Change PIN" value="4 digits" chevron onClick={() => window.dispatchEvent(new Event('deurge:change-pin'))} />
+            <ListRow label="Change PIN" value="4 digits" chevron onClick={() => window.dispatchEvent(new Event('tyag:change-pin'))} />
             {biometricsSupported() && biometricAvailability?.available ? (
               <Toggle
                 label="Biometric unlock"
@@ -465,7 +465,7 @@ export function SettingsScreen() {
             <ListRow
               label="Lock now"
               chevron
-              onClick={() => window.dispatchEvent(new Event('deurge:lock'))}
+              onClick={() => window.dispatchEvent(new Event('tyag:lock'))}
             />
           </ListGroup>
           <p className="setting-note">
@@ -483,7 +483,7 @@ export function SettingsScreen() {
 
         <SettingSection
           label="Privacy & security"
-          note="deUrge has no account and no telemetry. Your records are never sent to a server."
+          note="Tyag has no account and no telemetry. Your records are never sent to a server."
         >
           <ListGroup aria-label="Privacy and security">
             <ListRow label="Your data lives in" value={storageInfo?.label ?? 'This device'} />
@@ -503,17 +503,17 @@ export function SettingsScreen() {
             network request that carries your data. Files leave the app only when you export a backup or spreadsheet yourself.
           </div>
           <div className="notice warn" style={{ marginTop: 8 }}>
-            The app PIN and biometric unlock gate access to deUrge, but the live database itself is not encrypted by
-            deUrge. Rely on your device passcode and disk encryption as well; someone with access to the app's private storage or
+            The app PIN and biometric unlock gate access to Tyag, but the live database itself is not encrypted by
+            Tyag. Rely on your device passcode and disk encryption as well; someone with access to the app's private storage or
             a device backup could read the database file.
           </div>
         </SettingSection>
 
         <SettingSection label="About">
           <div className="about-brand">
-            <DeUrgeLockup height={24} />
+            <TyagLockup height={24} />
           </div>
-          <ListGroup aria-label="About deUrge">
+          <ListGroup aria-label="About Tyag">
             <ListRow label="Version" value={app.core.appVersion} />
             <ListRow label="Database schema" value={String(SCHEMA_VERSION)} />
             <ListRow label="License" value="AGPL-3.0-only" />
@@ -522,10 +522,10 @@ export function SettingsScreen() {
             <ListRow label="Notifications require" value="Your permission" />
           </ListGroup>
           <p className="setting-note">
-            deUrge is a local-first self-help tool, not medical care or a substitute for professional support. Insights
+            Tyag is a local-first self-help tool, not medical care or a substitute for professional support. Insights
             describe patterns in your own records only; they do not diagnose, predict or judge.
           </p>
-          <p className="setting-note">Plain-text links are shown for reference only; deUrge never opens external pages for you.</p>
+          <p className="setting-note">Plain-text links are shown for reference only; Tyag never opens external pages for you.</p>
         </SettingSection>
       </div>
 

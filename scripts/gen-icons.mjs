@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-icons.mjs — every deUrge icon, generated from the official brand kit.
+ * gen-icons.mjs — every Tyag icon, generated from the official brand kit.
  *
  * Source of truth (committed):
  *   assets/brand/app-icons/{web,android,ios}/   prebuilt brand-kit exports
@@ -31,7 +31,7 @@ const WEB_ICONS = join(WEB, 'icons');
 const ANDROID_RES = join(ROOT, 'apps/mobile/android/app/src/main/res');
 const IOS_ASSETS = join(ROOT, 'apps/mobile/ios/App/App/Assets.xcassets');
 const TAURI_ICONS = join(ROOT, 'apps/desktop/src-tauri/icons');
-const TMP = join(tmpdir(), `deurge-icons-${process.pid}`);
+const TMP = join(tmpdir(), `tyag-icons-${process.pid}`);
 mkdirSync(TMP, { recursive: true });
 
 const targets = new Set(
@@ -176,14 +176,14 @@ if (targets.has('android')) {
     }
     const colors = `<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- deUrge brand (Nov 2026 kit): black/white core with an optional orange accent. -->
+    <!-- Tyag brand (Nov 2026 kit): black/white core with an optional orange accent. -->
     <color name="colorPrimary">#000000</color>
     <color name="colorPrimaryDark">#000000</color>
     <color name="colorAccent">#FF4B2B</color>
 
-    <color name="deurge_brand">#000000</color>
-    <color name="deurge_canvas">#000000</color>
-    <color name="deurge_ink">#FFFFFF</color>
+    <color name="tyag_brand">#000000</color>
+    <color name="tyag_canvas">#000000</color>
+    <color name="tyag_ink">#FFFFFF</color>
 </resources>
 `;
     writeFileSync(join(ANDROID_RES, 'values/colors.xml'), colors);

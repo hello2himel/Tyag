@@ -11,7 +11,7 @@
  *  - `activeMs`  is the tracked (running, non-paused) time of a tracker that
  *    overlaps a period. A tracker session is a half-open interval, so paused
  *    time never contributes.
- *  - `abstinentMs` is the streak-engine view of the same overlap. In deUrge
+ *  - `abstinentMs` is the streak-engine view of the same overlap. In Tyag
  *    every active moment is abstinence (see domain.ts), therefore the two
  *    columns are equal by construction today. They are kept as separate
  *    fields so charts, exports and future partial-day rules can diverge
@@ -51,7 +51,7 @@ import { groupBy, loadAllData, loadTrackerBundle } from '../services/data';
 import { buildActiveIntervals, computeTrackerMetrics } from '../engine/streak';
 import { addPeriodsMs, enumeratePeriods, periodKeyFor, startOfPeriodMs } from '../time/periods';
 import { localDateKey, localHour, weekdayIndex } from '../time/temporal';
-import { DeUrgeError } from '../util/errors';
+import { TyagError } from '../util/errors';
 import type { CombinedAnalyticsOptions, TrackerAnalyticsOptions } from './service';
 
 /** Chart buckets returned when the caller does not choose a limit. */
@@ -72,7 +72,7 @@ export interface ActiveIntervalLike {
 export function resolveGranularity(granularity: Granularity | undefined): Granularity {
   const value = granularity ?? 'day';
   if (!GRANULARITIES.includes(value)) {
-    throw new DeUrgeError('VALIDATION', 'Unknown chart grouping.');
+    throw new TyagError('VALIDATION', 'Unknown chart grouping.');
   }
   return value;
 }
@@ -83,13 +83,13 @@ function clamp(value: number, min: number, max: number): number {
 
 export function resolvePeriodLimit(limit: number | undefined): number {
   if (limit === undefined) return DEFAULT_PERIOD_LIMIT;
-  if (!Number.isFinite(limit)) throw new DeUrgeError('VALIDATION', 'Invalid chart period limit.');
+  if (!Number.isFinite(limit)) throw new TyagError('VALIDATION', 'Invalid chart period limit.');
   return clamp(Math.round(limit), 1, MAX_PERIOD_LIMIT);
 }
 
 function assertFiniteBound(value: number | undefined, label: string): void {
   if (value === undefined) return;
-  if (!Number.isFinite(value)) throw new DeUrgeError('VALIDATION', `Invalid chart ${label}.`);
+  if (!Number.isFinite(value)) throw new TyagError('VALIDATION', `Invalid chart ${label}.`);
 }
 
 /** Active time inside `[from, to)` for a sorted, disjoint interval list. */
@@ -237,7 +237,7 @@ export function buildPeriodSeries(input: PeriodSeriesInput): PeriodBucket[] {
       checkInCount: checkInCounts.get(range.key) ?? 0,
       averageUrgeIntensity: urgeCount > 0 ? intensitySum / urgeCount : null,
       activeMs,
-      // In deUrge every active (non-paused) moment is abstinence, so the
+      // In Tyag every active (non-paused) moment is abstinence, so the
       // streak-engine overlap is identical; see the module doc comment.
       abstinentMs: activeMs,
     };

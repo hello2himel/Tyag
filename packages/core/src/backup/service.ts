@@ -10,7 +10,7 @@ import type {
   CsvDataset,
   CsvExportOptions,
   CsvExportResult,
-  DeUrgeExport,
+  TyagExport,
   EncryptedExportResult,
   ImportReport,
   JsonExportResult,
@@ -62,7 +62,7 @@ export class BackupService {
       timeZone,
     });
     return {
-      filename: exportFilename('deurge-export', exportedAt, timeZone, 'json'),
+      filename: exportFilename('tyag-export', exportedAt, timeZone, 'json'),
       content: JSON.stringify(document, null, 2),
       counts: document.counts,
     };
@@ -90,7 +90,7 @@ export class BackupService {
       schemaVersion: SCHEMA_VERSION,
     });
     return {
-      filename: exportFilename('deurge-encrypted-backup', createdAt, timeZone, 'json'),
+      filename: exportFilename('tyag-encrypted-backup', createdAt, timeZone, 'json'),
       content: JSON.stringify(envelope, null, 2),
       createdAt,
     };
@@ -128,7 +128,7 @@ export class BackupService {
    * {@link importJson}; this method performs full structural, enum, type,
    * uniqueness, timestamp and count validation synchronously.
    */
-  parseExport(text: string): DeUrgeExport {
+  parseExport(text: string): TyagExport {
     return parseExportDocument(text);
   }
 

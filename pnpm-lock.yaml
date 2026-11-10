@@ -47,7 +47,7 @@ importers:
       '@capacitor/local-notifications':
         specifier: ^8.0.0
         version: 8.3.1(@capacitor/core@8.6.0)
-      '@deurge/core':
+      '@tyag/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@tauri-apps/api':

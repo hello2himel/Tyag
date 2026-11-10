@@ -1,6 +1,6 @@
-# Releasing deUrge
+# Releasing Tyag
 
-deUrge ships the **same** React/Vite bundle on every platform. A release is a
+Tyag ships the **same** React/Vite bundle on every platform. A release is a
 single git tag that produces web, Android, iOS, Windows (NSIS + MSI), macOS
 (DMG), Linux AppImage/deb/rpm and Linux Flatpak (Tauri 2 + system WebView)
 artifacts plus checksums, and a draft GitHub release that a maintainer reviews
@@ -31,7 +31,7 @@ Bump these **together** in one commit before tagging:
 | `package.json` | `version` | source of truth, e.g. `1.1.0` |
 | `apps/mobile/android/app/build.gradle` | `versionCode` + `versionName` | `versionCode` is an integer that must strictly increase for Play Store; `versionName` = semver |
 | `apps/mobile/ios/App/App.xcodeproj/project.pbxproj` | `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION` | in both Debug and Release configurations |
-| `flatpak/org.deurge.DeUrge.metainfo.xml` | `<release version= date=>` | newest release first; AppStream requires it |
+| `flatpak/org.tyag.Tyag.metainfo.xml` | `<release version= date=>` | newest release first; AppStream requires it |
 | `apps/desktop/package.json` | `version` | keep in step with the root version |
 | `apps/desktop/src-tauri/tauri.conf.json` | `version` | Tauri bundle version (must equal the root version; `tauri build` refuses on mismatch) |
 | `apps/desktop/src-tauri/Cargo.toml` | `version` | Rust crate version; `Cargo.lock` is refreshed by the build (commit it) |
@@ -41,7 +41,7 @@ Then:
 
 ```bash
 pnpm install --frozen-lockfile   # lockfile must be unchanged; commit it if deps changed
-pnpm typecheck && pnpm test && pnpm --filter @deurge/web build && pnpm audit:privacy
+pnpm typecheck && pnpm test && pnpm --filter @tyag/web build && pnpm audit:privacy
 ```
 
 Finally update the changelog/release notes draft and commit everything before
@@ -56,20 +56,20 @@ All artifacts are attached to the GitHub release and covered by
 
 | Platform | Artifact | Built by |
 | --- | --- | --- |
-| Web/PWA | `deUrge-<version>-web.zip` | `web` job (`apps/web/dist`) |
-| Android | `deUrge-<version>-debug.apk` (CI fallback) / `deUrge-<version>-release.apk` / `deUrge-<version>-release.aab` | `android` job |
-| Linux AppImage | `deUrge-<version>-<arch>.AppImage` | `linux` job (Tauri) |
-| Linux deb | `deUrge-<version>-<arch>.deb` (`arch` = `amd64`) | `linux` job (Tauri) |
-| Linux rpm | `deUrge-<version>-<arch>.rpm` (`arch` = `x86_64`) | `linux` job (Tauri) |
-| Linux Flatpak | `deUrge-<version>-<arch>.flatpak` | `flatpak` job (Tauri on `org.gnome.Platform//48`) |
-| Windows | `deUrge-Setup-<version>-<arch>.exe` (NSIS) | `windows` job (Tauri) |
-| Windows MSI | `deUrge-<version>-<arch>.msi` | `windows` job (Tauri) |
-| macOS | `deUrge-<version>-<arch>.dmg` | `macos` job (Tauri, unsigned) |
-| iOS (unsigned) | `deUrge-<version>-unsigned.xcarchive.zip` | `ios` job |
+| Web/PWA | `Tyag-<version>-web.zip` | `web` job (`apps/web/dist`) |
+| Android | `Tyag-<version>-debug.apk` (CI fallback) / `Tyag-<version>-release.apk` / `Tyag-<version>-release.aab` | `android` job |
+| Linux AppImage | `Tyag-<version>-<arch>.AppImage` | `linux` job (Tauri) |
+| Linux deb | `Tyag-<version>-<arch>.deb` (`arch` = `amd64`) | `linux` job (Tauri) |
+| Linux rpm | `Tyag-<version>-<arch>.rpm` (`arch` = `x86_64`) | `linux` job (Tauri) |
+| Linux Flatpak | `Tyag-<version>-<arch>.flatpak` | `flatpak` job (Tauri on `org.gnome.Platform//48`) |
+| Windows | `Tyag-Setup-<version>-<arch>.exe` (NSIS) | `windows` job (Tauri) |
+| Windows MSI | `Tyag-<version>-<arch>.msi` | `windows` job (Tauri) |
+| macOS | `Tyag-<version>-<arch>.dmg` | `macos` job (Tauri, unsigned) |
+| iOS (unsigned) | `Tyag-<version>-unsigned.xcarchive.zip` | `ios` job |
 | Checksums | `SHA256SUMS.txt` | publish job (all files) |
 
 `<arch>` is `x86_64`/`aarch64` for Linux, `x64`/`arm64` for Windows/macOS,
-matching the Tauri bundle arch (`uname -m` on Linux, `process.arch` in `scripts/collect-tauri-artifacts.mjs`). The Tauri builds write native names first (`deUrge_1.0.0_amd64.AppImage`, `deUrge_1.0.0_x64-setup.exe`, …); the collection script renames them to the stable scheme above and generates `SHA256SUMS.txt`.
+matching the Tauri bundle arch (`uname -m` on Linux, `process.arch` in `scripts/collect-tauri-artifacts.mjs`). The Tauri builds write native names first (`Tyag_1.0.0_amd64.AppImage`, `Tyag_1.0.0_x64-setup.exe`, …); the collection script renames them to the stable scheme above and generates `SHA256SUMS.txt`.
 
 ---
 
@@ -82,13 +82,13 @@ provided to CI as secrets:
 
 | Secret | Value |
 | --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 "$HOME/deurge-release.jks"` |
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 "$HOME/tyag-release.jks"` |
 | `ANDROID_KEYSTORE_PASSWORD` | store password |
-| `ANDROID_KEY_ALIAS` | key alias (e.g. `deurge`) |
+| `ANDROID_KEY_ALIAS` | key alias (e.g. `tyag`) |
 | `ANDROID_KEY_PASSWORD` | key password |
 
-The workflow writes them to `$RUNNER_TEMP/deurge-release.jks`, exports the
-`DEURGE_*` variables, builds, and deletes the keystore afterwards. Locally the
+The workflow writes them to `$RUNNER_TEMP/tyag-release.jks`, exports the
+`TYAG_*` variables, builds, and deletes the keystore afterwards. Locally the
 same variables are read by `apps/mobile/android/app/build.gradle`; without them
 the release variant falls back to **debug signing** (useful for testing, not
 for distribution).
@@ -96,7 +96,7 @@ for distribution).
 Keystore creation (one-time, outside the repo):
 
 ```bash
-keytool -genkeypair -v -keystore "$HOME/deurge-release.jks" -alias deurge \
+keytool -genkeypair -v -keystore "$HOME/tyag-release.jks" -alias tyag \
   -keyalg RSA -keysize 4096 -validity 10000 -storetype PKCS12
 ```
 
@@ -148,19 +148,19 @@ mirror a Flatpak repository, use a GPG key stored only in CI secrets.
    ```bash
    pnpm install --frozen-lockfile
    pnpm typecheck && pnpm test
-   pnpm --filter @deurge/web build && pnpm audit:privacy
+   pnpm --filter @tyag/web build && pnpm audit:privacy
    ```
 2. **Bump versions** (table above) and commit:
    `chore(release): vX.Y.Z`.
 3. **Tag and push**:
    ```bash
-   git tag -a vX.Y.Z -m "deUrge vX.Y.Z"
+   git tag -a vX.Y.Z -m "Tyag vX.Y.Z"
    git push origin main --tags
    ```
 4. **Watch the `Release` workflow** (Actions → Release). It runs eight build
    jobs in parallel (web, android, linux AppImage, flatpak, windows, macos,
    ios), flattens all artifacts, writes `SHA256SUMS.txt` and creates a **draft**
-   GitHub release named `deUrge vX.Y.Z` with generated notes.
+   GitHub release named `Tyag vX.Y.Z` with generated notes.
 5. **Verify the draft**:
    * every expected artifact from §2 is attached (a missing `ios`/`macos`
      artifact means a runner failure — inspect logs before publishing);
@@ -172,18 +172,18 @@ mirror a Flatpak repository, use a GPG key stored only in CI secrets.
    * App Store Connect ← signed iOS archive;
    * Microsoft Store / direct download ← signed `.exe`;
    * macOS: notarized `.dmg` (direct download);
-   * Flathub: submit/update `flatpak/org.deurge.DeUrge.yml` on Flathub;
+   * Flathub: submit/update `flatpak/org.tyag.Tyag.yml` on Flathub;
    * web: Netlify builds `main` automatically (`netlify.toml`), or upload
-     `deUrge-<version>-web.zip` to any static host.
+     `Tyag-<version>-web.zip` to any static host.
 
 ### Local release build (no CI)
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm --filter @deurge/web build
+pnpm --filter @tyag/web build
 pnpm build:desktop                     # Tauri release binary (no installer bundles)
-pnpm --filter @deurge/desktop dist:linux   # AppImage + deb + rpm (+ SHA256SUMS.txt)
-pnpm build:android                     # debug unless DEURGE_* signing vars set
+pnpm --filter @tyag/desktop dist:linux   # AppImage + deb + rpm (+ SHA256SUMS.txt)
+pnpm build:android                     # debug unless TYAG_* signing vars set
 pnpm build:flatpak                     # needs flatpak-builder/docker
 ```
 
@@ -207,22 +207,22 @@ Platform checks:
   disabled after first load (service worker).
 * **Android**: `apksigner verify --print-certs <apk>` (CI does this), then
   `adb install -r` on a device.
-* **AppImage**: `chmod +x deUrge-*.AppImage && ./deUrge-*.AppImage` (needs the
+* **AppImage**: `chmod +x Tyag-*.AppImage && ./Tyag-*.AppImage` (needs the
   system WebKitGTK 4.1 and `libfuse2`; `--appimage-extract-and-run` works
   without FUSE).
-* **deb/rpm**: `sudo apt install ./deUrge-*.deb` or `sudo dnf install
-  ./deUrge-*.rpm`; then launch `deUrge` from the application menu.
-* **Windows MSI**: `msiexec /i deUrge-*.msi`; NSIS installer is unsigned
+* **deb/rpm**: `sudo apt install ./Tyag-*.deb` or `sudo dnf install
+  ./Tyag-*.rpm`; then launch `Tyag` from the application menu.
+* **Windows MSI**: `msiexec /i Tyag-*.msi`; NSIS installer is unsigned
   (SmartScreen warning expected).
 * **macOS DMG**: unsigned — right-click → Open the first time on other Macs.
-* **Flatpak**: `flatpak install --user --bundle deUrge-*.flatpak` then
-  `flatpak run org.deurge.DeUrge`; `flatpak info --user --show-permissions
-  org.deurge.DeUrge` must show no network and no home access; the database
-  lives under `~/.var/app/org.deurge.DeUrge/data/app.deurge.DeUrge/`.
-* **Tauri desktop**: first launch creates `deurge.db` in the Tauri app-data
-  directory (`~/.local/share/app.deurge.DeUrge` on Linux,
-  `~/Library/Application Support/app.deurge.DeUrge` on macOS,
-  `%APPDATA%\app.deurge.DeUrge` on Windows); the window must render the
+* **Flatpak**: `flatpak install --user --bundle Tyag-*.flatpak` then
+  `flatpak run org.tyag.Tyag`; `flatpak info --user --show-permissions
+  org.tyag.Tyag` must show no network and no home access; the database
+  lives under `~/.var/app/org.tyag.Tyag/data/app.tyag.Tyag/`.
+* **Tauri desktop**: first launch creates `tyag.db` in the Tauri app-data
+  directory (`~/.local/share/app.tyag.Tyag` on Linux,
+  `~/Library/Application Support/app.tyag.Tyag` on macOS,
+  `%APPDATA%\app.tyag.Tyag` on Windows); the window must render the
   embedded bundle from `tauri://localhost` (Linux/macOS) or
   `http://tauri.localhost` (Windows) and never make a network request.
 
@@ -262,7 +262,7 @@ Tauri notes for release engineers:
 * **Play Store**: roll out a new `versionCode`; you cannot decrease it. Use
   staged rollout halt + hotfix.
 * **App Store**: remove from sale or expedite a new build; builds are immutable.
-* **Web**: redeploy the previous `deUrge-<version>-web.zip` (service workers
+* **Web**: redeploy the previous `Tyag-<version>-web.zip` (service workers
   update on next load; keep the previous release zip).
 * **Flatpak/AppImage/desktop**: publish patched artifacts with the next patch
   version; never replace an already-published file with different bytes.

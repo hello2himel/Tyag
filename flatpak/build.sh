@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# deUrge — build the Flatpak bundle.
+# Tyag — build the Flatpak bundle.
 #
 # Pipeline:
-#   1. build the web app          (pnpm --filter @deurge/web build)
-#   2. build the Tauri binary     (pnpm --filter @deurge/desktop build -> target/release/deurge)
+#   1. build the web app          (pnpm --filter @tyag/web build)
+#   2. build the Tauri binary     (pnpm --filter @tyag/desktop build -> target/release/tyag)
 #   3. stage the payload          (flatpak/build/stage)
-#   4. flatpak-builder            (org.deurge.DeUrge.yml, org.gnome.Platform//48)
-#   5. flatpak build-bundle       -> flatpak/dist/deUrge-<version>-<arch>.flatpak
+#   4. flatpak-builder            (org.tyag.Tyag.yml, org.gnome.Platform//48)
+#   5. flatpak build-bundle       -> flatpak/dist/Tyag-<version>-<arch>.flatpak
 #
 # The Flatpak ships the prebuilt Tauri binary and runs it on the WebKitGTK 4.1
 # from the GNOME runtime: no Electron base app, no zypak, no bundled Chromium.
@@ -28,7 +28,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FP="$ROOT/flatpak"
-APP_ID="org.deurge.DeUrge"
+APP_ID="org.tyag.Tyag"
 MANIFEST="$FP/$APP_ID.yml"
 VERSION="$(node -p "require('$ROOT/package.json').version")"
 ARCH="$(uname -m)"
@@ -37,8 +37,8 @@ BUILD_ROOT="$FP/build"
 STAGE="$BUILD_ROOT/stage"
 REPO="$FP/repo"
 BUILD_DIR="$BUILD_ROOT/dir"
-BINARY="$ROOT/apps/desktop/src-tauri/target/release/deurge"
-BUNDLE="$DIST/deUrge-$VERSION-$ARCH.flatpak"
+BINARY="$ROOT/apps/desktop/src-tauri/target/release/tyag"
+BUNDLE="$DIST/Tyag-$VERSION-$ARCH.flatpak"
 MODE="${BUILD:-auto}"
 FLATHUB_REPO_URL="https://dl.flathub.org/repo/flathub.flatpakrepo"
 # The GNOME runtime that ships WebKitGTK 4.1. Keep in sync with the manifest.
@@ -62,10 +62,10 @@ fi
 # ---------------------------------------------------------------- app payload
 if [[ "${SKIP_APP_BUILD:-0}" != "1" ]]; then
   say "Building web app"
-  (cd "$ROOT" && pnpm --filter @deurge/web build)
+  (cd "$ROOT" && pnpm --filter @tyag/web build)
 
   say "Building Tauri binary (release, no bundle)"
-  (cd "$ROOT" && pnpm --filter @deurge/desktop build)
+  (cd "$ROOT" && pnpm --filter @tyag/desktop build)
 fi
 
 [[ -x "$BINARY" ]] || die "missing $BINARY — run without SKIP_APP_BUILD=1"
@@ -73,8 +73,8 @@ fi
 say "Staging Flatpak payload (v$VERSION, $ARCH)"
 rm -rf "$STAGE"
 mkdir -p "$STAGE" "$DIST"
-install -Dm755 "$BINARY" "$STAGE/deurge"
-install -m755 "$FP/deurge-wrapper.sh" "$STAGE/deurge-wrapper.sh"
+install -Dm755 "$BINARY" "$STAGE/tyag"
+install -m755 "$FP/tyag-wrapper.sh" "$STAGE/tyag-wrapper.sh"
 install -m644 "$FP/$APP_ID.desktop" "$STAGE/$APP_ID.desktop"
 install -m644 "$FP/$APP_ID.metainfo.xml" "$STAGE/$APP_ID.metainfo.xml"
 # Tauri's generated icon set (RGBA) plus the 512px PWA asset.
@@ -158,7 +158,7 @@ for arg in "$@"; do
     *) argv+=("$arg") ;;
   esac
 done
-exec flatpak run --filesystem=host --command=appstreamcli "org.gnome.Sdk//${DEURGE_FLATPAK_RUNTIME:-48}" "${argv[@]}"
+exec flatpak run --filesystem=host --command=appstreamcli "org.gnome.Sdk//${TYAG_FLATPAK_RUNTIME:-48}" "${argv[@]}"
 SHIM
   chmod +x "$shim_dir/appstreamcli"
   printf '%s' "$shim_dir"
@@ -174,7 +174,7 @@ run_flatpak_builder() {
     local shim_dir
     if shim_dir="$(make_appstream_shim)"; then
       warn "host appstreamcli compose failed (libvips/JPEG-XL); retrying with the GNOME SDK AppStream shim"
-      DEURGE_FLATPAK_RUNTIME="$RUNTIME_VERSION" PATH="$shim_dir:$PATH" "$@" 2>&1 | tee -a "$log"
+      TYAG_FLATPAK_RUNTIME="$RUNTIME_VERSION" PATH="$shim_dir:$PATH" "$@" 2>&1 | tee -a "$log"
       return "${PIPESTATUS[0]}"
     fi
   fi
@@ -215,9 +215,9 @@ docker_build() {
       flatpak remote-add --system --if-not-exists flathub '$FLATHUB_REPO_URL'
       flatpak-builder --force-clean --disable-rofiles-fuse \
         --default-branch=stable --repo=repo --install-deps-from=flathub --arch=$ARCH \
-        build/dir org.deurge.DeUrge.yml
+        build/dir org.tyag.Tyag.yml
       flatpak build-bundle --runtime-repo='$FLATHUB_REPO_URL' \
-        repo 'dist/deUrge-$VERSION-$ARCH.flatpak' '$APP_ID' stable
+        repo 'dist/Tyag-$VERSION-$ARCH.flatpak' '$APP_ID' stable
       chown -R \"\$HOST_UID:\$HOST_GID\" build repo dist
     "
 }
@@ -263,6 +263,6 @@ Notes:
     install time.
   * Sandbox: no network, no home-directory access, only xdg-download for
     user-initiated exports/backups.
-  * Install locally:  flatpak install --user --bundle dist/deUrge-*.flatpak
-    Run:              flatpak run org.deurge.DeUrge
+  * Install locally:  flatpak install --user --bundle dist/Tyag-*.flatpak
+    Run:              flatpak run org.tyag.Tyag
 EOF

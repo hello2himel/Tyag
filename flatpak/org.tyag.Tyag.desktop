@@ -1,12 +1,12 @@
 [Desktop Entry]
 Type=Application
-Name=deUrge
+Name=Tyag
 GenericName=Recovery Tracker
 Comment=Local-first addiction and habit recovery tracker
-Exec=deurge-wrapper %U
-Icon=org.deurge.DeUrge
+Exec=tyag-wrapper %U
+Icon=org.tyag.Tyag
 Terminal=false
 Categories=Utility;
 Keywords=habit;recovery;addiction;tracker;offline;privacy;
-StartupWMClass=deurge
+StartupWMClass=tyag
 X-GNOME-UsesNotifications=true

@@ -16,8 +16,8 @@ import type {
   ApplicationSettingRow,
   CheckIn,
   CustomCategory,
-  DeUrgeExport,
-  DeUrgeExportData,
+  TyagExport,
+  TyagExportData,
   ExportCounts,
   HistoryEvent,
   HistoryEventType,
@@ -37,7 +37,7 @@ import {
 import { SCHEMA_VERSION } from '../db/migrations';
 import { hydrateSettings } from '../settings/defaults';
 import { isValidTimeZone } from '../time/temporal';
-import { DeUrgeError } from '../util/errors';
+import { TyagError } from '../util/errors';
 
 /* ------------------------------------------------------------------------- */
 /* Migration registry                                                        */
@@ -92,10 +92,10 @@ export interface ExportMigrationSource {
   data: unknown;
 }
 
-const migrationSources = new WeakMap<DeUrgeExport, ExportMigrationSource>();
+const migrationSources = new WeakMap<TyagExport, ExportMigrationSource>();
 
 /** Pre-migration source for a parsed document, when it was upconverted. */
-export function exportMigrationSource(document: DeUrgeExport): ExportMigrationSource | undefined {
+export function exportMigrationSource(document: TyagExport): ExportMigrationSource | undefined {
   return migrationSources.get(document);
 }
 
@@ -110,9 +110,9 @@ export function applyExportMigrations(data: unknown, fromVersion: number, toVers
   while (version < toVersion) {
     const migration = EXPORT_DATA_MIGRATIONS[version];
     if (!migration) {
-      throw new DeUrgeError(
+      throw new TyagError(
         'IMPORT_UNSUPPORTED_VERSION',
-        'This backup was created by an older version of deUrge that this release cannot migrate. Update the app or export again from the older version.',
+        'This backup was created by an older version of Tyag that this release cannot migrate. Update the app or export again from the older version.',
       );
     }
     current = migration(current);
@@ -126,7 +126,7 @@ export function applyExportMigrations(data: unknown, fromVersion: number, toVers
 /* ------------------------------------------------------------------------- */
 
 function invalid(message: string): never {
-  throw new DeUrgeError('IMPORT_INVALID', message);
+  throw new TyagError('IMPORT_INVALID', message);
 }
 
 function recordError(collection: string, index: number, field: string): never {
@@ -622,7 +622,7 @@ function validateHistoryEvents(value: unknown): HistoryEvent[] {
 /* ------------------------------------------------------------------------- */
 
 /** Validate the current-shape export data object and return typed data. */
-export function validateExportData(value: unknown): DeUrgeExportData {
+export function validateExportData(value: unknown): TyagExportData {
   const record = asRecord(value, 'export');
   return {
     trackers: validateTrackers(record.trackers),
@@ -639,7 +639,7 @@ export function validateExportData(value: unknown): DeUrgeExportData {
 }
 
 /** Counts that match already-validated export data. */
-function countData(data: DeUrgeExportData): ExportCounts {
+function countData(data: TyagExportData): ExportCounts {
   return {
     trackers: data.trackers.length,
     sessions: data.sessions.length,
@@ -699,28 +699,28 @@ function validateIntegrity(value: unknown): { algorithm: 'SHA-256'; hash: string
  * Parse and validate a JSON export string. Performs no database access and no
  * asynchronous work (integrity hashing is verified separately before import).
  */
-export function parseExportDocument(text: string): DeUrgeExport {
+export function parseExportDocument(text: string): TyagExport {
   if (typeof text !== 'string' || text.trim().length === 0) {
-    invalid('This file is empty or is not a deUrge export.');
+    invalid('This file is empty or is not a Tyag export.');
   }
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch {
-    invalid('This file is not valid JSON. Choose a deUrge JSON export.');
+    invalid('This file is not valid JSON. Choose a Tyag JSON export.');
   }
   const record = asRecord(parsed, 'export');
   if (record.format !== EXPORT_FORMAT) {
-    invalid('This file is not a deUrge export.');
+    invalid('This file is not a Tyag export.');
   }
   const formatVersion = record.formatVersion;
   if (typeof formatVersion !== 'number' || !Number.isInteger(formatVersion) || formatVersion < 1) {
     invalid('This backup has an invalid format version.');
   }
   if (formatVersion > EXPORT_FORMAT_VERSION) {
-    throw new DeUrgeError(
+    throw new TyagError(
       'IMPORT_UNSUPPORTED_VERSION',
-      'This export was created by a newer version of deUrge. Update the app before importing it.',
+      'This export was created by a newer version of Tyag. Update the app before importing it.',
     );
   }
   const schemaVersion = record.schemaVersion;
@@ -728,9 +728,9 @@ export function parseExportDocument(text: string): DeUrgeExport {
     invalid('This backup has an invalid schema version.');
   }
   if (schemaVersion > SCHEMA_VERSION) {
-    throw new DeUrgeError(
+    throw new TyagError(
       'IMPORT_UNSUPPORTED_VERSION',
-      'This backup was created by a newer version of deUrge. Update the app before importing it.',
+      'This backup was created by a newer version of Tyag. Update the app before importing it.',
     );
   }
   const appVersion = record.appVersion;
@@ -760,7 +760,7 @@ export function parseExportDocument(text: string): DeUrgeExport {
     // data so previews match what will actually be imported.
     validateCounts(record.counts, countSourceData(record.data));
   }
-  const document: DeUrgeExport = {
+  const document: TyagExport = {
     format: EXPORT_FORMAT,
     formatVersion: EXPORT_FORMAT_VERSION,
     schemaVersion: SCHEMA_VERSION,
@@ -796,7 +796,7 @@ export interface RelationshipValidationResult {
  * returned as user-safe warnings.
  */
 export function validateImportRelationships(
-  data: DeUrgeExportData,
+  data: TyagExportData,
   known: KnownReferences,
 ): RelationshipValidationResult {
   const warnings: string[] = [];
@@ -879,7 +879,7 @@ export function validateImportRelationships(
  */
 export function mergeKnownReferences(
   existing: { trackerStartedAt: Map<string, number>; categoryIds: Set<string> },
-  data: DeUrgeExportData,
+  data: TyagExportData,
 ): KnownReferences {
   const trackerStartedAt = new Map(existing.trackerStartedAt);
   for (const tracker of data.trackers) trackerStartedAt.set(tracker.id, tracker.startedAt);
@@ -889,7 +889,7 @@ export function mergeKnownReferences(
 }
 
 /** Known references for a replace import: only the incoming export counts. */
-export function replaceKnownReferences(data: DeUrgeExportData): KnownReferences {
+export function replaceKnownReferences(data: TyagExportData): KnownReferences {
   return {
     trackerStartedAt: new Map(data.trackers.map((tracker) => [tracker.id, tracker.startedAt])),
     categoryIds: new Set(data.categories.map((category) => category.id)),

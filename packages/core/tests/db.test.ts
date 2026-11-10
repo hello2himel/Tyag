@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DeUrgeCore,
+  TyagCore,
   MIGRATIONS,
   MemoryPersistence,
   SCHEMA_VERSION,
@@ -314,7 +314,7 @@ describe('SQLite schema and migrations', () => {
     expect(bytes.length).toBeGreaterThan(0);
     const SQL2 = await loadSqlWasm();
     const persistence = new MemoryPersistence(bytes);
-    const reimport = await DeUrgeCore.open({ SQL: SQL2, persistence, clock });
+    const reimport = await TyagCore.open({ SQL: SQL2, persistence, clock });
     expect(reimport.trackers.list()[0]?.name).toBe('Snapshot');
     expect(reimport.metrics(tracker.id).currentStreakMs).toBe(2 * DAY);
     expect(reimport.checkIntegrity()).toBe('ok');

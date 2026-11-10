@@ -1,5 +1,5 @@
 /**
- * Boots the deUrge core on the current platform.
+ * Boots the Tyag core on the current platform.
  *
  * Persistence order:
  *   1. Tauri desktop commands (atomic local file in the app data directory)
@@ -7,7 +7,7 @@
  *   3. IndexedDB (browser/PWA), with a localStorage fallback
  *   4. In-memory (last resort; the UI warns that data will not be kept)
  */
-import { DeUrgeCore, loadSqlJs, MemoryPersistence, type PersistenceAdapter } from '@deurge/core';
+import { TyagCore, loadSqlJs, MemoryPersistence, type PersistenceAdapter } from '@tyag/core';
 import { Capacitor } from '@capacitor/core';
 import { invoke } from '@tauri-apps/api/core';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
@@ -70,8 +70,8 @@ class IdbPersistence implements PersistenceAdapter {
 /** localStorage fallback for environments where IndexedDB is blocked. */
 class LocalStoragePersistence implements PersistenceAdapter {
   readonly kind = 'localstorage' as const;
-  private readonly key = 'deurge.database';
-  private readonly backupKey = 'deurge.database.backup';
+  private readonly key = 'tyag.database';
+  private readonly backupKey = 'tyag.database.backup';
   private encode(data: Uint8Array): string {
     let binary = '';
     const chunk = 0x8000;
@@ -99,7 +99,7 @@ class LocalStoragePersistence implements PersistenceAdapter {
 }
 
 export interface BootResult {
-  core: DeUrgeCore;
+  core: TyagCore;
   persistenceKind: PersistenceAdapter['kind'];
   /** Set when the platform had to fall back to memory (data not saved). */
   storageWarning: string | null;
@@ -134,23 +134,23 @@ async function createPersistence(): Promise<{ persistence: PersistenceAdapter; w
       return {
         persistence,
         warning:
-          'This browser blocked IndexedDB, so deUrge is using small local storage instead. Export a backup regularly.',
+          'This browser blocked IndexedDB, so Tyag is using small local storage instead. Export a backup regularly.',
       };
     } catch {
       return {
         persistence: new MemoryPersistence(),
         warning:
-          'This browser is blocking local storage. deUrge will work for this session, but your data will not be kept. Export a backup before closing.',
+          'This browser is blocking local storage. Tyag will work for this session, but your data will not be kept. Export a backup before closing.',
       };
     }
   }
 }
 
-export async function openDeUrgeCore(): Promise<BootResult> {
+export async function openTyagCore(): Promise<BootResult> {
   const wasmBinary = await loadWasm();
   const SQL = await loadSqlJs({ wasmBinary });
   const { persistence, warning } = await createPersistence();
-  const core = await DeUrgeCore.open({ SQL, persistence });
+  const core = await TyagCore.open({ SQL, persistence });
   return { core, persistenceKind: persistence.kind, storageWarning: warning };
 }
 
@@ -161,8 +161,8 @@ export async function resetWebStorage(): Promise<void> {
     /* ignore */
   }
   try {
-    localStorage.removeItem('deurge.database');
-    localStorage.removeItem('deurge.database.backup');
+    localStorage.removeItem('tyag.database');
+    localStorage.removeItem('tyag.database.backup');
   } catch {
     /* ignore */
   }

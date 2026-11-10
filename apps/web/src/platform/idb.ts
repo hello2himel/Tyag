@@ -3,7 +3,7 @@
  * Deliberately dependency-free and local-only: the only thing stored is the
  * opaque database bytes (plus one rolling backup copy).
  */
-const DB_NAME = 'deurge-local';
+const DB_NAME = 'tyag-local';
 const STORE = 'kv';
 
 function openIdb(): Promise<IDBDatabase> {

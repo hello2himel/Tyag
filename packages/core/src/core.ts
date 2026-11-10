@@ -1,7 +1,7 @@
 /**
- * deUrge application core.
+ * Tyag application core.
  *
- * One `DeUrgeCore` owns the SQLite database, the services (trackers, events,
+ * One `TyagCore` owns the SQLite database, the services (trackers, events,
  * journal, categories, settings, history) and the engines (analytics,
  * insights, backup). It has no platform dependencies: pass it a SQLite WASM
  * instance, a persistence adapter and a clock.
@@ -14,7 +14,7 @@ import { migrate } from './db/migrations';
 import { seedDefaultCategories } from './settings/defaults';
 import type { Clock } from './util/clock';
 import { systemClock } from './util/clock';
-import { DeUrgeError } from './util/errors';
+import { TyagError } from './util/errors';
 import { loadTrackerBundle } from './services/data';
 import { computeTrackerMetrics } from './engine/streak';
 import type { CoreContext } from './services/context';
@@ -38,7 +38,7 @@ export interface CoreOpenOptions {
   appVersion?: string;
 }
 
-export class DeUrgeCore {
+export class TyagCore {
   readonly trackers: TrackerService;
   readonly lapses: LapseService;
   readonly urges: UrgeService;
@@ -96,7 +96,7 @@ export class DeUrgeCore {
    * Open the app: load the persisted snapshot, verify it, run migrations,
    * seed defaults and persist if anything changed.
    */
-  static async open(options: CoreOpenOptions): Promise<DeUrgeCore> {
+  static async open(options: CoreOpenOptions): Promise<TyagCore> {
     const clock = options.clock ?? systemClock();
     const appVersion = options.appVersion ?? APP_VERSION;
     const bytes = await options.persistence.load();
@@ -104,17 +104,17 @@ export class DeUrgeCore {
     try {
       database = SqlDatabase.fromBytes(options.SQL, bytes);
     } catch {
-      throw new DeUrgeError(
+      throw new TyagError(
         'DATABASE',
-        'Your local deUrge data could not be opened. Restore a backup from the Data & Backups screen.',
+        'Your local Tyag data could not be opened. Restore a backup from the Data & Backups screen.',
       );
     }
     if (bytes) {
       const integrity = database.integrityCheck();
       if (integrity !== 'ok') {
-        throw new DeUrgeError(
+        throw new TyagError(
           'DATABASE',
-          'Your local deUrge data failed an integrity check. Restore a backup from the Data & Backups screen.',
+          'Your local Tyag data failed an integrity check. Restore a backup from the Data & Backups screen.',
         );
       }
     }
@@ -124,9 +124,9 @@ export class DeUrgeCore {
       // duration of the transaction; verify the result before using it.
       const integrity = database.integrityCheck();
       if (integrity !== 'ok' || database.foreignKeyViolations().length > 0) {
-        throw new DeUrgeError(
+        throw new TyagError(
           'DATABASE',
-          'Your local deUrge data could not be upgraded safely. Restore a backup from the Data & Backups screen.',
+          'Your local Tyag data could not be upgraded safely. Restore a backup from the Data & Backups screen.',
         );
       }
     }
@@ -137,7 +137,7 @@ export class DeUrgeCore {
       const after = database.get<{ n: number }>('SELECT COUNT(*) AS n FROM custom_categories');
       seeded = (before?.n ?? 0) !== (after?.n ?? 0);
     });
-    const core = new DeUrgeCore(database, options.persistence, clock, appVersion);
+    const core = new TyagCore(database, options.persistence, clock, appVersion);
     if (!bytes || applied > 0 || seeded) {
       await core.persist();
     }

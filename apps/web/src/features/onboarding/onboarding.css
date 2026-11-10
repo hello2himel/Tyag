@@ -1,5 +1,5 @@
 /* ==========================================================================
-   deUrge onboarding — 1:1 implementation of the supplied onboarding kit.
+   Tyag onboarding — 1:1 implementation of the supplied onboarding kit.
    Mobile screens are 390×844 compositions; ≥980px uses the 980×620 desktop
    card with the three-step rail. Values come from the kit's inline styles.
    ========================================================================== */
@@ -915,3 +915,10 @@
 .onb-desktop-welcome-actions { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; }
 .onb-desktop-welcome-actions .btn { height: 46px; font-size: 15px; }
 .onb-desktop-welcome-actions .onb-text-btn { justify-content: center; }
+
+/* Large, highlighted restore action pinned inside the restore sheet. */
+.onb-restore-primary { margin-top: 4px; }
+.onb-restore-primary .btn { height: 50px; font-size: 16px; border-radius: 14px; }
+
+.onb-restore-primary { display: flex; flex-direction: column; gap: 8px; }
+.onb-restore-primary .btn-plain { height: 44px; font-size: 15px; }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DeUrgeError, MS_PER_DAY, toIsoUtc } from '../src/index';
+import { TyagError, MS_PER_DAY, toIsoUtc } from '../src/index';
 import {
   DAILY_SUMMARY_COLUMNS,
   JOURNAL_COLUMNS,
@@ -66,7 +66,7 @@ describe('csv: RFC 4180 formatting', () => {
       notes: 'He said "hi"',
     });
     const result = test.core.backup.exportCsv('trackers');
-    expect(result.filename).toMatch(/^deurge-trackers-\d{8}-\d{6}\.csv$/);
+    expect(result.filename).toMatch(/^tyag-trackers-\d{8}-\d{6}\.csv$/);
     expect(result.content.endsWith('\r\n')).toBe(true);
     // Record separators are CRLF; the quoted name keeps its own embedded LF.
     expect(result.content.split('\r\n').length).toBeGreaterThanOrEqual(2);
@@ -198,11 +198,11 @@ describe('csv: datasets and columns', () => {
     const seeded = await seedRichCore();
     expect(() =>
       seeded.core.backup.exportCsv('lapses', { timeZone: 'Mars/Olympus_Mons' }),
-    ).toThrow(DeUrgeError);
+    ).toThrow(TyagError);
     try {
       seeded.core.backup.exportCsv('lapses', { timeZone: 'Mars/Olympus_Mons' });
     } catch (error) {
-      expect((error as DeUrgeError).code).toBe('VALIDATION');
+      expect((error as TyagError).code).toBe('VALIDATION');
     }
   });
 });

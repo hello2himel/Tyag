@@ -5,7 +5,7 @@
  * sidebar's "New tracker") opens the create sheet via `#/trackers?new=1`.
  */
 import { useEffect, useMemo, useState } from 'react';
-import type { DeUrgeCore, Tracker } from '@deurge/core';
+import type { TyagCore, Tracker } from '@tyag/core';
 import { useApp } from '../../store/app';
 import { navigate, useRoute } from '../../router';
 import { RollingText } from '../../ui/RollingText';
@@ -23,7 +23,7 @@ import { TRACKER_STATUS_LABEL, trackerStatusDotClass } from './trackerStatus';
 import './trackers.css';
 
 /** When was this tracker last paused? The history log is the honest source. */
-function lastPausedAt(core: DeUrgeCore, trackerId: string): number | null {
+function lastPausedAt(core: TyagCore, trackerId: string): number | null {
   try {
     const [item] = core.history.list({ trackerId, types: ['tracker_paused'], limit: 1 });
     return item ? item.event.occurredAt : null;

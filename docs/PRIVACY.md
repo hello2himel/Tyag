@@ -1,11 +1,11 @@
-# deUrge — Privacy and local-only architecture
+# Tyag — Privacy and local-only architecture
 
-deUrge is local-first by design. There is no account, no server, no cloud
+Tyag is local-first by design. There is no account, no server, no cloud
 service, no advertising, no telemetry, no crash reporting, no third-party
 analytics and no external AI service. The application is fully functional in
 airplane mode after installation/first load.
 
-## What deUrge never does
+## What Tyag never does
 
 - Never requires an account, email, phone number or sign-in.
 - Never makes background network requests with personal information.
@@ -23,10 +23,10 @@ airplane mode after installation/first load.
 
 | Platform | Live database | Backups / exports |
 | --- | --- | --- |
-| Web / PWA | IndexedDB database `deurge-local` (plus a rolling backup copy). Service worker cache holds only the app bundle. | Files you download (`deurge-*.json`, `.csv`, `.deurge-backup`) |
-| Android / iOS | App-private storage via Capacitor Filesystem: `deurge.sqlite` (and `deurge.backup.sqlite`) in the app's data directory | Files you export via the system file picker / Documents |
-| Windows / macOS / Linux (Tauri) | App data directory: `deurge.db` (Linux: `~/.local/share/app.deurge.DeUrge/`, macOS: `~/Library/Application Support/app.deurge.DeUrge/`, Windows: `%APPDATA%/app.deurge.DeUrge/`) with rolling backups under `backups/` | Files you export to Downloads |
-| Linux Flatpak | Inside the Flatpak sandbox under `~/.var/app/org.deurge.DeUrge/data/` | Files you export to `xdg-download` |
+| Web / PWA | IndexedDB database `tyag-local` (plus a rolling backup copy). Service worker cache holds only the app bundle. | Files you download (`tyag-*.json`, `.csv`, `.tyag-backup`) |
+| Android / iOS | App-private storage via Capacitor Filesystem: `tyag.sqlite` (and `tyag.backup.sqlite`) in the app's data directory | Files you export via the system file picker / Documents |
+| Windows / macOS / Linux (Tauri) | App data directory: `tyag.db` (Linux: `~/.local/share/app.tyag.Tyag/`, macOS: `~/Library/Application Support/app.tyag.Tyag/`, Windows: `%APPDATA%/app.tyag.Tyag/`) with rolling backups under `backups/` | Files you export to Downloads |
+| Linux Flatpak | Inside the Flatpak sandbox under `~/.var/app/org.tyag.Tyag/data/` | Files you export to `xdg-download` |
 
 The app requests only the sandbox permissions it needs. In particular, the
 Flatpak manifest does **not** request network access.
@@ -75,7 +75,7 @@ Protected:
 - The app's CSP and Tauri/Capacitor hardening reduce remote-code injection
   risk.
 
-Not protected by deUrge itself:
+Not protected by Tyag itself:
 
 - An unlocked, compromised or rooted device (OS-level malware, screen capture).
   Use the operating system's disk encryption and device lock.

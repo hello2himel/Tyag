@@ -16,7 +16,7 @@
  */
 import type { EncryptedBackupEnvelope } from '../domain';
 import { ENCRYPTED_BACKUP_FORMAT } from '../domain';
-import { DeUrgeError } from '../util/errors';
+import { TyagError } from '../util/errors';
 
 /** Envelope version understood by this release. */
 export const BACKUP_ENVELOPE_VERSION = 1;
@@ -41,7 +41,7 @@ const DECODER = new TextDecoder('utf-8', { fatal: true });
 function cryptoObject(): Crypto {
   const candidate = (globalThis as { crypto?: Crypto }).crypto;
   if (!candidate || !candidate.subtle) {
-    throw new DeUrgeError(
+    throw new TyagError(
       'UNAVAILABLE',
       'Encrypted backups are not available on this platform. You can still export a JSON backup.',
     );
@@ -54,17 +54,17 @@ function subtle(): SubtleCrypto {
 }
 
 function failCrypto(message: string): never {
-  throw new DeUrgeError('CRYPTO', message);
+  throw new TyagError('CRYPTO', message);
 }
 
 function failInvalid(message: string): never {
-  throw new DeUrgeError('IMPORT_INVALID', message);
+  throw new TyagError('IMPORT_INVALID', message);
 }
 
 /** Cryptographically random bytes from the platform CSPRNG. */
 export function randomBytes(length: number): Uint8Array {
   if (!Number.isInteger(length) || length <= 0) {
-    throw new DeUrgeError('VALIDATION', 'Invalid random byte length.');
+    throw new TyagError('VALIDATION', 'Invalid random byte length.');
   }
   const bytes = new Uint8Array(length);
   cryptoObject().getRandomValues(bytes);
@@ -187,10 +187,10 @@ export async function encryptString(
   iterations: number = KDF_ITERATIONS,
 ): Promise<EncryptStringResult> {
   if (typeof password !== 'string' || password.length === 0) {
-    throw new DeUrgeError('VALIDATION', 'Enter a password to encrypt this backup.');
+    throw new TyagError('VALIDATION', 'Enter a password to encrypt this backup.');
   }
   if (!Number.isInteger(iterations) || iterations < MIN_ACCEPTED_KDF_ITERATIONS) {
-    throw new DeUrgeError('VALIDATION', 'Invalid encryption work factor.');
+    throw new TyagError('VALIDATION', 'Invalid encryption work factor.');
   }
   const salt = randomBytes(KDF_SALT_BYTES);
   const iv = randomBytes(AES_GCM_IV_BYTES);
@@ -217,7 +217,7 @@ export async function encryptString(
  */
 export async function decryptString(data: EncryptStringResult, password: string): Promise<string> {
   if (typeof password !== 'string' || password.length === 0) {
-    throw new DeUrgeError('VALIDATION', 'Enter the password for this backup.');
+    throw new TyagError('VALIDATION', 'Enter the password for this backup.');
   }
   const salt = decodeBase64OrThrow(data.salt, 'salt');
   const iv = decodeBase64OrThrow(data.iv, 'encryption');
@@ -245,7 +245,7 @@ export async function decryptString(data: EncryptStringResult, password: string)
     );
     return DECODER.decode(new Uint8Array(plaintext));
   } catch (error) {
-    if (error instanceof DeUrgeError) throw error;
+    if (error instanceof TyagError) throw error;
     failCrypto('Could not decrypt this backup. Check the password and try again, or the file may be damaged.');
   }
 }
@@ -281,22 +281,22 @@ export function parseEnvelope(text: string): EncryptedBackupEnvelope {
   try {
     parsed = JSON.parse(text);
   } catch {
-    failInvalid('This file is not a valid deUrge backup.');
+    failInvalid('This file is not a valid Tyag backup.');
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    failInvalid('This file is not a valid deUrge backup.');
+    failInvalid('This file is not a valid Tyag backup.');
   }
   const record = parsed as Record<string, unknown>;
   if (record.format !== ENCRYPTED_BACKUP_FORMAT) {
-    failInvalid('This file is not an encrypted deUrge backup.');
+    failInvalid('This file is not an encrypted Tyag backup.');
   }
   if (typeof record.version !== 'number' || !Number.isInteger(record.version) || record.version < 1) {
     failInvalid('This encrypted backup has an invalid version.');
   }
   if (record.version > BACKUP_ENVELOPE_VERSION) {
-    throw new DeUrgeError(
+    throw new TyagError(
       'IMPORT_UNSUPPORTED_VERSION',
-      'This backup was created by a newer version of deUrge. Update the app to open it.',
+      'This backup was created by a newer version of Tyag. Update the app to open it.',
     );
   }
   const kdf = record.kdf;

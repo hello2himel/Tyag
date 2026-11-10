@@ -4,7 +4,7 @@ import { settingsRepo } from '../repos/settings';
 import { validateAppSettingsPatch } from '../validation';
 import { write, type CoreContext } from './context';
 import { isValidTimeZone } from '../time/temporal';
-import { DeUrgeError, fail } from '../util/errors';
+import { TyagError, fail } from '../util/errors';
 
 export class SettingsService {
   constructor(private readonly ctx: CoreContext) {}
@@ -60,9 +60,9 @@ export class SettingsService {
   /** Guard used by the UI before enabling notifications. */
   assertNotificationsAvailable(enabled: boolean): void {
     if (enabled && typeof Notification === 'undefined') {
-      throw new DeUrgeError(
+      throw new TyagError(
         'UNAVAILABLE',
-        'This platform does not support local notifications. deUrge will keep working without them.',
+        'This platform does not support local notifications. Tyag will keep working without them.',
       );
     }
   }

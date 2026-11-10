@@ -1,5 +1,5 @@
 /**
- * deUrge shared UI components.
+ * Tyag shared UI components.
  * Visual language comes from the supplied UI/UX skeleton: iOS-like surfaces,
  * system fonts, tabular numerals, bottom sheets on mobile and dialogs on
  * desktop, and a green/amber/purple accent vocabulary (abstinence/lapse/urge).
@@ -21,7 +21,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { curves, durations, haptic, project, reducedMotion, rubberBand } from './motion';
-import type { StreakInterval } from '@deurge/core';
+import type { StreakInterval } from '@tyag/core';
 
 /* --------------------------------- icons --------------------------------- */
 
@@ -490,7 +490,7 @@ export function Sheet({
     panel.style.transform = '';
     if (reducedMotion()) {
       panel.style.opacity = '1';
-      backdrop.style.opacity = '0.4';
+      backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
       return;
     }
     const desktop = window.matchMedia('(pointer: fine)').matches && window.innerWidth >= 700;
@@ -498,14 +498,16 @@ export function Sheet({
       panel.animate(
         desktop
           ? [{ transform: 'translateY(-24px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }]
-          : [{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }],
+          : [{ transform: 'translateY(100%)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }],
         { duration: desktop ? 300 : durations.sheet, easing: desktop ? curves.easeOut : curves.sheet, fill: 'both' },
       ),
-      backdrop.animate([{ opacity: 0 }, { opacity: 0.4 }], {
-        duration: desktop ? 300 : durations.sheet,
-        easing: curves.easeOut,
-        fill: 'both',
-      }),
+      backdrop.animate(
+        [
+          { backgroundColor: 'rgba(0, 0, 0, 0)' },
+          { backgroundColor: 'rgba(0, 0, 0, 0.4)' },
+        ],
+        { duration: desktop ? 300 : durations.sheet, easing: curves.easeOut, fill: 'both' },
+      ),
     );
   }
 
@@ -528,11 +530,13 @@ export function Sheet({
           : [{ transform: 'translateY(0)' }, { transform: 'translateY(100%)' }],
         { duration: desktop ? 200 : durations.standard, easing: curves.easeIn, fill: 'both' },
       ),
-      backdrop.animate([{ opacity: 0.4 }, { opacity: 0 }], {
-        duration: desktop ? 200 : durations.standard,
-        easing: curves.easeIn,
-        fill: 'both',
-      }),
+      backdrop.animate(
+        [
+          { backgroundColor: 'rgba(0, 0, 0, 0.4)' },
+          { backgroundColor: 'rgba(0, 0, 0, 0)' },
+        ],
+        { duration: desktop ? 200 : durations.standard, easing: curves.easeIn, fill: 'both' },
+      ),
     );
     window.setTimeout(() => {
       setMounted(false);
@@ -600,7 +604,7 @@ export function Sheet({
     drag.current.lastY = event.clientY;
     drag.current.lastT = now;
     panel.style.transform = `translateY(${dy}px)`;
-    if (backdropRef.current) backdropRef.current.style.opacity = String(Math.max(0, 0.4 * (1 - dy / height)));
+    if (backdropRef.current) backdropRef.current.style.backgroundColor = `rgba(0, 0, 0, ${Math.max(0, 0.4 * (1 - dy / height))})`;
   }
 
   function onPointerUp(): void {
@@ -621,11 +625,13 @@ export function Sheet({
       animations.current.push(animation);
       if (backdropRef.current) {
         animations.current.push(
-          backdropRef.current.animate([{ opacity: backdropRef.current.style.opacity || '0.4' }, { opacity: 0.4 }], {
-            duration: durations.sheet,
-            easing: curves.sheet,
-            fill: 'both',
-          }),
+          backdropRef.current.animate(
+            [
+              { backgroundColor: backdropRef.current.style.backgroundColor || 'rgba(0, 0, 0, 0.4)' },
+              { backgroundColor: 'rgba(0, 0, 0, 0.4)' },
+            ],
+            { duration: durations.sheet, easing: curves.sheet, fill: 'both' },
+          ),
         );
       }
       panel.style.transform = '';
@@ -641,7 +647,7 @@ export function Sheet({
       className="sheet-backdrop"
       role="presentation"
       ref={backdropRef}
-      style={{ opacity: 0 }}
+
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) dismiss();
       }}

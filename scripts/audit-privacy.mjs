@@ -3,7 +3,7 @@
  * audit-privacy.mjs — fail the build if the shipped web bundle could talk to
  * the network or pull in third-party resources.
  *
- * deUrge is a local-first, offline app: the built bundle must be fully
+ * Tyag is a local-first, offline app: the built bundle must be fully
  * self-contained. This audit scans apps/web/dist (and the app manifests) for:
  *
  *   FAIL
@@ -251,7 +251,7 @@ function scanPackages() {
 function main() {
   if (!existsSync(DIST) || !statSync(DIST).isDirectory()) {
     console.error(`audit-privacy: dist directory not found: ${DIST}`);
-    console.error('audit-privacy: build the web app first (pnpm --filter @deurge/web build)');
+    console.error('audit-privacy: build the web app first (pnpm --filter @tyag/web build)');
     process.exit(2);
   }
 

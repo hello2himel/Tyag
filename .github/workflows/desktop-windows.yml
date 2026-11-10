@@ -6,8 +6,8 @@ name: Desktop Windows (Tauri)
 # docs/RELEASING.md) — they are never committed.
 #
 # Output (normalised by scripts/collect-tauri-artifacts.mjs):
-#   apps/desktop/release/deUrge-Setup-<version>-x64.exe
-#   apps/desktop/release/deUrge-<version>-x64.msi
+#   apps/desktop/release/Tyag-Setup-<version>-x64.exe
+#   apps/desktop/release/Tyag-<version>-x64.msi
 #   apps/desktop/release/SHA256SUMS.txt
 
 on:
@@ -76,7 +76,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Windows installers
-        run: pnpm --filter @deurge/desktop dist:win
+        run: pnpm --filter @tyag/desktop dist:win
 
       - name: Verify installers + checksums
         shell: pwsh

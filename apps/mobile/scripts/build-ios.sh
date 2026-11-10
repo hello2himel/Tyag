@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# deUrge — iOS build (web build -> Capacitor sync -> xcodebuild).
+# Tyag — iOS build (web build -> Capacitor sync -> xcodebuild).
 # Runs only on macOS with Xcode command line tools installed (see
 # docs/BUILDING.md); CI uses the same entry point from .github/workflows/ios.yml.
 #
@@ -10,7 +10,7 @@
 #
 # Environment:
 #   JAVA_HOME is NOT needed; needs Xcode + CocoaPods.
-#   DEURGE_CODESIGN_IDENTITY / DEURGE_TEAM_ID are optional (signing is done in
+#   TYAG_CODESIGN_IDENTITY / TYAG_TEAM_ID are optional (signing is done in
 #   Xcode/CI secrets, never in this repo).
 set -euo pipefail
 
@@ -24,10 +24,10 @@ die() { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
 
 [[ "$(uname -s)" == "Darwin" ]] || die "iOS builds require macOS with Xcode"
 command -v xcodebuild >/dev/null || die "xcodebuild not found — install Xcode"
-[[ -d "$IOS_APP_DIR" ]] || die "apps/mobile/ios is missing — run 'pnpm --filter @deurge/mobile exec cap add ios' on macOS"
+[[ -d "$IOS_APP_DIR" ]] || die "apps/mobile/ios is missing — run 'pnpm --filter @tyag/mobile exec cap add ios' on macOS"
 
 say "Building web assets"
-(cd "$REPO_ROOT" && pnpm --filter @deurge/web build)
+(cd "$REPO_ROOT" && pnpm --filter @tyag/web build)
 
 say "Syncing Capacitor iOS project"
 (cd "$MOBILE_DIR" && pnpm exec cap sync ios)
@@ -67,10 +67,10 @@ case "$MODE" in
       -configuration Release \
       -sdk iphoneos \
       -destination 'generic/platform=iOS' \
-      -archivePath "$MOBILE_DIR/dist/ios/deUrge.xcarchive" \
+      -archivePath "$MOBILE_DIR/dist/ios/Tyag.xcarchive" \
       CODE_SIGNING_ALLOWED=NO \
       archive)
-    echo "ARCHIVE: $MOBILE_DIR/dist/ios/deUrge.xcarchive"
+    echo "ARCHIVE: $MOBILE_DIR/dist/ios/Tyag.xcarchive"
     ;;
   *)
     die "unknown mode '$MODE' (use simulator|archive)"

@@ -10,7 +10,7 @@
  * write succeeds.
  */
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { isDeUrgeError, userMessage, type LapseEvent, type Tracker, type UrgeEvent, type UrgeOutcome } from '@deurge/core';
+import { isTyagError, userMessage, type LapseEvent, type Tracker, type UrgeEvent, type UrgeOutcome } from '@tyag/core';
 import { useApp } from '../../store/app';
 import {
   Button,
@@ -58,7 +58,7 @@ export function RecordSheet({ open, onClose, defaultTrackerId, initialKind, edit
   );
 }
 
-const FORM_ID = 'deurge-record-form';
+const FORM_ID = 'tyag-record-form';
 
 const INTENSITIES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -245,7 +245,7 @@ function RecordSheetDialog({
       onClose();
     } catch (writeError) {
       setError(userMessage(writeError));
-      if (isDeUrgeError(writeError) && writeError.details['occurredAt']) {
+      if (isTyagError(writeError) && writeError.details['occurredAt']) {
         setWhenError(userMessage(writeError));
       }
     } finally {

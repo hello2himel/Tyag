@@ -1,6 +1,6 @@
 # Third-party notices
 
-deUrge itself is licensed under the GNU Affero General Public License v3.0 (`AGPL-3.0-only`, see `LICENSE`). It is built with the following open-source packages
+Tyag itself is licensed under the GNU Affero General Public License v3.0 (`AGPL-3.0-only`, see `LICENSE`). It is built with the following open-source packages
 (see `pnpm-lock.yaml` for exact resolved versions). Each is used under its own
 license; no package includes advertising, tracking or cloud functionality.
 

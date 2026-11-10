@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
- * deUrge mobile shell (Android + iOS).
+ * Tyag mobile shell (Android + iOS).
  *
  * The mobile apps ship the exact same static PWA bundle as the web build
  * (`apps/web/dist`), served from the local app bundle (`https://` scheme on
@@ -13,8 +13,8 @@ import type { CapacitorConfig } from '@capacitor/cli';
  * Colors mirror the design tokens: canvas #000, brand #0071E3.
  */
 const config: CapacitorConfig = {
-  appId: 'app.deurge.DeUrge',
-  appName: 'deUrge',
+  appId: 'app.tyag.Tyag',
+  appName: 'Tyag',
   webDir: '../web/dist',
   backgroundColor: '#000000',
   android: {

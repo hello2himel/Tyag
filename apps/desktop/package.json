@@ -1,17 +1,17 @@
 {
-  "name": "@deurge/desktop",
+  "name": "@tyag/desktop",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "deUrge desktop shell (Tauri 2 + system WebView) \u2014 offline, local-only recovery tracker.",
-  "author": "deUrge contributors",
+  "description": "Tyag desktop shell (Tauri 2 + system WebView) \u2014 offline, local-only recovery tracker.",
+  "author": "Tyag contributors",
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build --no-bundle",
-    "dist:linux": "pnpm --filter @deurge/web build && tauri build --bundles appimage,deb,rpm && node ../../scripts/collect-tauri-artifacts.mjs linux",
-    "dist:win": "pnpm --filter @deurge/web build && tauri build --bundles nsis,msi && node ../../scripts/collect-tauri-artifacts.mjs windows",
-    "dist:mac": "pnpm --filter @deurge/web build && tauri build --bundles dmg && node ../../scripts/collect-tauri-artifacts.mjs macos",
+    "dist:linux": "pnpm --filter @tyag/web build && tauri build --bundles appimage,deb,rpm && node ../../scripts/collect-tauri-artifacts.mjs linux",
+    "dist:win": "pnpm --filter @tyag/web build && tauri build --bundles nsis,msi && node ../../scripts/collect-tauri-artifacts.mjs windows",
+    "dist:mac": "pnpm --filter @tyag/web build && tauri build --bundles dmg && node ../../scripts/collect-tauri-artifacts.mjs macos",
     "icons": "node ../../scripts/gen-icons.mjs desktop"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DeUrgeError, isDeUrgeError } from '../src/index';
+import { TyagError, isTyagError } from '../src/index';
 import { createTestCore, reopenTestCore, DAY, T0 } from './helpers';
 
 const PASSWORD = '4829';
@@ -9,8 +9,8 @@ async function expectError(promise: Promise<unknown>, code: string): Promise<voi
     await promise;
     throw new Error('expected an error');
   } catch (error) {
-    expect(isDeUrgeError(error)).toBe(true);
-    expect((error as DeUrgeError).code).toBe(code);
+    expect(isTyagError(error)).toBe(true);
+    expect((error as TyagError).code).toBe(code);
   }
 }
 

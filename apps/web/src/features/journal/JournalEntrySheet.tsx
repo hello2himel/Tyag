@@ -7,7 +7,7 @@
  * records and validation are the same as everywhere else in the app.
  */
 import { useEffect, useId, useMemo, useState } from 'react';
-import { isDeUrgeError, userMessage, type JournalEntry } from '@deurge/core';
+import { isTyagError, userMessage, type JournalEntry } from '@tyag/core';
 import { useApp } from '../../store/app';
 import { Button, Field, Input, Select, Sheet, Textarea, useToast } from '../../ui/components';
 import { useFormatters } from '../../ui/format';
@@ -105,7 +105,7 @@ export function JournalEntrySheet({
       app.refresh();
       onClose();
     } catch (error) {
-      toast.error(isDeUrgeError(error) ? userMessage(error) : 'That entry could not be saved. Your existing data was left untouched.');
+      toast.error(isTyagError(error) ? userMessage(error) : 'That entry could not be saved. Your existing data was left untouched.');
     } finally {
       setSaving(false);
     }

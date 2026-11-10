@@ -1,4 +1,4 @@
-/* deUrge PIN screens — ported 1:1 from the supplied `deurge-pin-screens` kit.
+/* Tyag PIN screens — ported 1:1 from the supplied `tyag-pin-screens` kit.
    Differences required by product: exactly 4 digits (kit shows 6), and
    "biometrics" instead of Touch ID / Face ID. Every selector is scoped under
    `.pin-ui` so none of the app's own components are affected. */

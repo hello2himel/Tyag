@@ -9,14 +9,14 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import {
-  isDeUrgeError,
+  isTyagError,
   userMessage,
   type CombinedAnalytics,
   type Granularity,
   type Insight,
   type Tracker,
   type TrackerAnalytics,
-} from '@deurge/core';
+} from '@tyag/core';
 import { useApp } from '../../store/app';
 import { navigate } from '../../router';
 import { BarChart, Button, Card, Chip, EmptyState, Segmented, StatTile } from '../../ui/components';
@@ -79,7 +79,7 @@ export function InsightsScreen() {
     } catch (error) {
       return {
         kind: 'error',
-        message: isDeUrgeError(error)
+        message: isTyagError(error)
           ? userMessage(error)
           : 'Analytics could not be calculated right now. Your records are still on this device.',
       };
@@ -94,7 +94,7 @@ export function InsightsScreen() {
     } catch (error) {
       return {
         kind: 'error',
-        message: isDeUrgeError(error)
+        message: isTyagError(error)
           ? userMessage(error)
           : 'Insights are not available in this build yet. Your records are unaffected.',
       };

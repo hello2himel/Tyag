@@ -14,7 +14,7 @@ import {
   type Granularity,
   type PeriodBucket,
   type TrackerMetrics,
-} from '@deurge/core';
+} from '@tyag/core';
 import type { Formatters } from '../../ui/format';
 import type { BarDatum } from '../../ui/components';
 

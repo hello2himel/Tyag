@@ -37,8 +37,8 @@
 }
 
 /* ==========================================================================
-   deUrge design system
-   Derived from the supplied deUrge UI/UX skeleton (light + dark, iOS-like
+   Tyag design system
+   Derived from the supplied Tyag UI/UX skeleton (light + dark, iOS-like
    surfaces, system font stack, tabular numerals, 20px cards, 32px sheets).
    Local-only: no webfonts, no remote assets.
    ========================================================================== */
@@ -616,7 +616,7 @@ p {
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.42);
+  background: transparent;
   z-index: 100;
   display: flex;
   align-items: flex-end;
@@ -1227,7 +1227,7 @@ p {
   color: var(--ink);
 }
 .about-brand svg,
-.about-brand .deurge-wordmark {
+.about-brand .tyag-wordmark {
   display: block;
 }
 

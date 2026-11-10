@@ -19,8 +19,8 @@ import type {
   ApplicationSettingRow,
   CheckIn,
   CustomCategory,
-  DeUrgeExport,
-  DeUrgeExportData,
+  TyagExport,
+  TyagExportData,
   HistoryEvent,
   ImportConflict,
   ImportReport,
@@ -36,7 +36,7 @@ import { appendHistory } from '../services/context';
 import type { AllData } from '../services/data';
 import { loadAllData } from '../services/data';
 import { seedDefaultCategories } from '../settings/defaults';
-import { DeUrgeError } from '../util/errors';
+import { TyagError } from '../util/errors';
 import { newId } from '../util/ids';
 import { categoryRepo } from '../repos/categories';
 import { trackerRepo } from '../repos/trackers';
@@ -164,7 +164,7 @@ function resolveRecord<T extends { id: string }>(
   return { action: 'rekey', record: { ...incoming, id: freshId }, oldId, newId: freshId };
 }
 
-function planMerge(existing: AllData, data: DeUrgeExportData, keepBoth: boolean): MergePlan {
+function planMerge(existing: AllData, data: TyagExportData, keepBoth: boolean): MergePlan {
   const plan: MergePlan = {
     categories: [],
     trackers: [],
@@ -441,7 +441,7 @@ function planMerge(existing: AllData, data: DeUrgeExportData, keepBoth: boolean)
   return plan;
 }
 
-function planReplace(data: DeUrgeExportData): MergePlan {
+function planReplace(data: TyagExportData): MergePlan {
   return {
     categories: [...data.categories],
     trackers: [...data.trackers],
@@ -515,7 +515,7 @@ function existingReferences(existing: AllData): {
  * document was upconverted from an older schema, the hash covers the original
  * (pre-migration) data, so that is what must be hashed.
  */
-async function verifyIntegrity(parsed: DeUrgeExport, warnings: string[]): Promise<void> {
+async function verifyIntegrity(parsed: TyagExport, warnings: string[]): Promise<void> {
   if (!parsed.integrity) {
     warnings.push('This export has no integrity hash; it was validated structurally only.');
     return;
@@ -524,7 +524,7 @@ async function verifyIntegrity(parsed: DeUrgeExport, warnings: string[]): Promis
   const source = exportMigrationSource(parsed);
   const actual = await sha256Hex(canonicalJson(source ? source.data : parsed.data));
   if (actual !== expected) {
-    throw new DeUrgeError(
+    throw new TyagError(
       'IMPORT_INVALID',
       'This export failed its integrity check and may have been damaged or edited. Nothing was imported.',
     );
@@ -542,20 +542,20 @@ export interface ExecuteImportOptions extends ImportOptions {
  */
 export async function executeImport(
   ctx: CoreContext,
-  parsed: DeUrgeExport,
+  parsed: TyagExport,
   options: ExecuteImportOptions,
   snapshot: () => Promise<void>,
 ): Promise<ImportReport> {
   const mode = options.mode;
   if (mode !== 'merge' && mode !== 'replace') {
-    throw new DeUrgeError('VALIDATION', 'Choose whether to merge or replace existing data.');
+    throw new TyagError('VALIDATION', 'Choose whether to merge or replace existing data.');
   }
   const onConflict = options.onConflict ?? 'skip';
   if (onConflict !== 'skip' && onConflict !== 'keep-both') {
-    throw new DeUrgeError('VALIDATION', 'Unknown import conflict behaviour.');
+    throw new TyagError('VALIDATION', 'Unknown import conflict behaviour.');
   }
   if (mode === 'replace' && options.confirmReplace !== true) {
-    throw new DeUrgeError(
+    throw new TyagError(
       'VALIDATION',
       'Replacing all data must be confirmed first. Your current data can be restored from the automatic snapshot.',
     );
@@ -566,7 +566,7 @@ export async function executeImport(
   if (migration) {
     warnings.push(
       `This backup was created with schema version ${migration.schemaVersion} and was upgraded while importing. ` +
-        'Tracker categories no longer exist in deUrge, so they were removed; every other record was imported unchanged.',
+        'Tracker categories no longer exist in Tyag, so they were removed; every other record was imported unchanged.',
     );
   }
   await verifyIntegrity(parsed, warnings);
@@ -592,7 +592,7 @@ export async function executeImport(
     try {
       await snapshot();
     } catch {
-      throw new DeUrgeError(
+      throw new TyagError(
         'DATABASE',
         'The import was cancelled because a safety snapshot could not be saved. Nothing was changed.',
       );
@@ -618,8 +618,8 @@ export async function executeImport(
       });
     });
   } catch (error) {
-    if (error instanceof DeUrgeError) throw error;
-    throw new DeUrgeError(
+    if (error instanceof TyagError) throw error;
+    throw new TyagError(
       'DATABASE',
       'The import could not be completed. Your existing data was left untouched.',
     );
@@ -627,7 +627,7 @@ export async function executeImport(
   try {
     await ctx.persist();
   } catch {
-    throw new DeUrgeError(
+    throw new TyagError(
       'DATABASE',
       'The import was applied in memory but could not be saved to this device. Reopen the app and try again.',
     );

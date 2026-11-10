@@ -61,7 +61,7 @@ jobs:
       - name: Ensure iOS platform exists
         run: |
           if [ ! -d apps/mobile/ios/App/App.xcodeproj ]; then
-            pnpm --filter @deurge/mobile exec cap add ios
+            pnpm --filter @tyag/mobile exec cap add ios
           fi
 
       - name: Simulator build (unsigned)
@@ -76,10 +76,10 @@ jobs:
           mkdir -p apps/mobile/dist/ios
           ditto -c -k --sequesterRsrc --keepParent \
             "apps/mobile/build/ios/Build/Products/Debug-iphonesimulator/App.app" \
-            "apps/mobile/dist/ios/deUrge-simulator.zip"
+            "apps/mobile/dist/ios/Tyag-simulator.zip"
           ditto -c -k --sequesterRsrc --keepParent \
-            "apps/mobile/dist/ios/deUrge.xcarchive" \
-            "apps/mobile/dist/ios/deUrge-unsigned.xcarchive.zip"
+            "apps/mobile/dist/ios/Tyag.xcarchive" \
+            "apps/mobile/dist/ios/Tyag-unsigned.xcarchive.zip"
           cd apps/mobile/dist/ios
           shasum -a 256 *.zip > SHA256SUMS.txt
           cat SHA256SUMS.txt

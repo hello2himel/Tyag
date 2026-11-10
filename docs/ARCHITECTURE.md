@@ -1,6 +1,6 @@
-# deUrge — Architecture
+# Tyag — Architecture
 
-deUrge is a local-first abstinence and recovery tracker. The same TypeScript
+Tyag is a local-first abstinence and recovery tracker. The same TypeScript
 application runs as a PWA, an Android app, an iOS app and a desktop app. There
 is no server, no account system and no network dependency.
 
@@ -46,13 +46,13 @@ code that opens a network connection.
 ## 2. Repository layout
 
 ```
-deUrge/
+Tyag/
 ├── apps/
 │   ├── web/            React PWA (Netlify deploy target, shared by all shells)
 │   ├── mobile/         Capacitor config + committed android/ (ios/ via CI)
 │   └── desktop/        Tauri 2 shell (Rust commands + system WebView)
 ├── packages/
-│   └── core/           @deurge/core — domain, SQLite, services, engines, backups
+│   └── core/           @tyag/core — domain, SQLite, services, engines, backups
 ├── flatpak/            Flatpak manifest, AppStream metadata, build script
 ├── docs/               architecture/data model/calculation rules/privacy/backup
 ├── scripts/            privacy audit, release helpers
@@ -67,7 +67,7 @@ deUrge/
 │ UI (apps/web/src)                                            │
 │  screens · design system · formatters · hash router · store   │
 ├──────────────────────────────────────────────────────────────┤
-│ @deurge/core                                                 │
+│ @tyag/core                                                 │
 │  services (trackers, lapses, urges, journal, check-ins,       │
 │  categories, settings, history)                              │
 │  engines (streak, recognition, analytics, insights, backup)   │
@@ -185,7 +185,7 @@ See [CALCULATION_RULES.md](CALCULATION_RULES.md) for the exact definitions.
   where possible, and JSON exports are the user-controlled fallback.
 - Encrypted backups protect exported files, not the live database on disk.
   Full at-rest database encryption is a platform decision (OS full-disk/file
-  encryption, app-private storage); deUrge does not invent its own crypto.
+  encryption, app-private storage); Tyag does not invent its own crypto.
 - Web/PWA local notifications only fire while the app is open (no push
   service by design). Android/iOS use scheduled on-device notifications.
 - macOS/Windows/iOS installers are produced by CI on their native runners;

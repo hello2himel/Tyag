@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- deUrge brand (Nov 2026 kit): black/white core with an optional orange accent. -->
+    <!-- Tyag brand (Nov 2026 kit): black/white core with an optional orange accent. -->
     <color name="colorPrimary">#000000</color>
     <color name="colorPrimaryDark">#000000</color>
     <color name="colorAccent">#FF4B2B</color>
 
-    <color name="deurge_brand">#000000</color>
-    <color name="deurge_canvas">#000000</color>
-    <color name="deurge_ink">#FFFFFF</color>
+    <color name="tyag_brand">#000000</color>
+    <color name="tyag_canvas">#000000</color>
+    <color name="tyag_ink">#FFFFFF</color>
 </resources>

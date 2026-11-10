@@ -1,4 +1,4 @@
-# deUrge · Motion implementation
+# Tyag · Motion implementation
 
 The motion contract is defined in the supplied specification. The web/Android/
 desktop UI implements it through one token set so no component invents its own

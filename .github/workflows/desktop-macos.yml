@@ -6,7 +6,7 @@ name: Desktop macOS (Tauri)
 # sign/notarize a locally built DMG later (see docs/RELEASING.md).
 #
 # Output (normalised by scripts/collect-tauri-artifacts.mjs):
-#   apps/desktop/release/deUrge-<version>-<arch>.dmg   (x64 | arm64)
+#   apps/desktop/release/Tyag-<version>-<arch>.dmg   (x64 | arm64)
 #   apps/desktop/release/SHA256SUMS.txt
 
 on:
@@ -68,7 +68,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build DMG
-        run: pnpm --filter @deurge/desktop dist:mac
+        run: pnpm --filter @tyag/desktop dist:mac
 
       - name: Verify DMG + checksums
         run: |
@@ -78,7 +78,7 @@ jobs:
           dmgs=(apps/desktop/release/*.dmg)
           test ${#dmgs[@]} -eq 1
           (cd apps/desktop/release && shasum -a 256 -c SHA256SUMS.txt)
-          file apps/desktop/src-tauri/target/release/deurge
+          file apps/desktop/src-tauri/target/release/tyag
           hdiutil verify apps/desktop/release/*.dmg
 
       - name: Upload DMG

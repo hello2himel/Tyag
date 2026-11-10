@@ -1,4 +1,4 @@
-package app.deurge.DeUrge;
+package app.tyag.Tyag;
 
 import androidx.annotation.NonNull;
 import androidx.biometric.BiometricManager;
@@ -17,7 +17,7 @@ import java.util.concurrent.Executor;
 /**
  * Local Capacitor plugin exposing the Android biometric prompt to the web layer.
  *
- * <p>deUrge is local-first and never talks to the network; this plugin only asks
+ * <p>Tyag is local-first and never talks to the network; this plugin only asks
  * the OS/AndroidX biometric library to show the system biometric prompt. The app
  * password remains the only fallback: the prompt is configured with a
  * "Use password" negative button and device-credential unlocking is deliberately
@@ -141,7 +141,7 @@ public class BiometricsPlugin extends Plugin {
                 }
 
                 BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                        .setTitle("Unlock deUrge")
+                        .setTitle("Unlock Tyag")
                         .setSubtitle("Confirm it's you to open your private records.")
                         // The only fallback is the in-app password, never the
                         // device lock-screen credential.

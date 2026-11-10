@@ -1,9 +1,9 @@
 /** Native Android/iOS persistence: the database snapshot lives in app-private storage. */
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
-import type { PersistenceAdapter } from '@deurge/core';
+import type { PersistenceAdapter } from '@tyag/core';
 
-const FILE = 'deurge.sqlite';
-const BACKUP = 'deurge.backup.sqlite';
+const FILE = 'tyag.sqlite';
+const BACKUP = 'tyag.backup.sqlite';
 
 function bytesToBase64(data: Uint8Array): string {
   let binary = '';

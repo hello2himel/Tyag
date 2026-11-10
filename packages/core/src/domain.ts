@@ -1,5 +1,5 @@
 /**
- * deUrge domain model.
+ * Tyag domain model.
  *
  * Every persisted record is described here. All timestamps are UTC epoch
  * milliseconds (`number`) so that they are timezone independent; the local
@@ -511,9 +511,9 @@ export interface HistoryItem {
 /* Export / backup                                                           */
 /* ------------------------------------------------------------------------- */
 
-export const EXPORT_FORMAT = 'deurge-export';
+export const EXPORT_FORMAT = 'tyag-export';
 export const EXPORT_FORMAT_VERSION = 1;
-export const ENCRYPTED_BACKUP_FORMAT = 'deurge-encrypted-backup';
+export const ENCRYPTED_BACKUP_FORMAT = 'tyag-encrypted-backup';
 
 export interface ExportCounts {
   trackers: number;
@@ -527,7 +527,7 @@ export interface ExportCounts {
   historyEvents: number;
 }
 
-export interface DeUrgeExportData {
+export interface TyagExportData {
   trackers: Tracker[];
   sessions: TrackerSession[];
   lapses: LapseEvent[];
@@ -540,7 +540,7 @@ export interface DeUrgeExportData {
   historyEvents: HistoryEvent[];
 }
 
-export interface DeUrgeExport {
+export interface TyagExport {
   format: typeof EXPORT_FORMAT;
   formatVersion: number;
   schemaVersion: number;
@@ -548,7 +548,7 @@ export interface DeUrgeExport {
   exportedAt: Timestamp;
   timeZone: string;
   counts: ExportCounts;
-  data: DeUrgeExportData;
+  data: TyagExportData;
   integrity?: { algorithm: 'SHA-256'; hash: string };
 }
 

@@ -88,7 +88,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           if [ -n "${KEYSTORE_BASE64}" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/deurge-release.jks"
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/tyag-release.jks"
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
@@ -97,20 +97,20 @@ jobs:
 
       - name: Build debug APK
         if: steps.signing.outputs.available != 'true'
-        run: pnpm --filter @deurge/mobile build:android:debug
+        run: pnpm --filter @tyag/mobile build:android:debug
 
       - name: Build signed release APK + AAB
         if: steps.signing.outputs.available == 'true'
         env:
-          DEURGE_KEYSTORE: ${{ runner.temp }}/deurge-release.jks
-          DEURGE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          DEURGE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          DEURGE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: pnpm --filter @deurge/mobile build:android:release
+          TYAG_KEYSTORE: ${{ runner.temp }}/tyag-release.jks
+          TYAG_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TYAG_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          TYAG_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: pnpm --filter @tyag/mobile build:android:release
 
       - name: Remove keystore from runner
         if: always()
-        run: rm -f "$RUNNER_TEMP/deurge-release.jks"
+        run: rm -f "$RUNNER_TEMP/tyag-release.jks"
 
       - name: Show artifacts
         run: |

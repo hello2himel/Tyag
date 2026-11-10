@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- deUrge is local-first: the app never talks to the network, so the
+    <!-- Tyag is local-first: the app never talks to the network, so the
          INTERNET permission is intentionally NOT requested. Capacitor serves
          the web bundle through the local WebViewAssetLoader (https://localhost)
          and all data lives in the app-private directory. -->

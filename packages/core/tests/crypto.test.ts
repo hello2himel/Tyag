@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DeUrgeError, ENCRYPTED_BACKUP_FORMAT } from '../src/index';
+import { TyagError, ENCRYPTED_BACKUP_FORMAT } from '../src/index';
 import {
   AES_GCM_IV_BYTES,
   BACKUP_ENVELOPE_VERSION,
@@ -46,9 +46,9 @@ describe('crypto: base64', () => {
 
   it('accepts surrounding whitespace and rejects invalid input', () => {
     expect(base64ToBytes(' Zm9v \n')).toEqual(new Uint8Array([0x66, 0x6f, 0x6f]));
-    expect(() => base64ToBytes('not base64!')).toThrow(DeUrgeError);
+    expect(() => base64ToBytes('not base64!')).toThrow(TyagError);
     expect(base64ToBytes('')).toEqual(new Uint8Array(0));
-    expect(() => base64ToBytes('abc')).toThrow(DeUrgeError);
+    expect(() => base64ToBytes('abc')).toThrow(TyagError);
   });
 });
 
@@ -59,7 +59,7 @@ describe('crypto: SHA-256 integrity hashing', () => {
   });
 
   it('hashes bytes the same way as their UTF-8 text', async () => {
-    const text = 'deUrge — private by design ✓';
+    const text = 'Tyag — private by design ✓';
     expect(await sha256Hex(new TextEncoder().encode(text))).toBe(await sha256Hex(text));
   });
 });
@@ -72,7 +72,7 @@ describe('crypto: random bytes', () => {
     expect(second).toHaveLength(16);
     expect(first).not.toEqual(second);
     expect(first.some((byte) => byte !== 0)).toBe(true);
-    expect(() => randomBytes(0)).toThrow(DeUrgeError);
+    expect(() => randomBytes(0)).toThrow(TyagError);
   });
 });
 
@@ -97,13 +97,13 @@ describe('crypto: AES-256-GCM encryption', () => {
   it('rejects a wrong password with a clear CRYPTO error', async () => {
     const encrypted = await encryptString('secret', PASSWORD);
     await expect(decryptString(encrypted, 'wrong password')).rejects.toMatchObject({
-      name: 'DeUrgeError',
+      name: 'TyagError',
       code: 'CRYPTO',
     });
     try {
       await decryptString(encrypted, 'wrong password');
     } catch (error) {
-      expect((error as DeUrgeError).message).toContain('Could not decrypt');
+      expect((error as TyagError).message).toContain('Could not decrypt');
     }
   });
 
@@ -163,23 +163,23 @@ describe('crypto: encrypted backup envelope', () => {
     const parsed = parseEnvelope(JSON.stringify(envelope));
     expect(parsed.format).toBe(ENCRYPTED_BACKUP_FORMAT);
 
-    expect(() => parseEnvelope('not json')).toThrow(DeUrgeError);
-    expect(() => parseEnvelope(JSON.stringify({ ...envelope, format: 'other' }))).toThrow(DeUrgeError);
-    expect(() => parseEnvelope(JSON.stringify({ ...envelope, version: 2 }))).toThrow(DeUrgeError);
+    expect(() => parseEnvelope('not json')).toThrow(TyagError);
+    expect(() => parseEnvelope(JSON.stringify({ ...envelope, format: 'other' }))).toThrow(TyagError);
+    expect(() => parseEnvelope(JSON.stringify({ ...envelope, version: 2 }))).toThrow(TyagError);
     try {
       parseEnvelope(JSON.stringify({ ...envelope, version: 2 }));
     } catch (error) {
-      expect((error as DeUrgeError).code).toBe('IMPORT_UNSUPPORTED_VERSION');
+      expect((error as TyagError).code).toBe('IMPORT_UNSUPPORTED_VERSION');
     }
     expect(() => parseEnvelope(JSON.stringify({ ...envelope, kdf: { ...envelope.kdf, name: 'scrypt' } }))).toThrow(
-      DeUrgeError,
+      TyagError,
     );
     expect(() => parseEnvelope(JSON.stringify({ ...envelope, cipher: { ...envelope.cipher, name: 'AES-CBC' } }))).toThrow(
-      DeUrgeError,
+      TyagError,
     );
-    expect(() => parseEnvelope(JSON.stringify({ ...envelope, payload: 5 }))).toThrow(DeUrgeError);
+    expect(() => parseEnvelope(JSON.stringify({ ...envelope, payload: 5 }))).toThrow(TyagError);
     expect(() => parseEnvelope(JSON.stringify({ ...envelope, kdf: { ...envelope.kdf, salt: 7 } }))).toThrow(
-      DeUrgeError,
+      TyagError,
     );
   });
 });

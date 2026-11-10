@@ -4,7 +4,7 @@
  * - Web/PWA: the Notification API while the app is open (no push, no server).
  * - Android/iOS: Capacitor LocalNotifications, scheduled on-device.
  *
- * Progress recognition in deUrge never depends on notifications, and
+ * Progress recognition in Tyag never depends on notifications, and
  * notifications never use milestones. They are disabled by default and require
  * explicit consent.
  */
@@ -53,7 +53,7 @@ export async function showProgressNotification(title: string, body: string): Pro
             title,
             body,
             schedule: { at: new Date(Date.now() + 500) },
-            smallIcon: 'ic_stat_deurge',
+            smallIcon: 'ic_stat_tyag',
           },
         ],
       });
@@ -82,10 +82,10 @@ export async function scheduleNativeAcknowledgement(intervalMinutes: number): Pr
       notifications: [
         {
           id: 2402,
-          title: 'deUrge',
-          body: 'Your progress continues. Open deUrge to see where you are.',
+          title: 'Tyag',
+          body: 'Your progress continues. Open Tyag to see where you are.',
           schedule: { at: new Date(Date.now() + intervalMinutes * 60_000), repeats: true, every },
-          smallIcon: 'ic_stat_deurge',
+          smallIcon: 'ic_stat_tyag',
         },
       ],
     });

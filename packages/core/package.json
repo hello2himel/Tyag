@@ -1,9 +1,9 @@
 {
-  "name": "@deurge/core",
+  "name": "@tyag/core",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "deUrge domain, persistence, streak engine, analytics, insights and backup engines.",
+  "description": "Tyag domain, persistence, streak engine, analytics, insights and backup engines.",
   "exports": {
     ".": "./src/index.ts"
   },

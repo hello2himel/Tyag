@@ -1,12 +1,12 @@
 {
-  "name": "@deurge/mobile",
+  "name": "@tyag/mobile",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "deUrge mobile shell (Capacitor) for Android and iOS \u2014 offline, local-only.",
+  "description": "Tyag mobile shell (Capacitor) for Android and iOS \u2014 offline, local-only.",
   "license": "AGPL-3.0-only",
   "scripts": {
-    "build:web": "pnpm --filter @deurge/web build",
+    "build:web": "pnpm --filter @tyag/web build",
     "sync": "pnpm build:web && cap sync",
     "sync:android": "pnpm build:web && cap sync android",
     "sync:ios": "pnpm build:web && cap sync ios",

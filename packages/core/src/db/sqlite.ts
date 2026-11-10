@@ -80,7 +80,7 @@ export class SqlDatabase {
     if (this.transactionDepth === 0) {
       this.db.run('BEGIN IMMEDIATE;');
     } else {
-      this.db.run(`SAVEPOINT deurge_sp_${this.transactionDepth};`);
+      this.db.run(`SAVEPOINT tyag_sp_${this.transactionDepth};`);
     }
     this.transactionDepth += 1;
     try {
@@ -89,7 +89,7 @@ export class SqlDatabase {
       if (this.transactionDepth === 0) {
         this.db.run('COMMIT;');
       } else {
-        this.db.run(`RELEASE deurge_sp_${this.transactionDepth};`);
+        this.db.run(`RELEASE tyag_sp_${this.transactionDepth};`);
       }
       return result;
     } catch (error) {
@@ -102,8 +102,8 @@ export class SqlDatabase {
         }
       } else {
         try {
-          this.db.run(`ROLLBACK TO deurge_sp_${this.transactionDepth};`);
-          this.db.run(`RELEASE deurge_sp_${this.transactionDepth};`);
+          this.db.run(`ROLLBACK TO tyag_sp_${this.transactionDepth};`);
+          this.db.run(`RELEASE tyag_sp_${this.transactionDepth};`);
         } catch {
           /* ignore */
         }

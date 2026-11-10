@@ -4,16 +4,16 @@
  *
  * `tauri build` writes platform bundles into
  * `apps/desktop/src-tauri/target/release/bundle/<target>/…` with names such as
- * `deUrge_1.0.0_amd64.AppImage`. Release assets use one stable scheme across
+ * `Tyag_1.0.0_amd64.AppImage`. Release assets use one stable scheme across
  * platforms and release jobs, so this script copies each produced file into
  * `apps/desktop/release/` with a predictable name and writes SHA256SUMS.txt:
  *
- *   linux    deUrge-<version>-x86_64.AppImage
- *            deUrge-<version>-amd64.deb
- *            deUrge-<version>-x86_64.rpm
- *   windows  deUrge-Setup-<version>-x64.exe          (NSIS)
- *            deUrge-<version>-x64.msi
- *   macos    deUrge-<version>-<arch>.dmg             (x64 | arm64)
+ *   linux    Tyag-<version>-x86_64.AppImage
+ *            Tyag-<version>-amd64.deb
+ *            Tyag-<version>-x86_64.rpm
+ *   windows  Tyag-Setup-<version>-x64.exe          (NSIS)
+ *            Tyag-<version>-x64.msi
+ *   macos    Tyag-<version>-<arch>.dmg             (x64 | arm64)
  *
  * Usage: node scripts/collect-tauri-artifacts.mjs [linux|windows|macos]
  *        (derived from the host platform when omitted)
@@ -51,15 +51,15 @@ const MAC_ARCH = { x64: 'x64', arm64: 'arm64' }[arch] ?? arch;
  */
 const TARGETS = {
   linux: [
-    { subdir: 'appimage', name: `deUrge-${VERSION}-${LINUX_ARCH}.AppImage` },
-    { subdir: 'deb', name: `deUrge-${VERSION}-${DEB_ARCH}.deb` },
-    { subdir: 'rpm', name: `deUrge-${VERSION}-${LINUX_ARCH}.rpm` },
+    { subdir: 'appimage', name: `Tyag-${VERSION}-${LINUX_ARCH}.AppImage` },
+    { subdir: 'deb', name: `Tyag-${VERSION}-${DEB_ARCH}.deb` },
+    { subdir: 'rpm', name: `Tyag-${VERSION}-${LINUX_ARCH}.rpm` },
   ],
   windows: [
-    { subdir: 'nsis', name: `deUrge-Setup-${VERSION}-${WINDOWS_ARCH}.exe` },
-    { subdir: 'msi', name: `deUrge-${VERSION}-${WINDOWS_ARCH}.msi` },
+    { subdir: 'nsis', name: `Tyag-Setup-${VERSION}-${WINDOWS_ARCH}.exe` },
+    { subdir: 'msi', name: `Tyag-${VERSION}-${WINDOWS_ARCH}.msi` },
   ],
-  macos: [{ subdir: 'dmg', name: `deUrge-${VERSION}-${MAC_ARCH}.dmg` }],
+  macos: [{ subdir: 'dmg', name: `Tyag-${VERSION}-${MAC_ARCH}.dmg` }],
 };
 
 const sha256 = (path) => createHash('sha256').update(readFileSync(path)).digest('hex');

@@ -1,5 +1,5 @@
 /** Small presentation helpers for tracker status, shared by the trackers UI. */
-import type { TrackerStatus } from '@deurge/core';
+import type { TrackerStatus } from '@tyag/core';
 
 export const TRACKER_STATUS_LABEL: Record<TrackerStatus, string> = {
   active: 'Active',

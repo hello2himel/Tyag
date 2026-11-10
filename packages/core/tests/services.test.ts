@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { DeUrgeError, isDeUrgeError } from '../src/index';
+import { TyagError, isTyagError } from '../src/index';
 import { createTestCore, reopenTestCore, DAY, HOUR, T0 } from './helpers';
 
-async function expectDeUrgeError(promise: Promise<unknown>, code: string, detail?: string): Promise<void> {
+async function expectTyagError(promise: Promise<unknown>, code: string, detail?: string): Promise<void> {
   try {
     await promise;
-    throw new Error('expected DeUrgeError to be thrown');
+    throw new Error('expected TyagError to be thrown');
   } catch (error) {
-    expect(isDeUrgeError(error)).toBe(true);
-    const deUrgeError = error as DeUrgeError;
-    expect(deUrgeError.code).toBe(code);
-    if (detail) expect(deUrgeError.message).toContain(detail);
+    expect(isTyagError(error)).toBe(true);
+    const TyagError = error as TyagError;
+    expect(TyagError.code).toBe(code);
+    if (detail) expect(TyagError.message).toContain(detail);
   }
 }
 
@@ -34,8 +34,8 @@ describe('tracker lifecycle', () => {
 
   it('validates tracker names and backdated starts', async () => {
     const { core } = await createTestCore();
-    await expectDeUrgeError(core.trackers.create({ name: '   ' }), 'VALIDATION');
-    await expectDeUrgeError(core.trackers.create({ name: 'x', startedAt: T0 + DAY }), 'VALIDATION', 'future');
+    await expectTyagError(core.trackers.create({ name: '   ' }), 'VALIDATION');
+    await expectTyagError(core.trackers.create({ name: 'x', startedAt: T0 + DAY }), 'VALIDATION', 'future');
     const backdated = await core.trackers.create({ name: 'Backdated', startedAt: T0 - 5 * DAY });
     expect(backdated.startedAt).toBe(T0 - 5 * DAY);
     expect(core.metrics(backdated.id).currentStreakMs).toBe(5 * DAY);
@@ -81,11 +81,11 @@ describe('tracker lifecycle', () => {
   it('rejects invalid status transitions', async () => {
     const { core } = await createTestCore();
     const tracker = await core.trackers.create({ name: 'X' });
-    await expectDeUrgeError(core.trackers.resume(tracker.id), 'CONFLICT');
-    await expectDeUrgeError(core.trackers.restore(tracker.id), 'CONFLICT');
+    await expectTyagError(core.trackers.resume(tracker.id), 'CONFLICT');
+    await expectTyagError(core.trackers.restore(tracker.id), 'CONFLICT');
     await core.trackers.pause(tracker.id);
-    await expectDeUrgeError(core.trackers.pause(tracker.id), 'CONFLICT');
-    await expectDeUrgeError(core.trackers.archive(tracker.id).then(() => core.trackers.archive(tracker.id)), 'CONFLICT');
+    await expectTyagError(core.trackers.pause(tracker.id), 'CONFLICT');
+    await expectTyagError(core.trackers.archive(tracker.id).then(() => core.trackers.archive(tracker.id)), 'CONFLICT');
   });
 
   it('edits tracker details and start time, adjusting active sessions', async () => {
@@ -114,7 +114,7 @@ describe('tracker lifecycle', () => {
     const tracker = await core.trackers.create({ name: 'X' });
     clock.advance(5 * DAY);
     await core.lapses.create({ trackerId: tracker.id, occurredAt: T0 + 2 * DAY });
-    await expectDeUrgeError(
+    await expectTyagError(
       core.trackers.update(tracker.id, { startedAt: T0 + 3 * DAY }),
       'VALIDATION',
       'recorded events',
@@ -160,26 +160,26 @@ describe('lapses and urges', () => {
     const { core, clock } = await createTestCore();
     const tracker = await core.trackers.create({ name: 'X' });
     clock.advance(1 * DAY);
-    await expectDeUrgeError(
+    await expectTyagError(
       core.lapses.create({ trackerId: tracker.id, occurredAt: T0 - DAY }),
       'VALIDATION',
       'before this tracker started',
     );
-    await expectDeUrgeError(
+    await expectTyagError(
       core.lapses.create({ trackerId: tracker.id, occurredAt: T0 + 5 * DAY }),
       'VALIDATION',
       'future',
     );
-    await expectDeUrgeError(
+    await expectTyagError(
       core.lapses.create({ trackerId: tracker.id, triggerCategoryId: 'does-not-exist' }),
       'VALIDATION',
       'no longer exists',
     );
-    await expectDeUrgeError(
+    await expectTyagError(
       core.urges.create({ trackerId: tracker.id, intensity: 11 }),
       'VALIDATION',
     );
-    await expectDeUrgeError(
+    await expectTyagError(
       core.lapses.create({ trackerId: 'missing' }),
       'NOT_FOUND',
     );
@@ -340,7 +340,7 @@ describe('categories and settings', () => {
   it('accepts only trigger and reason category kinds', async () => {
     const { core } = await createTestCore();
     // Runtime callers (imports, old UI code) cannot create a tracker category.
-    await expectDeUrgeError(core.categories.create('tracker_category' as never, 'Digital'), 'VALIDATION');
+    await expectTyagError(core.categories.create('tracker_category' as never, 'Digital'), 'VALIDATION');
     expect(core.categories.list('tracker_category' as never)).toEqual([]);
     expect(core.categories.list(undefined, true).some((category) => (category.kind as string) === 'tracker_category')).toBe(false);
   });
@@ -355,13 +355,13 @@ describe('categories and settings', () => {
     });
     const custom = await core.categories.create('trigger', 'Commuting');
     expect(custom.isDefault).toBe(false);
-    await expectDeUrgeError(core.categories.create('trigger', 'commuting'), 'CONFLICT');
+    await expectTyagError(core.categories.create('trigger', 'commuting'), 'CONFLICT');
     await core.categories.rename(custom.id, 'Long commute');
     expect(core.categories.get(custom.id).name).toBe('Long commute');
     await core.categories.setArchived(custom.id, true);
     expect(core.categories.list('trigger').some((category) => category.id === custom.id)).toBe(false);
     expect(core.categories.list('trigger', true).some((category) => category.id === custom.id)).toBe(true);
-    await expectDeUrgeError(core.categories.delete('default-trigger-stress'), 'CONFLICT');
+    await expectTyagError(core.categories.delete('default-trigger-stress'), 'CONFLICT');
     await core.categories.delete(custom.id);
     expect(core.categories.get.bind(core.categories, custom.id)).toThrow();
     expect(core.lapses.get(lapse.id).triggerCategoryId).toBe('default-trigger-stress');
@@ -374,8 +374,8 @@ describe('categories and settings', () => {
     await core.settings.update({ theme: 'dark', timeFormat: '24h', firstDayOfWeek: 1 });
     expect(core.settings.get().theme).toBe('dark');
     expect(core.settings.get().timeFormat).toBe('24h');
-    await expectDeUrgeError(core.settings.update({ theme: 'neon' } as never), 'VALIDATION');
-    await expectDeUrgeError(core.settings.update({ fixedTimeZone: 'Mars/Olympus' } as never), 'VALIDATION');
+    await expectTyagError(core.settings.update({ theme: 'neon' } as never), 'VALIDATION');
+    await expectTyagError(core.settings.update({ fixedTimeZone: 'Mars/Olympus' } as never), 'VALIDATION');
   });
 
   it('uses a fixed timezone when configured', async () => {
@@ -408,7 +408,7 @@ describe('persistence, restart and deletion', () => {
     (test.persistence as unknown as { corrupt: () => void }).corrupt?.();
     const SQL = await (await import('./helpers')).loadSqlWasm();
     await expect(
-      (await import('../src/index')).DeUrgeCore.open({ SQL, persistence: test.persistence, clock: test.clock }),
+      (await import('../src/index')).TyagCore.open({ SQL, persistence: test.persistence, clock: test.clock }),
     ).rejects.toMatchObject({ code: 'DATABASE' });
   });
 

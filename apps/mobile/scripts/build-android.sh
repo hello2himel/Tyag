@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 #
-# deUrge — Android build (web build -> Capacitor sync -> Gradle APK/AAB).
+# Tyag — Android build (web build -> Capacitor sync -> Gradle APK/AAB).
 #
 # Usage:
 #   scripts/build-android.sh [auto|debug|release]
 #
-#   auto     (default) release build when the DEURGE_KEYSTORE* env vars are
+#   auto     (default) release build when the TYAG_KEYSTORE* env vars are
 #            present, otherwise a debug build
 #   debug    assembleDebug; signed with the local debug keystore (never shipped
 #            to a store, fine for device testing)
 #   release  assembleRelease + bundleRelease; REQUIRES the signing env vars:
-#              DEURGE_KEYSTORE           path to the .jks/.keystore
-#              DEURGE_KEYSTORE_PASSWORD  store password
-#              DEURGE_KEY_ALIAS          key alias
-#              DEURGE_KEY_PASSWORD       key password
+#              TYAG_KEYSTORE           path to the .jks/.keystore
+#              TYAG_KEYSTORE_PASSWORD  store password
+#              TYAG_KEY_ALIAS          key alias
+#              TYAG_KEY_PASSWORD       key password
 #
 # Environment (never hardcoded — see docs/BUILDING.md):
 #   JAVA_HOME      JDK 21 (Capacitor 8 / AGP 8.13 needs 21)
@@ -21,8 +21,8 @@
 #                  android/local.properties (machine-local, git-ignored).
 #
 # Outputs (all git-ignored):
-#   apps/mobile/dist/apk/deUrge-<version>-[debug|release].apk
-#   apps/mobile/dist/aab/deUrge-<version>-release.aab
+#   apps/mobile/dist/apk/Tyag-<version>-[debug|release].apk
+#   apps/mobile/dist/aab/Tyag-<version>-release.aab
 #   apps/mobile/dist/SHA256SUMS.txt
 set -euo pipefail
 
@@ -35,7 +35,7 @@ DIST_DIR="$MOBILE_DIR/dist"
 say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 die() { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
 
-[[ -d "$ANDROID_DIR" ]] || die "apps/mobile/android is missing — run 'pnpm --filter @deurge/mobile exec cap add android' first"
+[[ -d "$ANDROID_DIR" ]] || die "apps/mobile/android is missing — run 'pnpm --filter @tyag/mobile exec cap add android' first"
 
 # ---------------------------------------------------------------- environment
 [[ -n "${JAVA_HOME:-}" ]] || die "JAVA_HOME is not set. Point it at a JDK 21 (e.g. Temurin 21), see docs/BUILDING.md"
@@ -54,8 +54,8 @@ export ANDROID_HOME="$SDK" ANDROID_SDK_ROOT="$SDK"
 VERSION="$(node -p "require('$MOBILE_DIR/package.json').version")"
 
 have_signing() {
-  [[ -n "${DEURGE_KEYSTORE:-}" && -n "${DEURGE_KEYSTORE_PASSWORD:-}" \
-     && -n "${DEURGE_KEY_ALIAS:-}" && -n "${DEURGE_KEY_PASSWORD:-}" ]]
+  [[ -n "${TYAG_KEYSTORE:-}" && -n "${TYAG_KEYSTORE_PASSWORD:-}" \
+     && -n "${TYAG_KEY_ALIAS:-}" && -n "${TYAG_KEY_PASSWORD:-}" ]]
 }
 
 case "$MODE" in
@@ -64,13 +64,13 @@ case "$MODE" in
   *) die "unknown mode '$MODE' (use auto|debug|release)" ;;
 esac
 
-say "deUrge android ($MODE) — version $VERSION"
+say "Tyag android ($MODE) — version $VERSION"
 echo "    JAVA_HOME=$JAVA_HOME (JDK $JAVA_MAJOR)"
 echo "    ANDROID_HOME=$ANDROID_HOME"
 
 # ---------------------------------------------------------------- web + sync
 say "Building web assets"
-(cd "$REPO_ROOT" && pnpm --filter @deurge/web build)
+(cd "$REPO_ROOT" && pnpm --filter @tyag/web build)
 
 say "Syncing Capacitor Android project"
 (cd "$MOBILE_DIR" && pnpm exec cap sync android)
@@ -82,16 +82,16 @@ case "$MODE" in
     say "Gradle assembleDebug"
     (cd "$ANDROID_DIR" && ./gradlew "${GRADLE_ARGS[@]}" assembleDebug)
     APK_SRC="$ANDROID_DIR/app/build/outputs/apk/debug/app-debug.apk"
-    APK_OUT="$DIST_DIR/apk/deUrge-$VERSION-debug.apk"
+    APK_OUT="$DIST_DIR/apk/Tyag-$VERSION-debug.apk"
     ;;
   release)
-    have_signing || die "release build requires DEURGE_KEYSTORE, DEURGE_KEYSTORE_PASSWORD, DEURGE_KEY_ALIAS, DEURGE_KEY_PASSWORD"
+    have_signing || die "release build requires TYAG_KEYSTORE, TYAG_KEYSTORE_PASSWORD, TYAG_KEY_ALIAS, TYAG_KEY_PASSWORD"
     say "Gradle assembleRelease + bundleRelease"
     (cd "$ANDROID_DIR" && ./gradlew "${GRADLE_ARGS[@]}" assembleRelease bundleRelease)
     APK_SRC="$ANDROID_DIR/app/build/outputs/apk/release/app-release.apk"
-    APK_OUT="$DIST_DIR/apk/deUrge-$VERSION-release.apk"
+    APK_OUT="$DIST_DIR/apk/Tyag-$VERSION-release.apk"
     AAB_SRC="$ANDROID_DIR/app/build/outputs/bundle/release/app-release.aab"
-    AAB_OUT="$DIST_DIR/aab/deUrge-$VERSION-release.aab"
+    AAB_OUT="$DIST_DIR/aab/Tyag-$VERSION-release.aab"
     ;;
 esac
 

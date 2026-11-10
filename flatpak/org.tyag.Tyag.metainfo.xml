@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  AppStream metadata for deUrge.
+  AppStream metadata for Tyag.
   Kept fully offline: no remote screenshots or asset URLs are referenced; the
   icon and desktop entry are installed by the Flatpak manifest itself.
 -->
 <component type="desktop-application">
-  <id>org.deurge.DeUrge</id>
+  <id>org.tyag.Tyag</id>
 
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>AGPL-3.0-only</project_license>
 
-  <name>deUrge</name>
+  <name>Tyag</name>
   <summary>Local-first addiction and habit recovery tracker</summary>
 
-  <developer id="org.deurge">
-    <name>deUrge contributors</name>
+  <developer id="org.tyag">
+    <name>Tyag contributors</name>
   </developer>
 
   <!-- Inert AppStream metadata URL: the app itself never fetches it. -->
-  <url type="homepage">https://github.com/hello2himel/deUrge</url>
+  <url type="homepage">https://github.com/hello2himel/Tyag</url>
 
   <description>
     <p>
-      deUrge is a private, offline recovery tracker. Log urges, habits and
+      Tyag is a private, offline recovery tracker. Log urges, habits and
       sessions, watch your streaks grow and understand your patterns — without
       ever creating an account or sending data anywhere.
     </p>
@@ -38,10 +38,10 @@
     </p>
   </description>
 
-  <launchable type="desktop-id">org.deurge.DeUrge.desktop</launchable>
+  <launchable type="desktop-id">org.tyag.Tyag.desktop</launchable>
 
   <provides>
-    <binary>deurge-wrapper</binary>
+    <binary>tyag-wrapper</binary>
   </provides>
 
   <categories>

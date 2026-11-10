@@ -34,7 +34,7 @@ export async function saveTextFile(
   }
   if (isNative()) {
     const { Directory, Filesystem } = await import('@capacitor/filesystem');
-    const path = `deUrge/${filename}`;
+    const path = `Tyag/${filename}`;
     await Filesystem.writeFile({
       path,
       data: content,

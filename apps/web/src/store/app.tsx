@@ -1,5 +1,5 @@
 /**
- * Application state: the single DeUrgeCore instance, current settings and a
+ * Application state: the single TyagCore instance, current settings and a
  * one-second clock used only for *display* (all durations are recomputed from
  * stored timestamps, so a suspended timer never distorts progress).
  */
@@ -13,9 +13,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { DeUrgeCore, type AppSettings, type PersistenceAdapter } from '@deurge/core';
-import { openDeUrgeCore } from '../platform/db';
-import { DeUrgeAppIcon } from '../ui/logo';
+import { TyagCore, type AppSettings, type PersistenceAdapter } from '@tyag/core';
+import { openTyagCore } from '../platform/db';
+import { TyagAppIcon } from '../ui/logo';
 import {
   cancelNativeAcknowledgement,
   notificationAvailability,
@@ -26,7 +26,7 @@ import {
 export type ResolvedTheme = 'light' | 'dark';
 
 export interface AppContextValue {
-  core: DeUrgeCore;
+  core: TyagCore;
   settings: AppSettings;
   timeZone: string;
   now: number;
@@ -44,7 +44,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 interface ReadyState {
   status: 'ready';
-  core: DeUrgeCore;
+  core: TyagCore;
   settings: AppSettings;
   timeZone: string;
   storageKind: PersistenceAdapter['kind'];
@@ -86,13 +86,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const bootOnce = useCallback(async () => {
     setBoot({ status: 'booting' });
     try {
-      const result = await openDeUrgeCore();
+      const result = await openTyagCore();
       const settings = result.core.settings.get();
       applyTheme(resolveTheme(settings));
       if (import.meta.env.DEV) {
         // Development-only handle for automated UI verification. Tree-shaken
         // from production builds; never exposed to users.
-        (window as unknown as { __deurgeCore?: unknown }).__deurgeCore = result.core;
+        (window as unknown as { __tyagCore?: unknown }).__tyagCore = result.core;
       }
       setBoot({
         status: 'ready',
@@ -106,7 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : 'deUrge could not open its local database. Your data stays on this device.';
+          : 'Tyag could not open its local database. Your data stays on this device.';
       setBoot({ status: 'error', message });
     }
   }, []);
@@ -189,7 +189,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const intervalMs = Math.max(current.notificationIntervalMinutes, 60) * 60_000;
     notificationTimer.current = window.setInterval(() => {
       try {
-        const key = 'deurge.lastNotificationAt';
+        const key = 'tyag.lastNotificationAt';
         const last = Number(window.localStorage.getItem(key) ?? 0);
         if (Number.isFinite(last) && Date.now() - last < intervalMs) return;
         const trackers = core.trackers.listActive();
@@ -200,7 +200,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           Math.max(0, Math.floor(metrics.currentStreakMs / 3_600_000)),
         );
         void showProgressNotification(
-          'deUrge',
+          'Tyag',
           `You've stayed away from ${tracker.name} for ${duration} hours. Your progress continues.`,
         );
         window.localStorage.setItem(key, String(Date.now()));
@@ -246,7 +246,7 @@ function BootScreen() {
   return (
     <div className="boot">
       <div className="boot-mark">
-        <DeUrgeAppIcon size={64} />
+        <TyagAppIcon size={64} />
       </div>
       <div className="mut" style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
         <span className="spinner" aria-hidden="true" /> Opening your local database…

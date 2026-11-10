@@ -25,7 +25,7 @@ import type { AllData } from '../services/data';
 import { isValidTimeZone, toIsoUtc, zonedAt } from '../time/temporal';
 import { formatDateTime, formatWeekdayLong } from '../time/format';
 import { exportFilename } from './serialize';
-import { DeUrgeError } from '../util/errors';
+import { TyagError } from '../util/errors';
 
 /** Everything the CSV builders need, already loaded by the service. */
 export interface CsvContext {
@@ -47,7 +47,7 @@ interface ResolvedFormatting {
 function resolveFormatting(context: CsvContext, options: CsvExportOptions): ResolvedFormatting {
   const timeZone = options.timeZone ?? context.effectiveTimeZone;
   if (!isValidTimeZone(timeZone)) {
-    throw new DeUrgeError('VALIDATION', 'Unknown time zone.');
+    throw new TyagError('VALIDATION', 'Unknown time zone.');
   }
   return {
     timeZone,
@@ -409,7 +409,7 @@ function buildStatisticsRows(context: CsvContext): string[][] {
 }
 
 function csvPrefix(dataset: CsvDataset): string {
-  return `deurge-${dataset}`;
+  return `tyag-${dataset}`;
 }
 
 /** Build one CSV export for a dataset. */
@@ -449,7 +449,7 @@ export function buildCsvExport(
     default: {
       // Exhaustiveness check: a new dataset must be added above.
       const unreachable: never = dataset;
-      throw new DeUrgeError('VALIDATION', `Unknown CSV dataset: ${String(unreachable)}`);
+      throw new TyagError('VALIDATION', `Unknown CSV dataset: ${String(unreachable)}`);
     }
   }
   return {

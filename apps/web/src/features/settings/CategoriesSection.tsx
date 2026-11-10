@@ -7,7 +7,7 @@
  * core enforces this too); deleting a custom entry never rewrites history.
  */
 import { useId, useMemo, useState } from 'react';
-import { isDeUrgeError, userMessage, type CategoryKind, type CustomCategory } from '@deurge/core';
+import { isTyagError, userMessage, type CategoryKind, type CustomCategory } from '@tyag/core';
 import { useApp } from '../../store/app';
 import {
   Button,
@@ -100,7 +100,7 @@ export function CategoriesSection() {
       return true;
     } catch (error) {
       toast.error(
-        isDeUrgeError(error) ? userMessage(error) : 'That change could not be saved. Nothing else was changed.',
+        isTyagError(error) ? userMessage(error) : 'That change could not be saved. Nothing else was changed.',
       );
       return false;
     } finally {
