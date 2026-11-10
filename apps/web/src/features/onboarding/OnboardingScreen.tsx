@@ -16,6 +16,7 @@ import { navigate } from '../../router';
 import { useApp } from '../../store/app';
 import { Button, Sheet, useToast } from '../../ui/components';
 import { useFormatters } from '../../ui/format';
+import { Keypad, PinDots } from '../lock/AppLock';
 import { DeUrgeAppIcon, DeUrgeMark, DeUrgeWordmark } from '../../ui/logo';
 import { pickTextFile } from '../../platform/files';
 import {
@@ -24,7 +25,7 @@ import {
 } from '../../platform/notifications';
 import './onboarding.css';
 
-type Step = 0 | 1 | 2 | 3 | 4; // welcome, privacy, tracker, reminders, ready
+type Step = 0 | 1 | 2 | 3 | 4 | 5; // welcome, privacy, tracker, reminders, PIN, ready
 
 /**
  * A broad, plain-language list of addictions and compulsive behaviours. Every
@@ -55,6 +56,20 @@ const SUGGESTIONS = [
   'Streaming',
   'Sugar',
   'Workaholism',
+] as const;
+
+/** Always-visible starting points under the name field. */
+const QUICK_PICKS = [
+  'Social media',
+  'Hair pulling',
+  'Drinking',
+  'Pornography',
+  'Gaming',
+  'Gambling',
+  'Drugs',
+  'Masturbation',
+  'Doomscrolling',
+  'Binge eating',
 ] as const;
 const REMINDER_OPTIONS: { value: number; label: string }[] = [
   { value: 60, label: 'Hourly' },
@@ -210,14 +225,32 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const isDesktop = useIsDesktop();
 
   const [step, setStep] = useState<Step>(0);
-  const [name, setName] = useState('Social media');
-  const [reasons, setReasons] = useState('');
+  const [stepMotion, setStepMotion] = useState<'' | 'push' | 'pop'>('');
+  const previousStep = useRef<Step>(0);
+  useEffect(() => {
+    if (step === previousStep.current) return;
+    setStepMotion(step > previousStep.current ? 'push' : 'pop');
+    previousStep.current = step;
+    const timer = window.setTimeout(() => setStepMotion(''), 520);
+    return () => window.clearTimeout(timer);
+  }, [step]);
+  const [name, setName] = useState('');
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [showWhen, setShowWhen] = useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [remindersOn, setRemindersOn] = useState(false);
   const [intervalMinutes, setIntervalMinutes] = useState(1440);
   const [created, setCreated] = useState<Tracker | null>(null);
+  const [pinStage, setPinStage] = useState<'create' | 'confirm'>('create');
+  const [pinValue, setPinValue] = useState('');
+  const [firstPin, setFirstPin] = useState('');
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pinShake, setPinShake] = useState(0);
+  const [pinSaving, setPinSaving] = useState(false);
+  const [desktopPin, setDesktopPin] = useState('');
+  const [desktopConfirm, setDesktopConfirm] = useState('');
+  const [desktopField, setDesktopField] = useState<'pin' | 'confirm'>('pin');
+  const desktopPinRef = useRef<HTMLInputElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -229,7 +262,13 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [restoring, setRestoring] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  const progressIndex = step === 1 ? 0 : step === 2 ? 1 : step === 3 ? 2 : 0;
+  const progressIndex = step === 1 ? 0 : step === 2 ? 1 : step === 3 ? 2 : step === 4 ? 3 : 0;
+  useEffect(() => {
+    if (step !== 4 || !isDesktop) return undefined;
+    const timer = window.setTimeout(() => desktopPinRef.current?.focus(), 80);
+    return () => window.clearTimeout(timer);
+  }, [step, isDesktop, desktopField]);
+
   const nameQuery = name.trim().toLowerCase();
   const suggestionMatches =
     suggestionsOpen && nameQuery.length > 0
@@ -286,7 +325,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     if (saving) return;
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Give your tracker a name, or pick one of the suggestions above.');
+      setError('Enter a name, or choose a suggestion.');
       return;
     }
     setSaving(true);
@@ -295,7 +334,6 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
       const tracker = await app.core.trackers.create({
         name: trimmed,
         startedAt,
-        reasons: reasons.trim() || null,
       });
       setCreated(tracker);
       setStep(3);
@@ -325,6 +363,81 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     }
     app.refresh();
     setStep(4);
+  }
+
+  function pinDigit(digit: string): void {
+    if (pinSaving || pinValue.length >= 4) return;
+    setPinError(null);
+    const next = pinValue + digit;
+    setPinValue(next);
+    if (next.length === 4) window.setTimeout(() => void completePin(next), 120);
+  }
+
+  function pinDelete(): void {
+    if (pinSaving) return;
+    setPinValue((current) => current.slice(0, -1));
+    setPinError(null);
+  }
+
+  async function completePin(pin: string): Promise<void> {
+    if (pinSaving) return;
+    setPinSaving(true);
+    try {
+      if (pinStage === 'create') {
+        setFirstPin(pin);
+        setPinStage('confirm');
+        setPinValue('');
+      } else if (pin !== firstPin) {
+        setPinStage('create');
+        setFirstPin('');
+        setPinValue('');
+        setPinError('PINs did not match. Try again.');
+        setPinShake((count) => count + 1);
+      } else {
+        await app.core.security.setPassword(pin, { biometricsEnabled: app.core.security.biometricsEnabled() });
+        setStep(5);
+      }
+    } catch (failure) {
+      setPinError(isDeUrgeError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
+      setPinValue('');
+    } finally {
+      setPinSaving(false);
+    }
+  }
+
+  async function saveDesktopPin(): Promise<void> {
+    if (pinSaving) return;
+    if (desktopPin.length !== 4 || desktopConfirm.length !== 4) {
+      setPinError('Enter all 4 digits in both fields.');
+      return;
+    }
+    if (desktopPin !== desktopConfirm) {
+      setPinError('PINs did not match. Try again.');
+      setDesktopConfirm('');
+      setDesktopField('confirm');
+      desktopPinRef.current?.focus();
+      return;
+    }
+    setPinSaving(true);
+    try {
+      await app.core.security.setPassword(desktopPin, { biometricsEnabled: app.core.security.biometricsEnabled() });
+      setStep(5);
+    } catch (failure) {
+      setPinError(isDeUrgeError(failure) ? userMessage(failure) : 'The PIN could not be saved.');
+    } finally {
+      setPinSaving(false);
+    }
+  }
+
+  function backFromPin(): void {
+    if (pinStage === 'confirm') {
+      setPinStage('create');
+      setFirstPin('');
+      setPinValue('');
+      setPinError(null);
+      return;
+    }
+    setStep(3);
   }
 
   async function chooseRestoreFile(): Promise<void> {
@@ -378,25 +491,22 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     <div className="onb-feature-list">
       <Feature
         icon={<><rect x="6" y="11" width="12" height="9" rx="2" /><path d="M8.5 11V8.5a3.5 3.5 0 0 1 7 0V11" /></>}
-        title="Stored on this device"
-        body="Your history never leaves it unless you export it."
+        title="Stays on this device"
+        body="Your data stays on this device."
       />
       <Feature
         icon={<><circle cx="12" cy="12" r="8" /><path d="M6.3 17.7L17.7 6.3" /></>}
-        title="No account, no tracking"
-        body="No sign-up, ads, analytics or cloud sync."
+        title="No account needed"
+        body="No sign-up, ads or tracking."
       />
-      <Feature icon={<path d="M3 11.5l18-7-7 18-2.5-7.5z" />} title="Works offline" body="Every feature runs without a connection." />
-      <Feature icon={<path d="M12 4v10M8 10l4 4 4-4M5 19h14" />} title="Yours to export" body="Back up or move to another device at any time." />
+      <Feature icon={<path d="M3 11.5l18-7-7 18-2.5-7.5z" />} title="Works offline" body="Works without internet." />
+      <Feature icon={<path d="M12 4v10M8 10l4 4 4-4M5 19h14" />} title="Export anytime" body="Back up or move to a new device." />
     </div>
   );
 
   const trackerFields = (
     <>
-      <button type="button" className="onb-text-btn onb-back" onClick={() => setStep(1)} disabled={saving}>
-        <BackChevron /> Back
-      </button>
-      <h1 className="onb-title onb-title-form">What are you leaving behind?</h1>
+      <h1 className="onb-title onb-title-form">Name of addiction</h1>
       <div className="onb-name-anchor">
         <div className="onb-group">
           <div className="onb-row onb-name-row">
@@ -412,7 +522,8 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
             onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 120)}
             onKeyDown={closeSuggestionsOnEscape}
             aria-label="Tracker name"
-            placeholder="Name your tracker"
+            placeholder="Enter the name"
+            autoFocus
             autoComplete="off"
             aria-autocomplete="list"
             aria-expanded={matchingSuggestions.length > 0}
@@ -443,12 +554,19 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
           />
         ) : null}
       </div>
+      <div className="onb-chips" aria-label="Suggestions">
+        {QUICK_PICKS.map((pick) => (
+          <button key={pick} type="button" className={`onb-chip ${name === pick ? 'on' : ''}`} onClick={() => chooseSuggestion(pick)}>
+            {pick}
+          </button>
+        ))}
+      </div>
       {error ? <p className="onb-error" role="alert">{error}</p> : null}
 
-      <div className="onb-label">Started</div>
+      <div className="onb-label">Start date</div>
       <div className="onb-group">
         <button type="button" className="onb-row onb-row-button" onClick={() => setShowWhen((value) => !value)} aria-expanded={showWhen}>
-          <span>When</span>
+          <span>Started</span>
           <span className="onb-muted onb-row-value">{whenLabel}</span>
         </button>
         {showWhen ? (
@@ -467,25 +585,16 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
           </div>
         ) : null}
       </div>
-      <p className="onb-footnote">Started earlier? Change the time to backdate it. Time is tracked to the minute.</p>
+      <p className="onb-footnote">Pick a past date if you already started. Time is tracked to the minute.</p>
 
-      <div className="onb-label">Your reasons</div>
-      <textarea
-        className="onb-textarea"
-        value={reasons}
-        onChange={(event) => setReasons(event.target.value)}
-        aria-label="Reasons"
-        placeholder="Why does this matter to you? (optional)"
-      />
-      <p className="onb-footnote">Only you can see this.</p>
     </>
   );
 
   const remindersContent = (
     <>
-      <h1 className="onb-title">Gentle reminders?</h1>
+      <h1 className="onb-title">Reminders (optional)</h1>
       <p className="onb-muted onb-subtitle onb-subtitle-wide">
-        Optional. deUrge can quietly acknowledge your progress with notifications that stay on your device.
+        Get a private reminder on this device. You can change this later.
       </p>
       <div className="onb-label onb-label-flush">Preview</div>
       <div className="onb-preview">
@@ -507,7 +616,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
           aria-label="Progress notes"
           onClick={() => setRemindersOn((value) => !value)}
         >
-          <span>Progress notes</span>
+          <span>Progress reminders</span>
           <span className={`onb-switch ${remindersOn ? 'on' : ''}`} aria-hidden="true" />
         </button>
         <label className="onb-row onb-row-button">
@@ -528,7 +637,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
           </select>
         </label>
       </div>
-      <p className="onb-footnote">Off unless you turn it on. No push servers, no accounts. You can change this in Settings at any time.</p>
+      <p className="onb-footnote">Off by default. No servers, no accounts.</p>
     </>
   );
 
@@ -540,7 +649,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
         <DeUrgeAppIcon size={96} />
         <DeUrgeWordmark height={44} className="onb-welcome-wordmark" />
         <p className="onb-muted onb-welcome-tagline">
-          Track what you are leaving behind. Every moment counts, and it all stays on this device.
+          Track recovery from addictions. Private, local-first, and always on this device.
         </p>
       </div>
       <div className="onb-welcome-actions onb-welcome-actions-stagger">
@@ -560,10 +669,10 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
         <span className="onb-chip onb-chip-status"><i className="onb-dot" aria-hidden="true" /> Tracking started</span>
         <div className="onb-ready-time">{minutesSeconds(app.core.metrics(created.id).currentStreakMs)}</div>
         <div className="onb-muted onb-ready-name">{created.name}</div>
-        <p className="onb-ready-message">Your progress starts now. Every moment counts.</p>
+        <p className="onb-ready-message">Your progress starts now.</p>
       </div>
       <p className="onb-footnote onb-ready-note">
-        If a lapse happens, you can record it. Your earlier progress always stays in your history.
+        If you lapse, record it. Your earlier progress stays in your history.
       </p>
       <Button variant="primary" block onClick={() => void finish()}>Open deUrge</Button>
     </div>
@@ -573,11 +682,12 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
 
   const desktopTrackerForm = (
     <form id={TRACKER_FORM_ID} className="onb-form onb-form-desktop" onSubmit={(event) => void startTracking(event)} noValidate>
-      <label className="onb-label" htmlFor="onb-name">Name</label>
+      <label className="onb-label" htmlFor="onb-name">Addiction name</label>
       <div className="onb-desktop-name-anchor">
         <input
           id="onb-name"
           className="onb-desktop-input"
+          autoFocus
           value={name}
           onChange={(event) => {
             setName(event.target.value);
@@ -600,7 +710,14 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
           />
         ) : null}
       </div>
-      <div className="onb-label">Started</div>
+      <div className="onb-chips" aria-label="Suggestions">
+        {QUICK_PICKS.map((pick) => (
+          <button key={pick} type="button" className={`onb-chip ${name === pick ? 'on' : ''}`} onClick={() => chooseSuggestion(pick)}>
+            {pick}
+          </button>
+        ))}
+      </div>
+      <div className="onb-label">Start date</div>
       <button type="button" className="onb-desktop-select" onClick={() => setShowWhen((value) => !value)} aria-expanded={showWhen}>
         <span>{whenLabel}</span>
         <Chevron />
@@ -618,41 +735,72 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
           aria-label="Start date and time"
         />
       ) : null}
-      <p className="onb-desktop-hint">Started earlier? Change the time to backdate it.</p>
+      <p className="onb-desktop-hint">Pick a past date if you already started.</p>
       {error ? <p className="onb-error" role="alert">{error}</p> : null}
-      <label className="onb-label" htmlFor="onb-reasons">Your reasons</label>
-      <textarea
-        id="onb-reasons"
-        className="onb-desktop-textarea"
-        value={reasons}
-        onChange={(event) => setReasons(event.target.value)}
-        aria-label="Reasons"
-        placeholder="Why does this matter to you? (optional)"
-      />
       <div className="onb-desktop-form-spacer" />
     </form>
+  );
+
+  const pinContent = (
+    <div className="onb-pin-body">
+      <h1 className="onb-title">{pinStage === 'create' ? 'Create a PIN' : 'Confirm your PIN'}</h1>
+      <p className="onb-muted onb-subtitle">
+        {pinStage === 'create' ? 'You will use this to open deUrge. It stays on this device.' : 'Enter the same PIN once more.'}
+      </p>
+      <PinDots length={pinValue.length} error={Boolean(pinError)} shake={pinShake} />
+      {pinError ? <p className="onb-error onb-pin-error" role="alert">{pinError}</p> : null}
+      <div className="onb-pin-keypad">
+        <Keypad onDigit={pinDigit} onDelete={pinDelete} />
+      </div>
+    </div>
+  );
+
+  const pinNav = (
+    <div className="onb-nav-row">
+      <button type="button" className="onb-text-btn" onClick={backFromPin} disabled={pinSaving}>
+        <BackChevron /> Back
+      </button>
+      <Button
+        variant="primary"
+        block
+        onClick={() => void completePin(pinValue)}
+        disabled={pinSaving || pinValue.length < 4}
+      >
+        {pinStage === 'create' ? 'Set PIN' : 'Confirm PIN'}
+      </Button>
+    </div>
   );
 
   /* ------------------------------ mobile layout ------------------------- */
 
   const mobile = (
     <div className="onb-app">
-      {step === 0 ? welcome : null}
+      {step === 0 ? <div key="welcome" className={stepMotion ? `onb-step-${stepMotion}` : ''}>{welcome}</div> : null}
       {step === 1 ? (
-        <>
+        <div key="privacy" className={`onb-step-layer ${stepMotion ? `onb-step-${stepMotion}` : ''}`}>
+          <div className="onb-topbar">
+            <button type="button" className="onb-text-btn" onClick={() => setStep(0)}>
+              <BackChevron /> Back
+            </button>
+          </div>
           <div className="onb-scroll onb-scroll-privacy">
-            <h1 className="onb-title">Private by design</h1>
-            <p className="onb-muted onb-subtitle">deUrge works entirely on your device.</p>
+            <h1 className="onb-title">Your data stays here</h1>
+            <p className="onb-muted onb-subtitle">No account. Everything is on this device.</p>
             {privacyList}
           </div>
           <div className="onb-footer">
             <Dots active={0} />
             <Button variant="primary" block onClick={() => setStep(2)}>Continue</Button>
           </div>
-        </>
+        </div>
       ) : null}
       {step === 2 ? (
-        <>
+        <div key="tracker" className={`onb-step-layer ${stepMotion ? `onb-step-${stepMotion}` : ''}`}>
+          <div className="onb-topbar">
+            <button type="button" className="onb-text-btn" onClick={() => setStep(1)} disabled={saving}>
+              <BackChevron /> Back
+            </button>
+          </div>
           <div className="onb-scroll onb-scroll-form">
             <form id={TRACKER_FORM_ID} className="onb-form" onSubmit={(event) => void startTracking(event)} noValidate>
               {trackerFields}
@@ -664,45 +812,86 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
               {saving ? 'Starting…' : 'Start Tracking'}
             </Button>
           </div>
-        </>
+        </div>
       ) : null}
       {step === 3 ? (
-        <>
+        <div key="reminders" className={`onb-step-layer ${stepMotion ? `onb-step-${stepMotion}` : ''}`}>
+          <div className="onb-topbar">
+            <button type="button" className="onb-text-btn" onClick={() => setStep(2)}>
+              <BackChevron /> Back
+            </button>
+          </div>
           <div className="onb-scroll onb-scroll-reminders">{remindersContent}</div>
           <div className="onb-footer">
             <Dots active={2} />
             <Button variant="primary" block onClick={() => void continueReminders(remindersOn)}>Continue</Button>
-            <button type="button" className="onb-text-btn onb-center" onClick={() => void continueReminders(false)}>
-              Not Now
+          </div>
+        </div>
+      ) : null}
+      {step === 4 ? (
+        <div key="pin" className={`onb-step-layer ${stepMotion ? `onb-step-${stepMotion}` : ''}`}>
+          <div className="onb-topbar">
+            <button type="button" className="onb-text-btn" onClick={backFromPin} disabled={pinSaving}>
+              <BackChevron /> Back
             </button>
           </div>
-        </>
+          {pinContent}
+          <div className="onb-footer">
+            <Button
+              variant="primary"
+              block
+              onClick={() => void completePin(pinValue)}
+              disabled={pinSaving || pinValue.length < 4}
+            >
+              {pinStage === 'create' ? 'Set PIN' : 'Confirm PIN'}
+            </Button>
+          </div>
+        </div>
       ) : null}
-      {step === 4 ? ready : null}
+      {step === 5 ? <div key="ready" className={stepMotion ? `onb-step-${stepMotion}` : ''}>{ready}</div> : null}
     </div>
   );
 
   /* ----------------------------- desktop layout ------------------------- */
 
   const desktopSteps = [
-    { label: 'Private by design', value: 1 as Step },
-    { label: 'Your first tracker', value: 2 as Step },
+    { label: 'Your data stays here', value: 1 as Step },
+    { label: 'Name of addiction', value: 2 as Step },
     { label: 'Reminders', value: 3 as Step },
+    { label: 'PIN', value: 4 as Step },
   ];
   const desktopRight =
-    step === 1 ? (
+    step === 0 ? (
+      <div className="onb-desktop-welcome">
+        <div className="onb-label onb-label-flush">Welcome</div>
+        <h1 className="onb-title onb-desktop-welcome-title">Track your recovery privately</h1>
+        <p className="onb-muted onb-subtitle">
+          No account. Everything stays on this device.
+        </p>
+        <div className="onb-desktop-welcome-actions">
+          <Button variant="primary" block onClick={() => setStep(1)}>
+            Get Started
+          </Button>
+          <button type="button" className="onb-text-btn onb-center" onClick={() => void chooseRestoreFile()}>
+            Restore from Backup
+          </button>
+        </div>
+      </div>
+    ) : step === 1 ? (
       <>
-        <h1 className="onb-title">Private by design</h1>
-        <p className="onb-muted onb-subtitle">deUrge works entirely on your device.</p>
+        <h1 className="onb-title">Your data stays here</h1>
+        <p className="onb-muted onb-subtitle">No account. Everything is on this device.</p>
         {privacyList}
         <div className="onb-desktop-footer">
-          <span />
+          <button type="button" className="onb-text-btn" onClick={() => setStep(0)}>
+            <BackChevron /> Back
+          </button>
           <Button variant="primary" onClick={() => setStep(2)}>Continue</Button>
         </div>
       </>
     ) : step === 2 ? (
       <>
-        <h1 className="onb-title onb-title-form">What are you leaving behind?</h1>
+        <h1 className="onb-title onb-title-form">Name of addiction</h1>
         {desktopTrackerForm}
         <div className="onb-desktop-footer">
           <button type="button" className="onb-text-btn" onClick={() => setStep(1)} disabled={saving}>
@@ -713,18 +902,105 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
           </Button>
         </div>
       </>
-    ) : (
+    ) : step === 3 ? (
       <>
         {remindersContent}
         <div className="onb-desktop-footer">
-          <button type="button" className="onb-text-btn" onClick={() => void continueReminders(false)}>Not Now</button>
+          <button type="button" className="onb-text-btn" onClick={() => setStep(2)}>
+            <BackChevron /> Back
+          </button>
           <Button variant="primary" onClick={() => void continueReminders(remindersOn)}>Continue</Button>
         </div>
       </>
+    ) : (
+      <div className="onb-desktop-pin-set">
+        <div className="onb-label onb-label-flush">Security</div>
+        <h1 className="onb-title onb-desktop-set-title">Set a PIN</h1>
+        <div className="onb-label">New PIN</div>
+        <div
+          className="pn-boxes onb-desktop-pin-boxes"
+          onClick={() => {
+            setDesktopField('pin');
+            desktopPinRef.current?.focus();
+          }}
+        >
+          {Array.from({ length: 4 }, (_, index) => (
+            <span key={index} className={`pn-box${index < desktopPin.length ? ' filled' : ''}${desktopField === 'pin' && index === Math.min(desktopPin.length, 3) ? ' active' : ''}`}>
+              {index < desktopPin.length ? <i /> : null}
+            </span>
+          ))}
+        </div>
+        <div className="onb-label">Confirm PIN</div>
+        <div
+          className="pn-boxes onb-desktop-pin-boxes"
+          onClick={() => {
+            setDesktopField('confirm');
+            desktopPinRef.current?.focus();
+          }}
+        >
+          {Array.from({ length: 4 }, (_, index) => (
+            <span key={index} className={`pn-box${index < desktopConfirm.length ? ' filled' : ''}${desktopField === 'confirm' && index === Math.min(desktopConfirm.length, 3) ? ' active' : ''}`}>
+              {index < desktopConfirm.length ? <i /> : null}
+            </span>
+          ))}
+        </div>
+        <input
+          ref={desktopPinRef}
+          className="pn-hidden-input"
+          type="password"
+          inputMode="numeric"
+          maxLength={4}
+          value={desktopField === 'pin' ? desktopPin : desktopConfirm}
+          onChange={(event) => {
+            const clean = event.target.value.replace(/\D/g, '').slice(0, 4);
+            setPinError(null);
+            if (desktopField === 'pin') {
+              setDesktopPin(clean);
+              if (clean.length === 4 && desktopConfirm.length === 0) setDesktopField('confirm');
+            } else {
+              setDesktopConfirm(clean);
+            }
+          }}
+          aria-label={desktopField === 'pin' ? 'New PIN' : 'Confirm PIN'}
+        />
+        {pinError ? <p className="onb-error" role="alert">{pinError}</p> : null}
+        <div className="onb-desktop-footer">
+          <button type="button" className="onb-text-btn" onClick={() => setStep(3)}>
+            <BackChevron /> Back
+          </button>
+          <Button variant="primary" onClick={() => void saveDesktopPin()} disabled={pinSaving || desktopPin.length < 4 || desktopConfirm.length < 4}>
+            {pinSaving ? 'Saving…' : 'Set PIN'}
+          </Button>
+        </div>
+      </div>
     );
 
+  const desktopWelcome = (
+    <div className="onb-desktop onb-desktop-welcome-shell">
+      <div className="onb-desktop-welcome-card">
+        <div className="onb-desktop-welcome-brand">
+          <DeUrgeAppIcon size={72} />
+          <DeUrgeWordmark height={26} />
+        </div>
+        <h1 className="onb-desktop-welcome-title">Track recovery from addictions</h1>
+        <p className="onb-muted onb-desktop-welcome-subtitle">
+          Private, local-first, and always on your device.
+        </p>
+        <div className="onb-desktop-welcome-actions">
+          <Button variant="primary" block onClick={() => setStep(1)}>
+            Get Started
+          </Button>
+          <button type="button" className="onb-text-btn onb-center" onClick={() => void chooseRestoreFile()}>
+            Restore from Backup
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   const desktop =
-    isDesktop && step >= 1 && step <= 3 ? (
+    isDesktop && step <= 4 ? (
+      step === 0 ? desktopWelcome : (
       <div className="onb-desktop">
         <div className="onb-desktop-card">
           <aside className="onb-desktop-side">
@@ -751,12 +1027,13 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
             <div className="onb-desktop-side-footer">
             </div>
           </aside>
-          <div className="onb-desktop-content">
-            <div className="onb-label onb-label-flush">Step {progressIndex + 1} of 3</div>
+          <div key={step} className={`onb-desktop-content onb-step-layer ${stepMotion ? `onb-step-${stepMotion}` : ''}`}>
+            <div className="onb-label onb-label-flush">{`Step ${progressIndex + 1} of 4`}</div>
             {desktopRight}
           </div>
         </div>
       </div>
+      )
     ) : null;
 
   return (

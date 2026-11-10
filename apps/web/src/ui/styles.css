@@ -1336,3 +1336,23 @@ p {
 .screen-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .onb-welcome-actions-stagger > * { animation: onb-rise var(--motion-duration-sheet) var(--motion-curve-ease-out) both; animation-delay: 240ms; }
 .onb-welcome-actions-stagger > *:nth-child(2) { animation-delay: 320ms; }
+
+/* Outgoing screen layers for push/pop. */
+.screen-stack { position: relative; flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.screen-exit-layer { position: absolute; inset: 0; z-index: 2; background: var(--bg); pointer-events: none; }
+.screen-exit-push { animation: screen-exit-push var(--motion-duration-sheet) var(--motion-curve-sheet) both; }
+.screen-exit-pop { animation: screen-exit-pop var(--motion-duration-sheet) var(--motion-curve-sheet) both; }
+.screen-enter-push { position: relative; z-index: 1; background: var(--bg); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12); }
+.screen-enter-pop { position: relative; z-index: 1; background: var(--bg); }
+@keyframes screen-exit-push { to { transform: translateX(-33%); opacity: 0.6; } }
+@keyframes screen-exit-pop { to { transform: translateX(100%); } }
+
+/* Onboarding step transitions: standard push/pop. */
+.onb-step-layer { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.onb-step-push { animation: onb-push-in var(--motion-duration-sheet) var(--motion-curve-sheet) both; }
+.onb-step-pop { animation: onb-pop-in var(--motion-duration-sheet) var(--motion-curve-sheet) both; }
+@keyframes onb-push-in { from { transform: translateX(100%); opacity: 0.85; } to { transform: translateX(0); opacity: 1; } }
+@keyframes onb-pop-in { from { transform: translateX(-33%); opacity: 0.85; } to { transform: translateX(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .onb-step-push, .onb-step-pop { animation: fade-in var(--motion-duration-crossfade) var(--motion-curve-ease-out) both !important; }
+}

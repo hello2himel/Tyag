@@ -450,7 +450,7 @@ export function SettingsScreen() {
 
         <SettingSection
           label="App lock"
-          note="deUrge asks for your PIN every time it opens and locks again the moment you leave the app. The PIN is exactly 4 digits and stored only as a salted hash on this device; it is never included in backups."
+          note="deUrge asks for your PIN every time it opens and locks when you leave. The 4-digit PIN is stored only as a salted hash; it is never included in backups."
         >
           <ListGroup aria-label="App lock">
             <ListRow label="Change PIN" value="4 digits" chevron onClick={() => window.dispatchEvent(new Event('deurge:change-pin'))} />

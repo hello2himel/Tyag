@@ -106,7 +106,7 @@ function usePinKeyboard(onDigit: (digit: string) => void, onDelete: () => void, 
   }, [enabled, onDelete, onDigit]);
 }
 
-function PinDots({
+export function PinDots({
   length,
   error = false,
   shake = 0,
@@ -131,7 +131,7 @@ function PinDots({
   );
 }
 
-function Keypad({
+export function Keypad({
   onDigit,
   onDelete,
   onBiometrics,

@@ -218,8 +218,8 @@ export function JournalScreen() {
             setSearch(event.target.value);
             setPageSize(25);
           }}
-          placeholder="Search your history"
-          aria-label="Search your history"
+          placeholder="Search"
+          aria-label="Search"
         />
 
         <div className="journal-chips" role="group" aria-label="Event type">
@@ -300,7 +300,7 @@ export function JournalScreen() {
       {!error && total === 0 && !hasFilters ? (
         <EmptyState
           title="Your history starts here"
-          body="Write a journal entry, or record a lapse or urge from a tracker. Every record appears here in chronological order — nothing is ever hidden or rewritten."
+          body="Write an entry, or record a lapse or urge. Everything appears here in order."
           action={
             <div className="row-start" style={{ justifyContent: 'center' }}>
               <Button variant="primary" icon="plus" onClick={openNewEntry}>
@@ -315,7 +315,7 @@ export function JournalScreen() {
       {!error && total === 0 && hasFilters ? (
         <EmptyState
           title="No matching records"
-          body="Nothing in your history matches these filters. Nothing has been removed — try a different tracker, event type or date range."
+          body="No records match these filters. Try another tracker, type or date range."
           action={<Button onClick={resetFilters}>Clear filters</Button>}
         />
       ) : null}

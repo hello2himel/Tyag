@@ -322,7 +322,7 @@ function RecordSheetDialog({
           {edit ? null : (
             <Segmented
               className="record-type"
-              ariaLabel="Record a lapse or an urge"
+              ariaLabel="Record a lapse or urge"
               value={kind}
               onChange={(nextKind) => setKind(nextKind)}
               options={[
@@ -393,9 +393,9 @@ function RecordSheetDialog({
               </div>
 
               <Field
-                label="Duration (minutes, optional)"
+                label="How long? (minutes, optional)"
                 htmlFor="record-duration"
-                hint="Leave empty if you are not sure."
+                hint="Optional. Leave blank if unsure."
               >
                 <Input
                   id="record-duration"
@@ -436,7 +436,7 @@ function RecordSheetDialog({
                 })}
               </ListGroup>
             )}
-            <div className="field-hint">Optional. Tap to select one trigger, tap again to clear it.</div>
+            <div className="field-hint">Optional. Tap a trigger to select it; tap again to clear.</div>
           </div>
 
           {kind === 'lapse' ? (
@@ -446,7 +446,7 @@ function RecordSheetDialog({
                   id="record-reason"
                   value={reason}
                   maxLength={300}
-                  placeholder="What do you think led to it?"
+                  placeholder="What led to it? (optional)"
                   onChange={(event) => setReason(event.target.value)}
                 />
               </Field>
@@ -455,7 +455,7 @@ function RecordSheetDialog({
                   id="record-context"
                   value={context}
                   maxLength={200}
-                  placeholder="Where were you, or who were you with?"
+                  placeholder="Where were you? (optional)"
                   onChange={(event) => setContext(event.target.value)}
                 />
               </Field>
@@ -487,7 +487,7 @@ function RecordSheetDialog({
               id="record-notes"
               value={notes}
               maxLength={10_000}
-              placeholder="What was happening?"
+              placeholder="What happened? (optional)"
               onChange={(event) => setNotes(event.target.value)}
             />
           </Field>

@@ -20,7 +20,7 @@ export function DataScreen() {
       <div className="screen-head">
         <div>
           <h1 className="screen-title">Data &amp; Backups</h1>
-          <div className="sub">Export, import and recover your data. Everything here happens on this device.</div>
+          <div className="sub">Export, import and restore your data. Everything stays on this device.</div>
         </div>
       </div>
 

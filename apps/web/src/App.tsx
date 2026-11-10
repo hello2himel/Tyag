@@ -87,7 +87,20 @@ function Root() {
   }
 
   if (!app.settings.onboarded) {
-    return <OnboardingScreen onComplete={() => app.refresh()} />;
+    return (
+      <OnboardingScreen
+        onComplete={() => {
+          app.refresh();
+          const hasPin = app.core.security.hasPassword();
+          setHasPassword(hasPin);
+          if (hasPin) {
+            setUnlocked(true);
+            setJustUnlocked(true);
+            window.setTimeout(() => setJustUnlocked(false), 420);
+          }
+        }}
+      />
+    );
   }
   if (!hasPassword) {
     return (
@@ -158,13 +171,24 @@ function Shell() {
   const route = useRoute();
   const previousRoute = useRef(route);
   const [transition, setTransition] = useState<'' | 'push' | 'pop'>('');
+  const [exiting, setExiting] = useState<ReturnType<typeof useRoute> | null>(null);
+  const exitTimer = useRef<number | null>(null);
   useEffect(() => {
     const previous = previousRoute.current;
     const changed = previous.name !== route.name || previous.trackerId !== route.trackerId;
     if (!changed) return;
-    if (route.name === 'tracker') setTransition('push');
-    else if (previous.name === 'tracker') setTransition('pop');
-    else setTransition('');
+    let next: '' | 'push' | 'pop' = '';
+    if (route.name === 'tracker') next = 'push';
+    else if (previous.name === 'tracker') next = 'pop';
+    setTransition(next);
+    if (next) {
+      setExiting(previous);
+      if (exitTimer.current !== null) window.clearTimeout(exitTimer.current);
+      exitTimer.current = window.setTimeout(() => {
+        setExiting(null);
+        setTransition('');
+      }, 520);
+    }
     previousRoute.current = route;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.name, route.trackerId]);
@@ -226,8 +250,15 @@ function Shell() {
             {app.storageWarning}
           </div>
         ) : null}
-        <div key={screenKey} className={`screen-wrap${transition ? ` screen-enter-${transition}` : ''}`}>
-          <ScreenContent route={route} />
+        <div className="screen-stack">
+          {exiting && transition ? (
+            <div className={`screen-exit-layer screen-exit-${transition}`} aria-hidden="true">
+              <ScreenContent route={exiting} />
+            </div>
+          ) : null}
+          <div key={screenKey} className={`screen-wrap${transition ? ` screen-enter-${transition}` : ''}`}>
+            <ScreenContent route={route} />
+          </div>
         </div>
       </div>
 

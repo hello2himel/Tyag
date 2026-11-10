@@ -210,14 +210,10 @@ export function TrackerDetailScreen({ trackerId }: { trackerId: string }) {
         className="detail-actions"
       />
 
-      {tracker.description || tracker.reasons ? (
+      {tracker.description ? (
         <div className="detail-meta">
           {tracker.description ? <p className="detail-description">{tracker.description}</p> : null}
-          {tracker.reasons ? (
-            <p className="detail-reasons">
-              <strong>Reasons:</strong> {tracker.reasons}
-            </p>
-          ) : null}
+
         </div>
       ) : null}
 

@@ -104,11 +104,11 @@ export function TrackersScreen() {
 
       {trackers.length === 0 ? (
         <EmptyState
-          title="Start with one behaviour"
-          body="Create a tracker for something you want to stay away from. Progress starts the moment you do — and earlier progress is never lost."
+          title="Start tracking"
+          body="New tracker for something you want to stay away from. Progress starts the moment you do — and earlier progress is never lost."
           action={
             <Button variant="primary" onClick={() => setSheet({ tracker: null })}>
-              Create a tracker
+              New tracker
             </Button>
           }
         />

@@ -139,12 +139,12 @@ export function InsightsScreen() {
         <div className="screen-head">
           <div>
             <h1 className="screen-title">Insights</h1>
-            <div className="sub">Calculated on this device from your own records.</div>
+            <div className="sub">Based on your records on this device.</div>
           </div>
         </div>
         <EmptyState
           title="Nothing to measure yet"
-          body="Insights are calculated only from your records. Create a tracker and record a lapse, urge or journal entry — this screen will then show patterns, always with the sample size they are based on."
+          body="Add a tracker and record something. Insights appear once there is enough data, with the sample size shown."
           action={
             <div className="row-start" style={{ justifyContent: 'center' }}>
               <Button variant="primary" onClick={() => navigate('/trackers?new=1')}>
@@ -163,7 +163,7 @@ export function InsightsScreen() {
       <div className="screen-head">
         <div>
           <h1 className="screen-title">Insights</h1>
-          <div className="sub">Calculated on this device from your own records.</div>
+          <div className="sub">Based on your records on this device.</div>
         </div>
       </div>
 
@@ -303,7 +303,7 @@ export function InsightsScreen() {
             ) : insightsView.insights.length === 0 ? (
               <p className="sub">
                 No insight rules had enough data for {selected === 'all' ? 'your trackers' : selectionName} yet. Insights appear
-                once there are a few records, and each one names the period and sample size it is based on.
+                once there are a few records. Each one shows its period and sample size.
               </p>
             ) : (
               <div className="insight-list">

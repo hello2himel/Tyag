@@ -35,7 +35,6 @@ function TrackerSheetDialog({ tracker, onClose, onSaved }: Omit<TrackerSheetProp
   const [description, setDescription] = useState(tracker?.description ?? '');
   const [initialStart] = useState(() => toDateTimeLocalValue(tracker?.startedAt ?? app.now, timeZone));
   const [start, setStart] = useState(initialStart);
-  const [reasons, setReasons] = useState(tracker?.reasons ?? '');
   const [notes, setNotes] = useState(tracker?.notes ?? '');
   const [nameError, setNameError] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
@@ -83,7 +82,6 @@ function TrackerSheetDialog({ tracker, onClose, onSaved }: Omit<TrackerSheetProp
       const common = {
         name: trimmedName,
         description,
-        reasons,
         notes,
         ...(startedAt !== undefined ? { startedAt, startedTimeZone: timeZone } : {}),
       };
@@ -148,7 +146,7 @@ function TrackerSheetDialog({ tracker, onClose, onSaved }: Omit<TrackerSheetProp
             id="tracker-description"
             value={description}
             maxLength={LIMITS.description}
-            placeholder="What does this tracker mean for you?"
+            placeholder="Short note about this tracker (optional)."
             style={{ minHeight: 84 }}
             onChange={(event) => setDescription(event.target.value)}
           />
@@ -157,7 +155,7 @@ function TrackerSheetDialog({ tracker, onClose, onSaved }: Omit<TrackerSheetProp
         <Field
           label="Start date and time"
           htmlFor="tracker-start"
-          hint="Backdating is allowed. Your streak counts from the time you choose."
+          hint="You can pick a past date. Your timer counts from there."
           error={startError}
         >
           <Input
@@ -169,23 +167,14 @@ function TrackerSheetDialog({ tracker, onClose, onSaved }: Omit<TrackerSheetProp
           />
         </Field>
 
-        <Field label="Reasons (optional)" htmlFor="tracker-reasons">
-          <Textarea
-            id="tracker-reasons"
-            value={reasons}
-            maxLength={LIMITS.description}
-            placeholder="Why does this matter to you?"
-            style={{ minHeight: 84 }}
-            onChange={(event) => setReasons(event.target.value)}
-          />
-        </Field>
+
 
         <Field label="Notes (optional)" htmlFor="tracker-notes">
           <Textarea
             id="tracker-notes"
             value={notes}
             maxLength={LIMITS.notes}
-            placeholder="Anything you want to remember."
+            placeholder="Anything you want to remember (optional)."
             style={{ minHeight: 84 }}
             onChange={(event) => setNotes(event.target.value)}
           />
