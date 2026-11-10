@@ -5,7 +5,7 @@ import { LIMITS, requireOneOf, requireText } from '../validation';
 import { categoryRepo } from '../repos/categories';
 import { appendHistory, write, type CoreContext } from './context';
 
-const KINDS: CategoryKind[] = ['trigger', 'reason', 'tracker_category'];
+const KINDS: CategoryKind[] = ['trigger', 'reason'];
 
 export class CategoryService {
   constructor(private readonly ctx: CoreContext) {}

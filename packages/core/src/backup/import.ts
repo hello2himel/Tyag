@@ -47,6 +47,7 @@ import { historyRepo } from '../repos/history';
 import { canonicalJson, summariseCounts } from './serialize';
 import { sha256Hex } from './crypto';
 import {
+  exportMigrationSource,
   mergeKnownReferences,
   replaceKnownReferences,
   validateImportRelationships,
@@ -246,17 +247,7 @@ function planMerge(existing: AllData, data: DeUrgeExportData, keepBoth: boolean)
 
   /* ------------------------------- trackers ------------------------------ */
   for (const tracker of data.trackers) {
-    const remappedCategoryId =
-      tracker.categoryId === null ? null : categoryIdMap.get(tracker.categoryId) ?? tracker.categoryId;
-    const candidate: Tracker = { ...tracker, categoryId: remappedCategoryId };
-    const resolved = resolveRecord(
-      candidate,
-      'trackers',
-      trackerById,
-      keepBoth,
-      plan.conflicts,
-      plan.warnings,
-    );
+    const resolved = resolveRecord(tracker, 'trackers', trackerById, keepBoth, plan.conflicts, plan.warnings);
     if (resolved.action === 'insert' || resolved.action === 'rekey') {
       plan.trackers.push(resolved.record);
       trackerStatus.set(resolved.record.id, resolved.record.status);
@@ -520,7 +511,9 @@ function existingReferences(existing: AllData): {
 
 /**
  * Verify the SHA-256 integrity hash when the export carries one. A missing
- * hash is tolerated (older exports) and reported as a warning.
+ * hash is tolerated (older exports) and reported as a warning. When the
+ * document was upconverted from an older schema, the hash covers the original
+ * (pre-migration) data, so that is what must be hashed.
  */
 async function verifyIntegrity(parsed: DeUrgeExport, warnings: string[]): Promise<void> {
   if (!parsed.integrity) {
@@ -528,7 +521,8 @@ async function verifyIntegrity(parsed: DeUrgeExport, warnings: string[]): Promis
     return;
   }
   const expected = parsed.integrity.hash.toLowerCase();
-  const actual = await sha256Hex(canonicalJson(parsed.data));
+  const source = exportMigrationSource(parsed);
+  const actual = await sha256Hex(canonicalJson(source ? source.data : parsed.data));
   if (actual !== expected) {
     throw new DeUrgeError(
       'IMPORT_INVALID',
@@ -568,6 +562,13 @@ export async function executeImport(
   }
 
   const warnings: string[] = [];
+  const migration = exportMigrationSource(parsed);
+  if (migration) {
+    warnings.push(
+      `This backup was created with schema version ${migration.schemaVersion} and was upgraded while importing. ` +
+        'Tracker categories no longer exist in deUrge, so they were removed; every other record was imported unchanged.',
+    );
+  }
   await verifyIntegrity(parsed, warnings);
 
   const existing = loadAllData(ctx.db);

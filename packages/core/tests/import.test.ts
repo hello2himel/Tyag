@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { DeUrgeError, MemoryPersistence, SqlDatabase } from '../src/index';
-import type { DeUrgeExport, ImportReport } from '../src/index';
+import type { CustomCategory, DeUrgeExport, DeUrgeExportData, ImportReport, Tracker } from '../src/index';
 import { EXPORT_DATA_MIGRATIONS, applyExportMigrations } from '../src/backup/schema';
-import { createTestCore, type TestCore } from './helpers';
+import { canonicalJson } from '../src/backup/serialize';
+import { sha256Hex } from '../src/backup/crypto';
+import { createTestCore, T0, type TestCore } from './helpers';
 import { seedRichCore, type SeededCore } from './helpers/engines';
 
 interface ExportedSource {
@@ -20,6 +22,47 @@ function mutateExport<T>(text: string, mutate: (document: DeUrgeExport) => T): {
   const document = JSON.parse(text) as DeUrgeExport;
   const result = mutate(document);
   return { text: JSON.stringify(document), result };
+}
+
+/**
+ * Turn a current (schema v2) export into a genuine schema-v1 document with
+ * tracker categories, optionally re-signing it with a hash over the v1 data.
+ */
+async function buildV1Export(
+  source: ExportedSource,
+  options: { withIntegrity: boolean },
+): Promise<{ text: string; data: DeUrgeExportData }> {
+  const document = JSON.parse(source.text) as DeUrgeExport;
+  const data = JSON.parse(JSON.stringify(document.data)) as DeUrgeExportData;
+  // v1 tracker records carried a tracker-category reference.
+  const trackers = data.trackers.map((tracker, index) => ({
+    ...tracker,
+    categoryId: index === 0 ? 'legacy-tracker-category' : null,
+  })) as unknown as Tracker[];
+  const legacyCategory = {
+    id: 'legacy-tracker-category',
+    kind: 'tracker_category',
+    name: 'Digital',
+    sortOrder: 10,
+    isDefault: true,
+    archived: false,
+    createdAt: T0,
+    updatedAt: T0,
+  } as unknown as CustomCategory;
+  const categories = [...data.categories, legacyCategory];
+  const v1Data = { ...data, trackers, categories } as unknown as DeUrgeExportData;
+  const v1Document: DeUrgeExport = {
+    ...document,
+    schemaVersion: 1,
+    counts: { ...document.counts, categories: categories.length },
+    data: v1Data,
+  };
+  if (options.withIntegrity) {
+    v1Document.integrity = { algorithm: 'SHA-256', hash: await sha256Hex(canonicalJson(v1Data)) };
+  } else {
+    delete v1Document.integrity;
+  }
+  return { text: JSON.stringify(v1Document), data: v1Data };
 }
 
 function allImportedZero(report: ImportReport): void {
@@ -421,6 +464,110 @@ describe('import: validation failures never write', () => {
     expect(after.content).toBe(before.content);
     expect(target.core.trackers.list()).toHaveLength(1);
     expect(target.core.trackers.list()[0]!.name).toBe('Existing');
+    expect(target.core.checkIntegrity()).toBe('ok');
+  });
+});
+
+describe('import: v1 export upconversion', () => {
+  it('drops tracker categories from a v1 export and preserves everything else', async () => {
+    const seeded = await seedRichCore();
+    const source = await exportSource(seeded);
+    const v1 = await buildV1Export(source, { withIntegrity: true });
+    const target = await createTestCore({ now: seeded.clock.now() });
+
+    // Previewing (parse-only) shows the upconverted shape and counts.
+    const parsed = target.core.backup.parseExport(v1.text);
+    expect(parsed.schemaVersion).toBe(2);
+    expect(parsed.counts.categories).toBe(source.document.data.categories.length);
+    expect(parsed.data.trackers).toEqual(source.document.data.trackers);
+    expect(parsed.data.categories).toEqual(source.document.data.categories);
+
+    const report = await target.core.backup.importJson(v1.text, { mode: 'merge' });
+    expect(report.imported.trackers).toBe(2);
+    expect(report.imported.sessions).toBe(2);
+    expect(report.imported.lapses).toBe(4);
+    expect(report.imported.urges).toBe(2);
+    // Tracker-category rows are intentionally discarded; trigger/reason
+    // categories match the target's seeded defaults and are recognized.
+    expect(report.imported.categories).toBe(0);
+    expect(report.warnings.some((warning) => warning.includes('schema version 1'))).toBe(true);
+    expect(report.warnings.some((warning) => warning.includes('Tracker categories'))).toBe(true);
+
+    const targetDocument = JSON.parse((await target.core.backup.exportJson()).content) as DeUrgeExport;
+    expect(targetDocument.schemaVersion).toBe(2);
+    expect(targetDocument.data.trackers).toEqual(source.document.data.trackers);
+    expect(targetDocument.data.sessions).toEqual(source.document.data.sessions);
+    expect(targetDocument.data.lapses).toEqual(source.document.data.lapses);
+    expect(targetDocument.data.urges).toEqual(source.document.data.urges);
+    expect(targetDocument.data.journalEntries).toEqual(source.document.data.journalEntries);
+    expect(targetDocument.data.checkIns).toEqual(source.document.data.checkIns);
+    expect(targetDocument.data.categories).toEqual(source.document.data.categories);
+    expect(targetDocument.data.trackers.every((tracker) => !('categoryId' in tracker))).toBe(true);
+    expect(
+      target.core.categories.list(undefined, true).some((category) => (category.kind as string) === 'tracker_category'),
+    ).toBe(false);
+    expect(target.core.trackers.get(seeded.trackerId)).toEqual(seeded.core.trackers.get(seeded.trackerId));
+    expect(target.core.checkIntegrity()).toBe('ok');
+    const memory = target.persistence as unknown as MemoryPersistence;
+    expect(memory.snapshot()).toEqual(target.core.bytes());
+  });
+
+  it('verifies an older export hash against its pre-migration data', async () => {
+    const seeded = await seedRichCore();
+    const source = await exportSource(seeded);
+    const v1 = await buildV1Export(source, { withIntegrity: true });
+    const target = await createTestCore({ now: seeded.clock.now() });
+    const tampered = JSON.parse(v1.text) as DeUrgeExport;
+    tampered.data.trackers[0]!.name = 'Tampered name';
+    try {
+      await target.core.backup.importJson(JSON.stringify(tampered), { mode: 'merge' });
+      throw new Error('expected import to fail');
+    } catch (error) {
+      expect((error as DeUrgeError).code).toBe('IMPORT_INVALID');
+      expect((error as DeUrgeError).message).toContain('integrity');
+    }
+    expect(target.core.trackers.list()).toHaveLength(0);
+  });
+
+  it('imports a v1 export that has no integrity hash', async () => {
+    const seeded = await seedRichCore();
+    const source = await exportSource(seeded);
+    const v1 = await buildV1Export(source, { withIntegrity: false });
+    const target = await createTestCore({ now: seeded.clock.now() });
+    const report = await target.core.backup.importJson(v1.text, { mode: 'merge' });
+    expect(report.imported.trackers).toBe(2);
+    expect(report.warnings.some((warning) => warning.includes('no integrity hash'))).toBe(true);
+    expect(target.core.trackers.list()).toHaveLength(2);
+  });
+
+  it('still rejects inconsistent counts in a v1 export', async () => {
+    const seeded = await seedRichCore();
+    const source = await exportSource(seeded);
+    const v1 = await buildV1Export(source, { withIntegrity: false });
+    const document = JSON.parse(v1.text) as DeUrgeExport;
+    document.counts.categories += 1;
+    const target = await createTestCore({ now: seeded.clock.now() });
+    await expect(target.core.backup.importJson(JSON.stringify(document), { mode: 'merge' })).rejects.toMatchObject({
+      code: 'IMPORT_INVALID',
+    });
+    expect(target.core.trackers.list()).toHaveLength(0);
+  });
+
+  it('supports replace mode for a v1 export without resurrecting tracker categories', async () => {
+    const seeded = await seedRichCore();
+    const source = await exportSource(seeded);
+    const v1 = await buildV1Export(source, { withIntegrity: true });
+    const target = await createTestCore({ now: seeded.clock.now() });
+    await target.core.trackers.create({ name: 'Will be replaced', startedAt: seeded.clock.now() });
+
+    const report = await target.core.backup.importJson(v1.text, { mode: 'replace', confirmReplace: true });
+    expect(report.mode).toBe('replace');
+    expect(report.imported.trackers).toBe(2);
+    expect(target.core.trackers.list().some((tracker) => tracker.name === 'Will be replaced')).toBe(false);
+    expect(target.core.trackers.get(seeded.trackerId).name).toBe('Smoking');
+    expect(
+      target.core.categories.list(undefined, true).some((category) => (category.kind as string) === 'tracker_category'),
+    ).toBe(false);
     expect(target.core.checkIntegrity()).toBe('ok');
   });
 });

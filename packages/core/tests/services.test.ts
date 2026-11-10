@@ -320,6 +320,29 @@ describe('categories and settings', () => {
       'Prefer not to say',
     ]);
     expect(triggers[0]?.id).toBe('default-trigger-stress');
+    const reasons = core.categories.list('reason');
+    expect(reasons.map((category) => category.name)).toEqual([
+      'Health',
+      'Relationships',
+      'Focus',
+      'Sleep',
+      'Self-respect',
+      'Money',
+      'Other',
+    ]);
+    // Tracker categories were removed from the product; nothing seeds them.
+    const all = core.categories.list(undefined, true);
+    expect(all).toHaveLength(triggers.length + reasons.length);
+    expect(all.every((category) => category.kind === 'trigger' || category.kind === 'reason')).toBe(true);
+    expect(all.some((category) => category.id.startsWith('default-cat-'))).toBe(false);
+  });
+
+  it('accepts only trigger and reason category kinds', async () => {
+    const { core } = await createTestCore();
+    // Runtime callers (imports, old UI code) cannot create a tracker category.
+    await expectDeUrgeError(core.categories.create('tracker_category' as never, 'Digital'), 'VALIDATION');
+    expect(core.categories.list('tracker_category' as never)).toEqual([]);
+    expect(core.categories.list(undefined, true).some((category) => (category.kind as string) === 'tracker_category')).toBe(false);
   });
 
   it('creates, renames, archives and deletes custom categories safely', async () => {

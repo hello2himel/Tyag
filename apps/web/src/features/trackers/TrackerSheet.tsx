@@ -5,10 +5,10 @@
  * the heavy lifting). Writes go through `core.trackers.create/update`; the
  * sheet stays open with an inline error if the core rejects the input.
  */
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { isDeUrgeError, LIMITS, userMessage, type Tracker } from '@deurge/core';
 import { useApp } from '../../store/app';
-import { Button, Field, Input, Select, Sheet, Textarea, useToast } from '../../ui/components';
+import { Button, Field, Input, Sheet, Textarea, useToast } from '../../ui/components';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../record/localDateTime';
 
 const FORM_ID = 'deurge-tracker-form';
@@ -30,11 +30,9 @@ function TrackerSheetDialog({ tracker, onClose, onSaved }: Omit<TrackerSheetProp
   const app = useApp();
   const toast = useToast();
   const timeZone = app.timeZone;
-  const categories = useMemo(() => app.core.categories.list('tracker_category'), [app.core, app.version]);
 
   const [name, setName] = useState(tracker?.name ?? '');
   const [description, setDescription] = useState(tracker?.description ?? '');
-  const [categoryId, setCategoryId] = useState(tracker?.categoryId ?? '');
   const [initialStart] = useState(() => toDateTimeLocalValue(tracker?.startedAt ?? app.now, timeZone));
   const [start, setStart] = useState(initialStart);
   const [reasons, setReasons] = useState(tracker?.reasons ?? '');
@@ -85,7 +83,6 @@ function TrackerSheetDialog({ tracker, onClose, onSaved }: Omit<TrackerSheetProp
       const common = {
         name: trimmedName,
         description,
-        categoryId: categoryId ? categoryId : null,
         reasons,
         notes,
         ...(startedAt !== undefined ? { startedAt, startedTimeZone: timeZone } : {}),
@@ -155,17 +152,6 @@ function TrackerSheetDialog({ tracker, onClose, onSaved }: Omit<TrackerSheetProp
             style={{ minHeight: 84 }}
             onChange={(event) => setDescription(event.target.value)}
           />
-        </Field>
-
-        <Field label="Category (optional)" htmlFor="tracker-category">
-          <Select id="tracker-category" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
-            <option value="">No category</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </Select>
         </Field>
 
         <Field

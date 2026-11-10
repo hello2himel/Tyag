@@ -19,7 +19,6 @@ export interface Tracker {
   id: Id;
   name: string;
   description: string | null;
-  categoryId: Id | null;
   status: TrackerStatus;
   /** Original commitment start (can be backdated). */
   startedAt: Timestamp;
@@ -119,7 +118,7 @@ export interface CheckIn {
   mood: number | null; // 1..5, optional
 }
 
-export type CategoryKind = 'trigger' | 'reason' | 'tracker_category';
+export type CategoryKind = 'trigger' | 'reason';
 
 export interface CustomCategory {
   id: Id;
@@ -376,7 +375,6 @@ export interface Recognition {
 export interface CreateTrackerInput {
   name: string;
   description?: string | null;
-  categoryId?: string | null;
   startedAt?: Timestamp;
   startedTimeZone?: string;
   notes?: string | null;
@@ -388,7 +386,6 @@ export interface CreateTrackerInput {
 export interface UpdateTrackerInput {
   name?: string;
   description?: string | null;
-  categoryId?: string | null;
   startedAt?: Timestamp;
   startedTimeZone?: string;
   notes?: string | null;

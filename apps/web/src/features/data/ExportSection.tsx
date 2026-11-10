@@ -145,7 +145,7 @@ export function ExportSection() {
             </div>
           </div>
           <p className="data-block-body">
-            All trackers, sessions, lapses, urges, journal entries, check-ins, categories and settings in one file you can
+            All trackers, sessions, lapses, urges, journal entries, check-ins, trigger/reason lists and settings in one file you can
             import back later. Plain JSON is readable by anyone who opens the file.
           </p>
           <Button variant="primary" icon="download" onClick={() => void exportJson()} disabled={busy !== null}>

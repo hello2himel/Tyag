@@ -6,7 +6,6 @@ interface TrackerRow {
   id: string;
   name: string;
   description: string | null;
-  category_id: string | null;
   status: string;
   started_at: number;
   started_time_zone: string;
@@ -25,7 +24,6 @@ function mapTracker(row: TrackerRow): Tracker {
     id: requiredString(row.id, 'trackers.id'),
     name: requiredString(row.name, 'trackers.name'),
     description: row.description ?? null,
-    categoryId: row.category_id ?? null,
     status: requiredString(row.status, 'trackers.status') as TrackerStatus,
     startedAt: requiredNumber(row.started_at, 'trackers.started_at'),
     startedTimeZone: requiredString(row.started_time_zone, 'trackers.started_time_zone'),
@@ -43,15 +41,14 @@ function mapTracker(row: TrackerRow): Tracker {
 export const trackerRepo = {
   insert(db: SqlDatabase, tracker: Tracker): void {
     db.run(
-      `INSERT INTO trackers (id, name, description, category_id, status, started_at, started_time_zone,
+      `INSERT INTO trackers (id, name, description, status, started_at, started_time_zone,
         started_utc_offset_minutes, created_at, updated_at, archived_at, notes, reasons,
         reminder_enabled, reminder_interval_minutes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         tracker.id,
         tracker.name,
         tracker.description,
-        tracker.categoryId,
         tracker.status,
         tracker.startedAt,
         tracker.startedTimeZone,
@@ -69,14 +66,13 @@ export const trackerRepo = {
 
   update(db: SqlDatabase, tracker: Tracker): void {
     db.run(
-      `UPDATE trackers SET name = ?, description = ?, category_id = ?, status = ?, started_at = ?,
+      `UPDATE trackers SET name = ?, description = ?, status = ?, started_at = ?,
         started_time_zone = ?, started_utc_offset_minutes = ?, updated_at = ?, archived_at = ?,
         notes = ?, reasons = ?, reminder_enabled = ?, reminder_interval_minutes = ?
        WHERE id = ?`,
       [
         tracker.name,
         tracker.description,
-        tracker.categoryId,
         tracker.status,
         tracker.startedAt,
         tracker.startedTimeZone,

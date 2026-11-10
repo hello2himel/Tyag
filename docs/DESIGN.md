@@ -50,7 +50,10 @@ sheets/grids).
 
 The kit's font stack is SF Pro on Apple platforms with Inter as the fallback.
 deUrge bundles the Inter WOFF2 files locally (SIL OFL, no remote fonts) and uses
-the same stack, so non-Apple platforms match the iOS boards. iOS PWA metadata,
+the same stack, so non-Apple platforms match the iOS boards. Tracker-name search
+suggestions follow the iOS inset grouped search-results pattern on mobile, while
+the desktop card keeps the same inline list. The optional tracker Category row
+from the kit was removed by request. iOS PWA metadata,
 `viewport-fit=cover`, safe-area insets and the `-webkit-tap-highlight-color`
 reset are applied for an app-like iOS feel.
 

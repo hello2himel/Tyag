@@ -40,7 +40,6 @@ export class TrackerService {
       id: newId(),
       name,
       description: optionalText(input.description, 'description', LIMITS.description, 'Description'),
-      categoryId: input.categoryId ?? null,
       status: 'active',
       startedAt,
       startedTimeZone,
@@ -84,13 +83,6 @@ export class TrackerService {
       const description = optionalText(patch.description, 'description', LIMITS.description, 'Description');
       if (description !== tracker.description) changed.push('description');
       next.description = description;
-    }
-    if (patch.categoryId !== undefined) {
-      if (patch.categoryId !== null && typeof patch.categoryId !== 'string') {
-        fail('VALIDATION', 'Category is invalid.', { categoryId: 'type' });
-      }
-      if (patch.categoryId !== tracker.categoryId) changed.push('categoryId');
-      next.categoryId = patch.categoryId;
     }
     if (patch.notes !== undefined) {
       const notes = optionalText(patch.notes, 'notes', LIMITS.notes, 'Notes');

@@ -7,9 +7,9 @@
  * newer app/schema throw `IMPORT_UNSUPPORTED_VERSION`.
  *
  * Schema migrations are a registry keyed by the *source* schema version:
- * `EXPORT_DATA_MIGRATIONS[1]` transforms schema v1 data into schema v2 data.
- * The registry is currently empty (schema v1 is current) but the pipeline is
- * already wired so a future release only has to append one entry.
+ * `EXPORT_DATA_MIGRATIONS[1]` transforms schema v1 data into schema v2 data
+ * (removing the tracker-category feature). Future releases append an entry
+ * whenever `SCHEMA_VERSION` is bumped.
  */
 import type {
   AppSettings,
@@ -48,13 +48,56 @@ export type ExportDataMigration = (data: unknown) => unknown;
 
 /**
  * Registry of forward data migrations. Add an entry when `SCHEMA_VERSION` in
- * `db/migrations.ts` is bumped:
- *
- * ```ts
- * EXPORT_DATA_MIGRATIONS[1] = (data) => { ...normalise v1 -> v2...; return data; };
- * ```
+ * `db/migrations.ts` is bumped.
  */
 export const EXPORT_DATA_MIGRATIONS: Record<number, ExportDataMigration> = {};
+
+/**
+ * Schema v1 → v2: the tracker-category feature was removed from the product.
+ * Drop `categoryId` from every tracker record and discard categories whose kind
+ * is `tracker_category`. Trigger and reason categories are untouched.
+ *
+ * The transform works on unvalidated data (validation runs afterwards) and is
+ * lenient with malformed shapes so the normal validators remain responsible
+ * for rejecting them with their precise error messages.
+ */
+EXPORT_DATA_MIGRATIONS[1] = (data: unknown): unknown => {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
+  const record = data as Record<string, unknown>;
+  const trackers = Array.isArray(record.trackers)
+    ? record.trackers.map((tracker) => {
+        if (!tracker || typeof tracker !== 'object' || Array.isArray(tracker)) return tracker;
+        const copy = { ...(tracker as Record<string, unknown>) };
+        delete copy.categoryId;
+        return copy;
+      })
+    : record.trackers;
+  const categories = Array.isArray(record.categories)
+    ? record.categories.filter((category) => {
+        if (!category || typeof category !== 'object' || Array.isArray(category)) return true;
+        return (category as Record<string, unknown>).kind !== 'tracker_category';
+      })
+    : record.categories;
+  return { ...record, trackers, categories };
+};
+
+/**
+ * Original data of a parsed document that was migrated to the current schema.
+ * Kept out of the document object so callers cannot accidentally re-export it;
+ * import uses it to verify the integrity hash against the *source* data (the
+ * hash is computed before migration by the exporting release).
+ */
+export interface ExportMigrationSource {
+  schemaVersion: number;
+  data: unknown;
+}
+
+const migrationSources = new WeakMap<DeUrgeExport, ExportMigrationSource>();
+
+/** Pre-migration source for a parsed document, when it was upconverted. */
+export function exportMigrationSource(document: DeUrgeExport): ExportMigrationSource | undefined {
+  return migrationSources.get(document);
+}
 
 /**
  * Apply registered migrations to bring data from `fromVersion` up to
@@ -217,7 +260,7 @@ function readId(record: Record<string, unknown>, found: Set<string>, collection:
 
 const TRACKER_STATUSES: readonly TrackerStatus[] = ['active', 'paused', 'archived'];
 const SESSION_START_KINDS: readonly SessionStartKind[] = ['created', 'resumed', 'imported', 'restored'];
-const CATEGORY_KINDS = ['trigger', 'reason', 'tracker_category'] as const;
+const CATEGORY_KINDS = ['trigger', 'reason'] as const;
 const URGE_OUTCOMES: readonly UrgeOutcome[] = ['passed', 'lapse', 'unknown'];
 const HISTORY_TYPES: readonly HistoryEventType[] = [
   'tracker_created',
@@ -259,7 +302,6 @@ function validateTrackers(value: unknown): Tracker[] {
       id: readId(record, ids, 'tracker', index),
       name: readString(record, 'name', 'tracker', index, { maxLength: 120 }),
       description: readNullableString(record, 'description', 'tracker', index),
-      categoryId: readNullableString(record, 'categoryId', 'tracker', index),
       status: readEnum(record, 'status', 'tracker', index, TRACKER_STATUSES),
       startedAt: readTimestamp(record, 'startedAt', 'tracker', index),
       startedTimeZone: readTimeZone(record, 'startedTimeZone', 'tracker', index),
@@ -596,9 +638,9 @@ export function validateExportData(value: unknown): DeUrgeExportData {
   };
 }
 
-function validateCounts(value: unknown, data: DeUrgeExportData): ExportCounts {
-  const record = asRecord(value, 'counts');
-  const expected: ExportCounts = {
+/** Counts that match already-validated export data. */
+function countData(data: DeUrgeExportData): ExportCounts {
+  return {
     trackers: data.trackers.length,
     sessions: data.sessions.length,
     lapses: data.lapses.length,
@@ -609,13 +651,38 @@ function validateCounts(value: unknown, data: DeUrgeExportData): ExportCounts {
     settings: data.settingsRows.length,
     historyEvents: data.historyEvents.length,
   };
+}
+
+/**
+ * Counts of the *source* document before an export-data migration, used to
+ * verify an older export's declared counts against what the file actually
+ * contains. Safe to call after `validateExportData` has accepted the migrated
+ * data: any non-array collection would already have been rejected.
+ */
+function countSourceData(value: unknown): ExportCounts {
+  const record = asRecord(value, 'export');
+  return {
+    trackers: asArray(record.trackers, 'trackers').length,
+    sessions: asArray(record.sessions, 'sessions').length,
+    lapses: asArray(record.lapses, 'lapses').length,
+    urges: asArray(record.urges, 'urges').length,
+    journalEntries: asArray(record.journalEntries, 'journalEntries').length,
+    checkIns: asArray(record.checkIns, 'checkIns').length,
+    categories: asArray(record.categories, 'categories').length,
+    settings: asArray(record.settingsRows, 'settingsRows').length,
+    historyEvents: asArray(record.historyEvents, 'historyEvents').length,
+  };
+}
+
+/** Verify that the file's declared counts match the expected counts. */
+function validateCounts(value: unknown, expected: ExportCounts): void {
+  const record = asRecord(value, 'counts');
   for (const [key, count] of Object.entries(expected) as [keyof ExportCounts, number][]) {
     const incoming = record[key];
     if (incoming !== count) {
       invalid('The backup file is inconsistent: its record counts do not match its data.');
     }
   }
-  return expected;
 }
 
 function validateIntegrity(value: unknown): { algorithm: 'SHA-256'; hash: string } | undefined {
@@ -680,24 +747,32 @@ export function parseExportDocument(text: string): DeUrgeExport {
   }
   const integrity = validateIntegrity(record.integrity);
 
-  const migratedData =
-    schemaVersion < SCHEMA_VERSION
-      ? applyExportMigrations(record.data, schemaVersion, SCHEMA_VERSION)
-      : record.data;
+  const currentSchema = schemaVersion >= SCHEMA_VERSION;
+  const migratedData = currentSchema
+    ? record.data
+    : applyExportMigrations(record.data, schemaVersion, SCHEMA_VERSION);
   const data = validateExportData(migratedData);
-  const counts = validateCounts(record.counts, data);
-
-  return {
+  if (currentSchema) {
+    validateCounts(record.counts, countData(data));
+  } else {
+    // Older exports declared counts for their own shape (which may include
+    // tracker categories); verify those, then report counts for the migrated
+    // data so previews match what will actually be imported.
+    validateCounts(record.counts, countSourceData(record.data));
+  }
+  const document: DeUrgeExport = {
     format: EXPORT_FORMAT,
     formatVersion: EXPORT_FORMAT_VERSION,
     schemaVersion: SCHEMA_VERSION,
     appVersion,
     exportedAt,
     timeZone,
-    counts,
+    counts: countData(data),
     data,
     ...(integrity ? { integrity } : {}),
   };
+  if (!currentSchema) migrationSources.set(document, { schemaVersion, data: record.data });
+  return document;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -745,7 +820,6 @@ export function validateImportRelationships(
   for (const checkIn of data.checkIns) requireTrackerRef(checkIn.trackerId, 'check-in');
   for (const event of data.historyEvents) requireTrackerRef(event.trackerId, 'history');
 
-  for (const tracker of data.trackers) requireCategoryRef(tracker.categoryId, 'tracker');
   for (const lapse of data.lapses) requireCategoryRef(lapse.triggerCategoryId, 'lapse');
   for (const urge of data.urges) requireCategoryRef(urge.triggerCategoryId, 'urge');
 

@@ -2,7 +2,7 @@
  * Settings screen — grouped iOS-style preference lists.
  *
  * Every change persists immediately through `app.updateSettings` (or the core
- * category service) and re-renders without a reload. Errors are reported with
+ * trigger/reason category service) and re-renders without a reload. Errors are reported with
  * the core's user-safe messages. Nothing here talks to a server.
  */
 import { useCallback, useId, useMemo, useState, type ReactNode } from 'react';
@@ -417,7 +417,10 @@ export function SettingsScreen() {
           </div>
         </SettingSection>
 
-        <SettingSection label="Categories">
+        <SettingSection
+          label="Triggers & reasons"
+          note="Manage the lists offered when you record a lapse or an urge."
+        >
           <CategoriesSection />
         </SettingSection>
 

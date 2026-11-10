@@ -5,19 +5,19 @@ CHECK constraints, a migration table and one open session per tracker enforced
 by a partial unique index. All timestamps are UTC epoch milliseconds
 (`INTEGER`). IDs are UUID v4 strings.
 
-Schema version: **1** (see `packages/core/src/db/migrations.ts`).
+Schema version: **2** (see `packages/core/src/db/migrations.ts`).
 
 ## Entity relationship overview
 
 ```
-custom_categories ──< trackers >── tracker_sessions
-        │                 │
-        │                 ├──< lapse_events
-        │                 ├──< urge_events
-        │                 ├──< check_ins
-        │                 └──< journal_entries (nullable tracker)
-        │
-        └── trigger_category_id referenced by lapse/urge events
+trackers ──< tracker_sessions
+        ├──< lapse_events
+        ├──< urge_events
+        ├──< check_ins
+        └──< journal_entries (nullable tracker)
+
+custom_categories (kind = trigger | reason)
+        └── referenced by lapse/urge `trigger_category_id`
 
 history_events — append-only timeline referencing trackers and record ids
 application_settings — key/value JSON settings
@@ -33,7 +33,6 @@ schema_migrations — applied migration versions
 | `id` | TEXT PK | UUID v4 |
 | `name` | TEXT NOT NULL | trimmed, 1–120 chars (validated) |
 | `description` | TEXT | optional |
-| `category_id` | TEXT | nullable user category |
 | `status` | TEXT | `active` \| `paused` \| `archived` |
 | `started_at` | INTEGER | original commitment start (backdatable) |
 | `started_time_zone` | TEXT | IANA zone used at entry |
@@ -71,11 +70,13 @@ Lightweight check-in attached to a tracker: optional `note`, optional `mood`
 1–5. Appears in the activity log.
 
 ### `custom_categories`
-`kind` ∈ `trigger` \| `reason` \| `tracker_category`; unique `(kind, name)`;
-`is_default` flags the seeded categories (which may be archived but not
-deleted); `archived` hides them from pickers without touching history.
-Deleting a custom category nulls references but leaves the plain-text trigger
-on historic events, so old records remain readable.
+Only the trigger and reason lists used by the record sheet: `kind` ∈
+`trigger` \| `reason`; unique `(kind, name)`; `is_default` flags the seeded
+entries (which may be archived but not deleted); `archived` hides them from
+pickers without touching history. Deleting a custom entry nulls references but
+leaves the plain-text trigger on historic events, so old records remain
+readable. (Schema v1 also had `tracker_category` rows for the removed tracker
+category feature; migration 2 deletes them.)
 
 ### `application_settings`
 Key/value rows with JSON values (`theme`, date/time formats, first day of week,
@@ -124,8 +125,24 @@ Internal key/value metadata (database identity/format hints).
 
 1. creates `schema_migrations` if needed,
 2. reads applied versions,
-3. applies each pending migration inside its own transaction and records it.
+3. disables foreign-key enforcement for the duration of the run (SQLite cannot
+   change `PRAGMA foreign_keys` inside a transaction, and table rebuilds must
+   not cascade-delete child rows when the old table is dropped),
+4. applies each pending migration inside its own transaction and records it,
+5. re-enables foreign-key enforcement and verifies `PRAGMA integrity_check` and
+   `PRAGMA foreign_key_check` before the database is used.
 
 Future versions append new entries; shipped migrations are never edited.
+
+### Migration 2 — remove the tracker-category feature
+
+- Rebuilds `trackers` without `category_id` (new table, copy every other
+  column, drop old table, rename, recreate `idx_trackers_status`).
+- Deletes `custom_categories` rows with `kind = 'tracker_category'` and rebuilds
+  the table with `CHECK (kind IN ('trigger','reason'))`, preserving all other
+  rows, ids and timestamps.
+- Runs for fresh databases too (they apply migration 1 then migration 2), and is
+  recorded in `schema_migrations` so it never runs twice.
+
 Export format versioning is separate (`schemaVersion` in the JSON export) and
 older exports are migrated by the import pipeline before validation.

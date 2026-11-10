@@ -109,7 +109,7 @@ function trackerNameMap(context: CsvContext): Map<string, string> {
 
 /**
  * `trackers` columns:
- * id, name, description, category_id, status, started_at_utc,
+ * id, name, description, status, started_at_utc,
  * started_at_local, started_time_zone, started_utc_offset_minutes,
  * created_at_utc, updated_at_utc, archived_at_utc, notes, reasons,
  * reminder_enabled, reminder_interval_minutes
@@ -118,7 +118,6 @@ export const TRACKER_COLUMNS = [
   'id',
   'name',
   'description',
-  'category_id',
   'status',
   'started_at_utc',
   'started_at_local',
@@ -272,7 +271,6 @@ function buildTrackerRows(context: CsvContext, formatting: ResolvedFormatting): 
       tracker.id,
       tracker.name,
       nullableText(tracker.description),
-      nullableText(tracker.categoryId),
       tracker.status,
       startedUtc,
       startedLocal,

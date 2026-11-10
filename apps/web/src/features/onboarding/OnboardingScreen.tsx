@@ -5,7 +5,7 @@
  * Behaviour is wired to the real core services (create tracker, local
  * reminder preference, restore from backup, open the app).
  */
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   ENCRYPTED_BACKUP_FORMAT,
   isDeUrgeError,
@@ -28,8 +28,8 @@ type Step = 0 | 1 | 2 | 3 | 4; // welcome, privacy, tracker, reminders, ready
 
 /**
  * A broad, plain-language list of addictions and compulsive behaviours. Every
- * entry is a distinct behaviour or substance category — no synonyms, no
- * narrower duplicates of another entry. They only appear as search suggestions
+ * entry is a distinct behaviour or substance — no synonyms, no narrower
+ * duplicates of another entry. They only appear as search suggestions
  * while the person is typing (the onboarding board has no default pill row).
  */
 const SUGGESTIONS = [
@@ -115,6 +115,48 @@ function Feature({ icon, title, body }: { icon: ReactNode; title: string; body: 
   );
 }
 
+/**
+ * iOS inset grouped search-results table for the tracker-name field. The rows
+ * are plain buttons with a muted magnifier glyph and an inset separator drawn
+ * on the container, exactly like a grouped table in iOS. Native mouse-down is
+ * prevented so tapping a row never blurs (and therefore never closes) the
+ * search field before the click is handled.
+ */
+function SuggestionList({
+  id,
+  suggestions,
+  onSelect,
+  mobile = false,
+}: {
+  id: string;
+  suggestions: readonly string[];
+  onSelect: (suggestion: string) => void;
+  mobile?: boolean;
+}) {
+  return (
+    <ul id={id} className={`onb-suggestions${mobile ? ' onb-suggestions-mobile' : ''}`} aria-label="Suggestions">
+      {suggestions.map((suggestion) => (
+        <li key={suggestion}>
+          <button
+            type="button"
+            aria-label={`Use “${suggestion}”`}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => onSelect(suggestion)}
+          >
+            <span className="onb-suggestion-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-4.3-4.3" />
+              </svg>
+            </span>
+            {suggestion}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function useIsDesktop(): boolean {
   const [desktop, setDesktop] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(min-width: 980px)').matches,
@@ -178,7 +220,6 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
 
   const [step, setStep] = useState<Step>(0);
   const [name, setName] = useState('Social media');
-  const [categoryId, setCategoryId] = useState('');
   const [reasons, setReasons] = useState('');
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [showWhen, setShowWhen] = useState(false);
@@ -195,11 +236,8 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [restorePassword, setRestorePassword] = useState('');
   const [restoreError, setRestoreError] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
-  const categories = useMemo(
-    () => app.core.categories.list('tracker_category'),
-    [app.core, app.version],
-  );
   const progressIndex = step === 1 ? 0 : step === 2 ? 1 : step === 3 ? 2 : 0;
   const nameQuery = name.trim().toLowerCase();
   const matchingSuggestions =
@@ -218,6 +256,23 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     if (isToday) return `Today, ${time}`;
     return `${fmt.dateCompact(startedAt)}, ${time}`;
   }, [startedAt, app.now, fmt]);
+
+  const chooseSuggestion = useCallback((suggestion: string) => {
+    setName(suggestion);
+    setSuggestionsOpen(false);
+    setError(null);
+  }, []);
+
+  const clearName = useCallback(() => {
+    setName('');
+    setSuggestionsOpen(false);
+    setError(null);
+    nameInputRef.current?.focus();
+  }, []);
+
+  const closeSuggestionsOnEscape = useCallback((event: { key: string }) => {
+    if (event.key === 'Escape') setSuggestionsOpen(false);
+  }, []);
 
   const finish = useCallback(async () => {
     try {
@@ -242,7 +297,6 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     try {
       const tracker = await app.core.trackers.create({
         name: trimmed,
-        categoryId: categoryId || null,
         startedAt,
         reasons: reasons.trim() || null,
       });
@@ -346,9 +400,11 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
         <BackChevron /> Back
       </button>
       <h1 className="onb-title onb-title-form">What are you leaving behind?</h1>
-      <div className="onb-group">
-        <div className="onb-row">
+      <div className="onb-name-anchor">
+        <div className="onb-group">
+          <div className="onb-row onb-name-row">
           <input
+            ref={nameInputRef}
             className="onb-inline-input"
             value={name}
             onChange={(event) => {
@@ -357,55 +413,39 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
               setSuggestionsOpen(true);
             }}
             onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 120)}
-            onFocus={(event) => {
-              if (event.currentTarget.value.trim().length > 0 && event.currentTarget.value !== name) {
-                setSuggestionsOpen(true);
-              }
-            }}
+            onKeyDown={closeSuggestionsOnEscape}
             aria-label="Tracker name"
             placeholder="Name your tracker"
             autoComplete="off"
             aria-autocomplete="list"
             aria-expanded={matchingSuggestions.length > 0}
+            aria-controls={matchingSuggestions.length > 0 ? 'onb-name-suggestions' : undefined}
           />
+          {name.length > 0 ? (
+            <button
+              type="button"
+              className="onb-clear"
+              aria-label="Clear tracker name"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={clearName}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" fill="currentColor" />
+                <path d="M8.6 8.6l6.8 6.8M15.4 8.6l-6.8 6.8" stroke="var(--card)" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          ) : null}
+          </div>
         </div>
-        <label className="onb-row onb-row-button">
-          <span>Category</span>
-          <span className="onb-muted onb-row-value">
-            {categories.find((category) => category.id === categoryId)?.name ?? 'Optional'} <Chevron />
-          </span>
-          <select className="onb-select-overlay" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} aria-label="Category">
-            <option value="">Optional</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>{category.name}</option>
-            ))}
-          </select>
-        </label>
+        {matchingSuggestions.length > 0 ? (
+          <SuggestionList
+            id="onb-name-suggestions"
+            suggestions={matchingSuggestions}
+            onSelect={chooseSuggestion}
+            mobile
+          />
+        ) : null}
       </div>
-      {matchingSuggestions.length > 0 ? (
-        <ul className="onb-suggestions" aria-label="Suggestions">
-          {matchingSuggestions.map((suggestion) => (
-            <li key={suggestion}>
-              <button
-                type="button"
-                onClick={() => {
-                  setName(suggestion);
-                  setSuggestionsOpen(false);
-                  setError(null);
-                }}
-              >
-                <span className="onb-suggestion-icon" aria-hidden="true">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                    <circle cx="11" cy="11" r="7" />
-                    <path d="M20 20l-4.3-4.3" />
-                  </svg>
-                </span>
-                {suggestion}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
       {error ? <p className="onb-error" role="alert">{error}</p> : null}
 
       <div className="onb-label">Started</div>
@@ -537,69 +577,37 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const desktopTrackerForm = (
     <form id={TRACKER_FORM_ID} className="onb-form onb-form-desktop" onSubmit={(event) => void startTracking(event)} noValidate>
       <label className="onb-label" htmlFor="onb-name">Name</label>
-      <input
-        id="onb-name"
-        className="onb-desktop-input"
-        value={name}
-        onChange={(event) => {
-          setName(event.target.value);
-          setError(null);
-          setSuggestionsOpen(true);
-        }}
-        onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 120)}
-        aria-label="Tracker name"
-        autoComplete="off"
-        aria-autocomplete="list"
-        aria-expanded={matchingSuggestions.length > 0}
-      />
-      {matchingSuggestions.length > 0 ? (
-        <ul className="onb-suggestions" aria-label="Suggestions">
-          {matchingSuggestions.map((suggestion) => (
-            <li key={suggestion}>
-              <button
-                type="button"
-                onClick={() => {
-                  setName(suggestion);
-                  setSuggestionsOpen(false);
-                  setError(null);
-                }}
-              >
-                <span className="onb-suggestion-icon" aria-hidden="true">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                    <circle cx="11" cy="11" r="7" />
-                    <path d="M20 20l-4.3-4.3" />
-                  </svg>
-                </span>
-                {suggestion}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      <div className="onb-desktop-grid">
-        <div>
-          <div className="onb-label">Category</div>
-          <label className="onb-desktop-select">
-            <span className="onb-muted">
-              {categories.find((category) => category.id === categoryId)?.name ?? 'Optional'}
-            </span>
-            <Chevron />
-            <select className="onb-select-overlay" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} aria-label="Category">
-              <option value="">Optional</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>{category.name}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div>
-          <div className="onb-label">Started</div>
-          <button type="button" className="onb-desktop-select" onClick={() => setShowWhen((value) => !value)} aria-expanded={showWhen}>
-            <span>{whenLabel}</span>
-            <Chevron />
-          </button>
-        </div>
+      <div className="onb-desktop-name-anchor">
+        <input
+          id="onb-name"
+          className="onb-desktop-input"
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value);
+            setError(null);
+            setSuggestionsOpen(true);
+          }}
+          onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 120)}
+          onKeyDown={closeSuggestionsOnEscape}
+          aria-label="Tracker name"
+          autoComplete="off"
+          aria-autocomplete="list"
+          aria-expanded={matchingSuggestions.length > 0}
+          aria-controls={matchingSuggestions.length > 0 ? 'onb-name-suggestions-desktop' : undefined}
+        />
+        {matchingSuggestions.length > 0 ? (
+          <SuggestionList
+            id="onb-name-suggestions-desktop"
+            suggestions={matchingSuggestions}
+            onSelect={chooseSuggestion}
+          />
+        ) : null}
       </div>
+      <div className="onb-label">Started</div>
+      <button type="button" className="onb-desktop-select" onClick={() => setShowWhen((value) => !value)} aria-expanded={showWhen}>
+        <span>{whenLabel}</span>
+        <Chevron />
+      </button>
       {showWhen ? (
         <input
           className="onb-desktop-input onb-desktop-when"

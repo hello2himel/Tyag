@@ -71,7 +71,6 @@ export const categoryRepo = {
     // a plain text trigger, so deleting a category never removes history.
     db.run('UPDATE lapse_events SET trigger_category_id = NULL WHERE trigger_category_id = ?', [id]);
     db.run('UPDATE urge_events SET trigger_category_id = NULL WHERE trigger_category_id = ?', [id]);
-    db.run('UPDATE trackers SET category_id = NULL WHERE category_id = ?', [id]);
     db.run('DELETE FROM custom_categories WHERE id = ?', [id]);
   },
 };

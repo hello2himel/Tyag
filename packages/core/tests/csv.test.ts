@@ -76,6 +76,8 @@ describe('csv: RFC 4180 formatting', () => {
 
     const rows = parseCsv(result.content);
     expect(rows[0]).toEqual([...TRACKER_COLUMNS]);
+    // Tracker categories were removed from the data model.
+    expect(rows[0]).not.toContain('category_id');
     expect(rows).toHaveLength(2);
     expect(result.rows).toBe(1);
     const byColumn = new Map(rows[0]!.map((column, index) => [column, rows[1]![index]!]));

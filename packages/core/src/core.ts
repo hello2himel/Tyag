@@ -116,6 +116,17 @@ export class DeUrgeCore {
       }
     }
     const applied = migrate(database, clock.now());
+    if (applied > 0) {
+      // Migrations rebuild tables with foreign-key enforcement disabled for the
+      // duration of the transaction; verify the result before using it.
+      const integrity = database.integrityCheck();
+      if (integrity !== 'ok' || database.foreignKeyViolations().length > 0) {
+        throw new DeUrgeError(
+          'DATABASE',
+          'Your local deUrge data could not be upgraded safely. Restore a backup from the Data & Backups screen.',
+        );
+      }
+    }
     let seeded = false;
     database.transaction(() => {
       const before = database.get<{ n: number }>('SELECT COUNT(*) AS n FROM custom_categories');

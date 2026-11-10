@@ -52,7 +52,7 @@ const COUNT_FIELDS: { key: keyof ExportCounts; label: string }[] = [
   { key: 'urges', label: 'Urges' },
   { key: 'journalEntries', label: 'Journal entries' },
   { key: 'checkIns', label: 'Check-ins' },
-  { key: 'categories', label: 'Categories' },
+  { key: 'categories', label: 'Triggers & reasons' },
   { key: 'settings', label: 'Settings' },
   { key: 'historyEvents', label: 'History events' },
 ];

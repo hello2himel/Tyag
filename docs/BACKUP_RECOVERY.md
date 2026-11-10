@@ -13,7 +13,7 @@ explicit merge/replace semantics.
 {
   "format": "deurge-export",
   "formatVersion": 1,
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "appVersion": "1.0.0",
   "exportedAt": 1794357900000,
   "timeZone": "Asia/Dhaka",
@@ -28,7 +28,9 @@ explicit merge/replace semantics.
 ```
 
 - IDs, timestamps and relationships are preserved exactly.
-- `schemaVersion` allows future versions to migrate older backups.
+- `schemaVersion` allows future versions to migrate older backups. It is `2` in
+  this release; schema-v1 backups (which still contain tracker categories) are
+  upconverted during import.
 - `integrity.hash` is SHA-256 over the canonical JSON of `data`. If present, it
   is verified before import.
 - The export is sufficient to reconstruct the application state on any
@@ -45,7 +47,7 @@ a `deurge-backup-<timestamp>.deurge-backup` file:
   "version": 1,
   "createdAt": 1794357900000,
   "appVersion": "1.0.0",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kdf": { "name": "PBKDF2", "hash": "SHA-256", "iterations": 310000, "salt": "…base64…" },
   "cipher": { "name": "AES-GCM", "iv": "…base64…" },
   "payload": "…base64 ciphertext of the UTF-8 JSON export…"
@@ -63,7 +65,7 @@ a `deurge-backup-<timestamp>.deurge-backup` file:
 Available datasets (RFC 4180, UTF-8, CRLF line endings, ISO-8601 UTC
 timestamps plus local-time columns):
 
-- `trackers` — id, name, status, category, timestamps, notes/reasons.
+- `trackers` — id, name, status, timestamps, notes/reasons.
 - `lapses` — id, tracker, occurred UTC/local, trigger, reason, context, notes,
   retrospective.
 - `urges` — id, tracker, occurred UTC/local, intensity, duration, trigger,
@@ -82,9 +84,9 @@ CSV is intended for spreadsheets/analysis; JSON is the backup format.
 2. deUrge validates: file structure, format identifier, `schemaVersion`
    (migrating older versions when supported), per-record types/enums/limits,
    ID uniqueness, timestamps, and relationships (sessions/lapses/urges must
-   reference existing or newly imported trackers; category references must
-   resolve or are dropped to text-only values). Integrity hash is checked when
-   present.
+   reference existing or newly imported trackers; trigger/reason references
+   must resolve or are dropped to text-only values). Integrity hash is checked
+   when present, against the original (pre-migration) data.
 3. A preview shows format, app version, export time, timezone and counts.
 4. Choose a mode:
    - **Merge** — inserts new records, keeps existing ones. Duplicate IDs that
@@ -102,6 +104,18 @@ CSV is intended for spreadsheets/analysis; JSON is the backup format.
 5. The import report lists imported counts per collection, skipped duplicates,
    conflicts, re-keyed records and warnings. Invalid or corrupted files are
    rejected before any write; no partial import is ever committed.
+
+### Older backups (schema version 1)
+
+Schema v1 was written by releases that still had the tracker-category feature.
+Import upconverts it in memory before validation: `categoryId` is removed from
+every tracker and `custom_categories` rows of kind `tracker_category` are
+discarded. Everything else — ids, timestamps, sessions, lapses, urges, journal
+entries, check-ins, history and trigger/reason lists — is preserved exactly. The
+import report includes a warning that the backup was upgraded and that tracker
+categories were removed; the integrity hash (when present) is verified against
+the original v1 data. Merge/replace semantics and rollback behaviour are the
+same as for a current backup.
 
 ## 5. Integrity and recovery
 

@@ -122,6 +122,14 @@ export class SqlDatabase {
     return row ? String(Object.values(row)[0] ?? 'unknown') : 'unknown';
   }
 
+  /**
+   * `PRAGMA foreign_key_check` — one entry per row that violates a foreign key.
+   * Used after migrations because table rebuilds run with enforcement disabled.
+   */
+  foreignKeyViolations(): { table: string; rowid: number | null; parent: string }[] {
+    return this.all<{ table: string; rowid: number | null; parent: string }>('PRAGMA foreign_key_check;');
+  }
+
   close(): void {
     this.db.close();
   }

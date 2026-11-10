@@ -1,10 +1,10 @@
 /**
- * Settings → Categories.
+ * Settings → Triggers & reasons.
  *
- * Manages the trigger / reason / tracker-category lists. Counts are computed
- * from the stored records so the user can see whether a category is actually
- * used. Built-in categories can be archived but not deleted (the core enforces
- * this too); deleting a custom category never rewrites historical records.
+ * Manages the trigger and reason lists used when recording lapses and urges.
+ * Counts are computed from the stored records so the user can see whether an
+ * entry is actually used. Built-in entries can be archived but not deleted (the
+ * core enforces this too); deleting a custom entry never rewrites history.
  */
 import { useId, useMemo, useState } from 'react';
 import { isDeUrgeError, userMessage, type CategoryKind, type CustomCategory } from '@deurge/core';
@@ -24,13 +24,11 @@ import {
 const KIND_OPTIONS: { value: CategoryKind; label: string }[] = [
   { value: 'trigger', label: 'Triggers' },
   { value: 'reason', label: 'Reasons' },
-  { value: 'tracker_category', label: 'Tracker categories' },
 ];
 
 const KIND_LABEL: Record<CategoryKind, string> = {
   trigger: 'Trigger',
   reason: 'Reason',
-  tracker_category: 'Tracker category',
 };
 
 export function CategoriesSection() {
@@ -72,9 +70,6 @@ export function CategoriesSection() {
         if (urge.triggerCategoryId) bump(byId, urge.triggerCategoryId);
         else if (urge.trigger) bump(byText, `trigger:${urge.trigger.trim().toLowerCase()}`);
       }
-      for (const tracker of app.core.trackers.list()) {
-        if (tracker.categoryId) bump(byId, tracker.categoryId);
-      }
     } catch {
       // Usage counts are informative only; the list still works without them.
     }
@@ -105,7 +100,7 @@ export function CategoriesSection() {
       return true;
     } catch (error) {
       toast.error(
-        isDeUrgeError(error) ? userMessage(error) : 'That category change could not be saved. Nothing else was changed.',
+        isDeUrgeError(error) ? userMessage(error) : 'That change could not be saved. Nothing else was changed.',
       );
       return false;
     } finally {
@@ -116,7 +111,7 @@ export function CategoriesSection() {
   const create = async () => {
     const name = addName.trim();
     if (!name) return;
-    const ok = await run('create', () => app.core.categories.create(kind, name), `${kindLabel} category added.`);
+    const ok = await run('create', () => app.core.categories.create(kind, name), `${kindLabel} added.`);
     if (ok) {
       setAddOpen(false);
       setAddName('');
@@ -126,7 +121,7 @@ export function CategoriesSection() {
   const rename = async () => {
     const name = renameName.trim();
     if (!renameTarget || !name) return;
-    const ok = await run('rename', () => app.core.categories.rename(renameTarget.id, name), 'Category renamed.');
+    const ok = await run('rename', () => app.core.categories.rename(renameTarget.id, name), `${KIND_LABEL[renameTarget.kind]} renamed.`);
     if (ok) {
       setRenameTarget(null);
       setRenameName('');
@@ -137,13 +132,13 @@ export function CategoriesSection() {
     await run(
       `archive-${category.id}`,
       () => app.core.categories.setArchived(category.id, nextArchived),
-      nextArchived ? 'Category archived.' : 'Category restored.',
+      nextArchived ? `${KIND_LABEL[category.kind]} archived.` : `${KIND_LABEL[category.kind]} restored.`,
     );
   };
 
   const remove = async () => {
     if (!deleteTarget) return;
-    const ok = await run('delete', () => app.core.categories.delete(deleteTarget.id), 'Category deleted.');
+    const ok = await run('delete', () => app.core.categories.delete(deleteTarget.id), `${KIND_LABEL[deleteTarget.kind]} deleted.`);
     if (ok) setDeleteTarget(null);
   };
 
@@ -200,12 +195,12 @@ export function CategoriesSection() {
 
   return (
     <div className="stack">
-      <Segmented options={KIND_OPTIONS} value={kind} onChange={setKind} ariaLabel="Category type" />
+      <Segmented options={KIND_OPTIONS} value={kind} onChange={setKind} ariaLabel="Trigger or reason list" />
 
-      <ListGroup aria-label={`${kindLabel} categories`}>
+      <ListGroup aria-label={`${kindLabel}s`}>
         {active.length === 0 ? (
           <div className="list-row">
-            <span className="mut">No active {kindLabel.toLowerCase()} categories.</span>
+            <span className="mut">No active {kindLabel.toLowerCase()}s.</span>
           </div>
         ) : (
           active.map(renderRow)
@@ -219,7 +214,7 @@ export function CategoriesSection() {
           }}
           disabled={busyKey !== null}
         >
-          <span style={{ color: 'var(--b)' }}>+ Add {kindLabel.toLowerCase()} category</span>
+          <span style={{ color: 'var(--b)' }}>+ Add {kindLabel.toLowerCase()}</span>
         </button>
       </ListGroup>
 
@@ -229,7 +224,7 @@ export function CategoriesSection() {
             <Button variant="plain" onClick={() => setShowArchived(false)}>
               Hide archived ({archived.length})
             </Button>
-            <ListGroup aria-label="Archived categories">{archived.map(renderRow)}</ListGroup>
+            <ListGroup aria-label="Archived triggers and reasons">{archived.map(renderRow)}</ListGroup>
           </>
         ) : (
           <Button variant="plain" onClick={() => setShowArchived(true)}>
@@ -239,14 +234,14 @@ export function CategoriesSection() {
       ) : null}
 
       <p className="setting-note">
-        Built-in categories can be archived but not deleted, so old records stay readable. Archiving hides a category from
-        new entries; existing records keep their text. Deleting a custom category never rewrites history.
+        Built-in triggers and reasons can be archived but not deleted, so old records stay readable. Archiving hides an
+        entry from new records; existing records keep their text. Deleting a custom entry never rewrites history.
       </p>
 
       <Modal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        title={`New ${kindLabel.toLowerCase()} category`}
+        title={`New ${kindLabel.toLowerCase()}`}
         actions={
           <>
             <Button onClick={() => setAddOpen(false)}>Cancel</Button>
@@ -256,7 +251,7 @@ export function CategoriesSection() {
           </>
         }
       >
-        <Field label="Category name" htmlFor={addNameId} hint="Up to 60 characters.">
+        <Field label="Name" htmlFor={addNameId} hint="Up to 60 characters.">
           <Input
             id={addNameId}
             value={addName}
@@ -271,7 +266,7 @@ export function CategoriesSection() {
       <Modal
         open={renameTarget !== null}
         onClose={() => setRenameTarget(null)}
-        title="Rename category"
+        title="Rename"
         actions={
           <>
             <Button onClick={() => setRenameTarget(null)}>Cancel</Button>
@@ -281,7 +276,7 @@ export function CategoriesSection() {
           </>
         }
       >
-        <Field label="Category name" htmlFor={renameNameId} hint="Existing records keep the text they were saved with.">
+        <Field label="Name" htmlFor={renameNameId} hint="Existing records keep the text they were saved with.">
           <Input
             id={renameNameId}
             value={renameName}
@@ -298,8 +293,8 @@ export function CategoriesSection() {
         body={
           <div>
             <p>
-              This custom category will be removed from the list. Records that reference it keep their text, but the link to
-              this category is lost.
+              This custom entry will be removed from the list. Records that reference it keep their text, but the link to
+              it is lost.
             </p>
             <p style={{ marginTop: 8 }}>This cannot be undone.</p>
           </div>

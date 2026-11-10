@@ -7,7 +7,6 @@ function makeTracker(overrides: Partial<Tracker> = {}): Tracker {
     id: 'tracker-1',
     name: 'Social media',
     description: null,
-    categoryId: null,
     status: 'active',
     startedAt: T0,
     startedTimeZone: 'UTC',

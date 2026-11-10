@@ -13,7 +13,7 @@ describe('backup: JSON export', () => {
     const document = JSON.parse(result.content) as Record<string, unknown>;
     expect(document.format).toBe('deurge-export');
     expect(document.formatVersion).toBe(1);
-    expect(document.schemaVersion).toBe(1);
+    expect(document.schemaVersion).toBe(2);
     expect(document.appVersion).toBe(seeded.core.appVersion);
     expect(document.exportedAt).toBe(seeded.clock.now());
     expect(document.timeZone).toBe('UTC');
@@ -33,6 +33,9 @@ describe('backup: JSON export', () => {
     expect(result.counts).toEqual(counts);
     // The export is exactly what a restore would produce.
     expect(data.trackers!.map((tracker) => (tracker as { id: string }).id)).toContain(seeded.trackerId);
+    // Tracker categories no longer exist, so no tracker record carries one.
+    for (const tracker of data.trackers!) expect(tracker).not.toHaveProperty('categoryId');
+    expect(counts.categories).toBe(data.categories!.length);
 
     const integrity = document.integrity as { algorithm: string; hash: string };
     expect(integrity.algorithm).toBe('SHA-256');
@@ -95,7 +98,7 @@ describe('backup: encrypted backups', () => {
     expect(envelope.version).toBe(1);
     expect(envelope.createdAt).toBe(seeded.clock.now());
     expect(envelope.appVersion).toBe(seeded.core.appVersion);
-    expect(envelope.schemaVersion).toBe(1);
+    expect(envelope.schemaVersion).toBe(2);
     expect(envelope.kdf).toMatchObject({ name: 'PBKDF2', hash: 'SHA-256', iterations: 310_000 });
     expect(envelope.cipher.name).toBe('AES-GCM');
     expect(envelope.payload.length).toBeGreaterThan(0);

@@ -5,7 +5,7 @@
    ========================================================================== */
 
 .onb-app {
-  min-height: 100dvh;
+  height: 100dvh;
   max-width: 390px;
   margin: 0 auto;
   display: flex;
@@ -16,6 +16,7 @@
 
 .onb-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -23,7 +24,7 @@
   padding: calc(80px + env(safe-area-inset-top)) 24px 0;
 }
 .onb-scroll-form {
-  padding: calc(52px + env(safe-area-inset-top)) 20px 0;
+  padding: calc(52px + env(safe-area-inset-top)) 20px 16px;
 }
 .onb-scroll-reminders {
   padding: calc(80px + env(safe-area-inset-top)) 24px 0;
@@ -169,32 +170,74 @@
   align-self: flex-start;
   height: 44px;
 }
-.onb-chips {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+/* Tracker-name field: iOS search-style clear button (44pt target). */
+.onb-name-row {
+  padding-right: 0;
+}
+.onb-name-row .onb-inline-input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+.onb-clear {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--mut);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.onb-clear:focus-visible {
+  outline: 2px solid var(--mut);
+  outline-offset: -10px;
+  border-radius: 50%;
+}
+
+/* ---------------------- tracker-name search results --------------------- */
+/* An iOS inset grouped table: 12px card, 46pt rows, 16px inset separators.
+   Light/dark come from the app tokens (--card/--sep/--mut/--fill). */
+.onb-name-anchor,
+.onb-desktop-name-anchor {
+  position: relative;
 }
 .onb-suggestions {
   list-style: none;
-  margin: -6px 0 16px;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  margin: 0;
   padding: 0;
   background: var(--card);
   border-radius: 12px;
   overflow: hidden;
-  position: relative;
-  z-index: 5;
-  max-height: 264px;
+  z-index: 40;
+  max-height: 368px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22), 0 0 0 0.5px var(--sep);
+  animation: onb-results-in 160ms cubic-bezier(0.32, 0.72, 0, 1);
 }
-.onb-suggestions li + li {
+.onb-suggestions li {
+  position: relative;
+}
+.onb-suggestions li + li::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 0;
+  top: 0;
   border-top: 0.5px solid var(--sep);
-  margin-left: 16px;
 }
 .onb-suggestions button {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   min-height: 44px;
   padding: 0 16px;
@@ -202,22 +245,61 @@
   background: none;
   color: var(--ink);
   font-size: 17px;
+  line-height: 1.2;
   text-align: left;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.onb-suggestions button:hover {
+.onb-suggestions button:active {
   background: var(--fill);
+}
+@media (hover: hover) {
+  .onb-suggestions button:hover {
+    background: var(--fill);
+  }
+}
+.onb-suggestions button:focus-visible {
+  outline: 2px solid var(--bf);
+  outline-offset: -2px;
+  border-radius: 0;
 }
 .onb-suggestion-icon {
   display: inline-flex;
+  flex: none;
   color: var(--mut);
 }
+
+/* Mobile: attached directly under the name field, 46pt rows, subtle fade-in. */
+.onb-suggestions-mobile {
+  max-height: min(368px, 46dvh);
+}
+.onb-suggestions-mobile button {
+  min-height: 46px;
+}
+@keyframes onb-results-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onb-suggestions-mobile {
+    animation: none;
+  }
+}
+
+/* Desktop keeps the existing, lighter suggestion language. */
 .onb-desktop-content .onb-suggestions {
   margin: 8px 0 14px;
-  font-size: 15px;
+  max-height: 280px;
 }
 .onb-desktop-content .onb-suggestions button {
   min-height: 40px;
+  gap: 10px;
   font-size: 15px;
 }
 .onb-chip {
@@ -633,9 +715,6 @@
 .onb-desktop-content .onb-inline-input {
   color: var(--ink);
 }
-.onb-desktop-content .onb-chips {
-  margin-bottom: 22px;
-}
 .onb-desktop-content .onb-form .onb-label {
   margin-top: 16px;
 }
@@ -662,15 +741,14 @@
   box-sizing: border-box;
   font-family: inherit;
 }
-.onb-chips-desktop {
-  display: flex;
-  gap: 8px;
-  margin: 10px 0 22px;
-}
-.onb-desktop-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+/* iOS-style soft focus halo instead of the app's thick focus outline. */
+.onb-desktop-input:focus,
+.onb-desktop-input:focus-visible,
+.onb-desktop-textarea:focus,
+.onb-desktop-textarea:focus-visible,
+.onb-desktop-select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.22);
 }
 .onb-desktop-select {
   height: 40px;

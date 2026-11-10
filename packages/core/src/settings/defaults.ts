@@ -48,10 +48,6 @@ export const DEFAULT_CATEGORIES: SeedCategory[] = [
   { id: 'default-reason-self-respect', kind: 'reason', name: 'Self-respect', sortOrder: 50 },
   { id: 'default-reason-money', kind: 'reason', name: 'Money', sortOrder: 60 },
   { id: 'default-reason-other', kind: 'reason', name: 'Other', sortOrder: 70 },
-  { id: 'default-cat-digital', kind: 'tracker_category', name: 'Digital', sortOrder: 10 },
-  { id: 'default-cat-substances', kind: 'tracker_category', name: 'Substances', sortOrder: 20 },
-  { id: 'default-cat-compulsive', kind: 'tracker_category', name: 'Compulsive behaviour', sortOrder: 30 },
-  { id: 'default-cat-other', kind: 'tracker_category', name: 'Other', sortOrder: 40 },
 ];
 
 /** Insert any missing default category. Safe to call on every startup. */
