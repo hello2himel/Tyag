@@ -72,20 +72,9 @@
   padding: 0 4px;
 }
 .onb-welcome-wordmark {
+  display: block;
   margin: 28px 0 12px;
-}
-.onb-wordmark {
-  display: flex;
-  align-items: baseline;
-  font-size: 44px;
-  letter-spacing: -0.04em;
-  line-height: 1;
-}
-.onb-wordmark-de {
-  font-weight: 400;
-}
-.onb-wordmark-urge {
-  font-weight: 800;
+  color: var(--ink);
 }
 .onb-welcome-tagline {
   font-size: 17px;
@@ -602,8 +591,9 @@
   box-sizing: border-box;
 }
 .onb-desktop-wordmark {
-  font-size: 26px;
+  display: block;
   margin: 16px 0 36px;
+  color: var(--ink);
 }
 .onb-desktop-step {
   display: flex;

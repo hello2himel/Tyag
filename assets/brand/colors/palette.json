@@ -1,0 +1,110 @@
+[
+  {
+    "name": "Black",
+    "hex": "#000000",
+    "rgb": [
+      0,
+      0,
+      0
+    ],
+    "cmyk_approx": [
+      0,
+      0,
+      0,
+      100
+    ],
+    "role": "Core - the tile, wordmark, primary text",
+    "contrast_on_black": 1.0,
+    "contrast_on_white": 21.0
+  },
+  {
+    "name": "White",
+    "hex": "#FFFFFF",
+    "rgb": [
+      255,
+      255,
+      255
+    ],
+    "cmyk_approx": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "role": "Core - the peak, reversed text, backgrounds",
+    "contrast_on_black": 21.0,
+    "contrast_on_white": 1.0
+  },
+  {
+    "name": "Graphite",
+    "hex": "#1A1A1C",
+    "rgb": [
+      26,
+      26,
+      28
+    ],
+    "cmyk_approx": [
+      7,
+      7,
+      0,
+      89
+    ],
+    "role": "Support - dark UI surfaces",
+    "contrast_on_black": 1.21,
+    "contrast_on_white": 17.38
+  },
+  {
+    "name": "Slate",
+    "hex": "#6E6E73",
+    "rgb": [
+      110,
+      110,
+      115
+    ],
+    "cmyk_approx": [
+      4,
+      4,
+      0,
+      55
+    ],
+    "role": "Support - secondary text, captions, rules",
+    "contrast_on_black": 4.14,
+    "contrast_on_white": 5.07
+  },
+  {
+    "name": "Mist",
+    "hex": "#EDEDEF",
+    "rgb": [
+      237,
+      237,
+      239
+    ],
+    "cmyk_approx": [
+      1,
+      1,
+      0,
+      6
+    ],
+    "role": "Support - light surfaces, dividers",
+    "contrast_on_black": 17.96,
+    "contrast_on_white": 1.17
+  },
+  {
+    "name": "Impulse",
+    "hex": "#FF4B2B",
+    "rgb": [
+      255,
+      75,
+      43
+    ],
+    "cmyk_approx": [
+      0,
+      71,
+      83,
+      0
+    ],
+    "role": "Optional accent - use sparingly, always with black text",
+    "contrast_on_black": 6.29,
+    "contrast_on_white": 3.34
+  }
+]

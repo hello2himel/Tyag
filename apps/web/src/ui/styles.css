@@ -70,8 +70,8 @@
   --radius-xs: 9px;
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', Inter, system-ui, 'Noto Sans',
     sans-serif;
-  --logo-bg: #ffffff;
-  --logo-fg: #000000;
+  --logo-tile-bg: #000000;
+  --logo-tile-fg: #ffffff;
   --max-mobile: 560px;
 }
 
@@ -97,8 +97,8 @@
   --e2: #2c2c2e;
   --danger: #ff453a;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35);
-  --logo-bg: #0b0b0d;
-  --logo-fg: #ffffff;
+  --logo-tile-bg: #ffffff;
+  --logo-tile-fg: #000000;
 }
 
 * {
@@ -795,8 +795,6 @@ p {
   }
   .sidebar-brand svg {
     display: block;
-    height: 26px;
-    width: auto;
   }
   .sidebar-label {
     font-size: 11px;
@@ -1211,6 +1209,7 @@ p {
   padding: 2px 0 14px;
   color: var(--ink);
 }
-.about-brand svg {
+.about-brand svg,
+.about-brand .deurge-wordmark {
   display: block;
 }

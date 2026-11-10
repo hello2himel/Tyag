@@ -14,7 +14,18 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: null,
-      includeAssets: ['favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'],
+      includeAssets: [
+        'favicon.ico',
+        'favicon.svg',
+        'favicon-16.png',
+        'favicon-32.png',
+        'favicon-48.png',
+        'icons/apple-touch-icon-180.png',
+        'icons/icon-192.png',
+        'icons/icon-512.png',
+        'icons/icon-maskable-512.png',
+        'og-image-1200x630.png',
+      ],
       manifest: {
         name: 'deUrge',
         short_name: 'deUrge',
@@ -25,8 +36,8 @@ export default defineConfig({
         scope: './',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#F2F2F7',
-        theme_color: '#F2F2F7',
+        background_color: '#000000',
+        theme_color: '#000000',
         categories: ['health', 'lifestyle', 'productivity'],
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },

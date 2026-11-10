@@ -1,1 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="deUrge"><style>.m{fill:#000}@media(prefers-color-scheme:dark){.m{fill:#fff}}</style><path d="M13.00,23.10A60.53 60.53 0 0 1 96.90,107.00A88.24 88.24 0 0 0 13.00,23.10Z" fill="#000" class="m"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="deUrge">
+<title>deUrge</title>
+<rect x="0" y="0" width="1024" height="1024" rx="225.28" fill="#000000"/>
+<path d="M163.84 655.298L421.732 397.406C471.586 347.552 552.414 347.552 602.268 397.406L860.16 655.298C635.77 570.654 388.23 570.654 163.84 655.298Z" fill="#FFFFFF"/>
+</svg>

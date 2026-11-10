@@ -1,47 +1,51 @@
 /**
- * deUrge brand components — generated from the official logo kit in
- * `assets/brand/` (deurge-lockup-light.svg, deurge-icon-light-rounded.svg and
- * deurge-mark-primary.svg). Colour follows `currentColor` so the lockup works
- * in both light and dark themes; the app icon uses the themed --logo-bg /
- * --logo-fg tokens to match the kit's light and dark variants.
+ * deUrge brand components from the official November 2026 brand kit
+ * (`assets/brand/`): the black/white peak symbol tiles and glyph, with the
+ * wordmark set in Inter — per the product decision to use Inter for type
+ * instead of the kit's proposed Poppins wordmark.
  */
+
+const GLYPH_PATH =
+  'M212.03 636.091L582.394 265.728C653.99 194.131 770.071 194.131 841.667 265.728L1212.03 636.091C889.779 514.533 534.281 514.533 212.03 636.091Z';
+const TILE_GLYPH_PATH =
+  'M225.28 630.01L437.661 417.629C478.717 376.573 545.283 376.573 586.339 417.629L798.72 630.01C613.928 560.304 410.072 560.304 225.28 630.01Z';
+
+const WORDMARK_STYLE = {
+  fontFamily: "'Inter', system-ui, sans-serif",
+  fontWeight: 700,
+  letterSpacing: '-0.01em',
+  lineHeight: 1,
+  whiteSpace: 'nowrap' as const,
+  color: 'inherit',
+};
 
 export function DeUrgeMark({ size = 24, className }: { size?: number; className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 120 120"
+      viewBox="0 0 1424.061 848.122"
       width={size}
-      height={size}
+      height={(size * 848.122) / 1424.061}
       fill="currentColor"
       className={className}
       aria-hidden="true"
       focusable="false"
     >
-      <path d="M13.00,23.10A60.53 60.53 0 0 1 96.90,107.00A88.24 88.24 0 0 0 13.00,23.10Z" />
+      <path d={GLYPH_PATH} />
     </svg>
   );
 }
 
-export function DeUrgeLockup({ height = 24, className }: { height?: number; className?: string }) {
-  const width = (height * 441) / 120;
+/** The wordmark as live text in the bundled Inter font. */
+export function DeUrgeWordmark({ height = 24, className }: { height?: number; className?: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 441 120"
-      width={width}
-      height={height}
-      fill="currentColor"
-      className={className}
-      role="img"
-      aria-label="deUrge"
-    >
-      <path d="M13.00,23.10A60.53 60.53 0 0 1 96.90,107.00A88.24 88.24 0 0 0 13.00,23.10Z" />
-      <path d="M151.84 95.94C158.27 95.94 163.94 93.22 167.5 87.5H167.59V95H175.38V25.16H167.41V52.81H167.31C164.12 47.28 158.27 44.56 151.84 44.56C138.95 44.56 130.38 54.97 130.38 70.25C130.38 85.48 138.95 95.94 151.84 95.94ZM153.06 88.77C144.48 88.77 138.44 82.39 138.44 70.25C138.44 58.11 144.48 51.69 153.06 51.69C162.25 51.69 168.06 59.05 168.06 70.25C168.06 81.45 162.25 88.77 153.06 88.77Z M203.78 96.12C214.57 96.12 223 89.66 224.88 80.19H216.91C215.41 85.34 210.82 88.91 203.78 88.91C194.41 88.91 189.07 82.25 188.69 72.55H225.72V70.34C225.72 54.97 217 44.38 203.22 44.38C190.1 44.38 180.82 55.3 180.82 70.34C180.82 85.25 189.25 96.12 203.78 96.12ZM188.78 65.7C189.63 56.98 195.11 51.5 203.22 51.5C211.38 51.5 216.91 56.98 217.75 65.7Z M258.91 96.12C276.68 96.12 288.3 85.86 288.3 70.44V25.16H271.85V69.08C271.85 76.48 266.69 81.78 258.91 81.78C251.18 81.78 245.93 76.44 245.93 69.08V25.16H229.48V70.44C229.48 85.86 241.05 96.12 258.91 96.12Z M293.37 95H309.5V69.64C309.5 62.61 313.48 58.58 319.25 58.58C321.59 58.58 324.45 58.67 325.62 58.72V45.41C324.31 45.36 322.95 45.31 321.21 45.31C314.61 45.31 310.9 47.94 309.12 54.22H308.98V45.5H293.37Z M351.73 115.25C367.2 115.25 376.95 108.41 376.95 92.28V45.5H360.92V52.44H360.87C357.78 47.23 352.95 44.42 346.53 44.42C333.97 44.42 325.25 55.02 325.25 69.73C325.25 84.27 333.69 94.67 346.67 94.67C353.14 94.67 358.25 92.09 360.87 86.23H360.92V93.88C360.92 100.44 357.73 103.81 351.73 103.81C347.09 103.81 343.95 101.94 343.11 98.84H327.69C329.19 108.36 336.5 115.25 351.73 115.25ZM351.17 82.02C345.26 82.02 341.61 77.33 341.61 69.45C341.61 61.62 345.26 56.94 351.17 56.94C357.26 56.94 361.44 61.86 361.44 69.45C361.44 77.09 357.26 82.02 351.17 82.02Z M405.55 96.12C418.07 96.12 428.05 89.14 429.88 79.16H415.39C414.22 82.44 410.85 84.5 406.11 84.5C399.74 84.5 395.99 80.52 395.8 74.23H430.25V69.88C430.25 54.88 419.99 44.38 405.13 44.38C390.46 44.38 380.05 55.16 380.05 70.25C380.05 85.34 390.36 96.12 405.55 96.12ZM395.89 64.58C396.6 59.38 400.11 56.28 405.55 56.28C410.94 56.28 414.5 59.38 415.21 64.58Z" />
-    </svg>
+    <span className={className} style={{ ...WORDMARK_STYLE, fontSize: `${height}px` }} role="img" aria-label="deUrge">
+      deUrge
+    </span>
   );
 }
 
+/** Rounded-square app icon: black tile on light surfaces, white tile on dark. */
 export function DeUrgeAppIcon({ size = 64, className }: { size?: number; className?: string }) {
   return (
     <svg
@@ -53,10 +57,22 @@ export function DeUrgeAppIcon({ size = 64, className }: { size?: number; classNa
       role="img"
       aria-label="deUrge"
     >
-      <rect width="1024" height="1024" rx="229" fill="var(--logo-bg, #FFFFFF)" />
-      <g transform="translate(212 212) scale(5)">
-        <path d="M13.00,23.10A60.53 60.53 0 0 1 96.90,107.00A88.24 88.24 0 0 0 13.00,23.10Z" fill="var(--logo-fg, #000000)" />
-      </g>
+      <rect x="0" y="0" width="1024" height="1024" rx="225.28" fill="var(--logo-tile-bg, #000000)" />
+      <path d={TILE_GLYPH_PATH} fill="var(--logo-tile-fg, #FFFFFF)" />
     </svg>
+  );
+}
+
+/** Horizontal lockup: symbol tile + Inter wordmark. */
+export function DeUrgeLockup({ height = 24, className }: { height?: number; className?: string }) {
+  const tile = height * (200 / 288);
+  return (
+    <span
+      className={className}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: `${height * (87 / 288)}px`, color: 'inherit' }}
+    >
+      <DeUrgeAppIcon size={tile} />
+      <DeUrgeWordmark height={height * 0.8} />
+    </span>
   );
 }

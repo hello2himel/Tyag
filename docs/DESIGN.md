@@ -60,9 +60,11 @@ reset are applied for an app-like iOS feel.
 ## Brand
 
 The supplied skeleton used a placeholder clock mark. The final product uses the
-official **deUrge logo kit** committed in `assets/brand/` (SVG icon light/dark,
-mark, lockup and favicon). `apps/web/src/ui/logo.tsx` wraps the kit for the UI,
-while `scripts/gen-icons.mjs` generates every platform icon (PWA, Android, iOS,
-Tauri) from the same source SVGs. The app icon is a white/black rounded square
-with the deUrge mark; the lockup is used for the sidebar, onboarding and boot
-screens.
+official **deUrge brand kit (November 2026)** committed in `assets/brand/`:
+black/white peak symbol tiles, glyph, lockup and prebuilt app icons for web,
+Android and iOS. `apps/web/src/ui/logo.tsx` wraps the kit for the UI (tile,
+glyph, and a live Inter-set wordmark), while `scripts/gen-icons.mjs` derives
+every platform icon (PWA, Android adaptive + monochrome, iOS, Tauri) and the
+social/meta card from the same committed exports. The wordmark uses the bundled
+Inter font rather than the kit's outlined Poppins suggestion, per product
+direction.

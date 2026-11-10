@@ -16,7 +16,7 @@ import { navigate } from '../../router';
 import { useApp } from '../../store/app';
 import { Button, Sheet, useToast } from '../../ui/components';
 import { useFormatters } from '../../ui/format';
-import { DeUrgeMark } from '../../ui/logo';
+import { DeUrgeAppIcon, DeUrgeMark, DeUrgeWordmark } from '../../ui/logo';
 import { pickTextFile } from '../../platform/files';
 import {
   notificationAvailability,
@@ -63,15 +63,6 @@ const REMINDER_OPTIONS: { value: number; label: string }[] = [
   { value: 1440, label: 'Daily' },
 ];
 const TRACKER_FORM_ID = 'onb-first-tracker';
-
-function Wordmark({ className = '' }: { className?: string }) {
-  return (
-    <span className={`onb-wordmark ${className}`}>
-      <span className="onb-wordmark-de">de</span>
-      <b className="onb-wordmark-urge">Urge</b>
-    </span>
-  );
-}
 
 function Dots({ active }: { active: number }) {
   return (
@@ -240,15 +231,21 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
 
   const progressIndex = step === 1 ? 0 : step === 2 ? 1 : step === 3 ? 2 : 0;
   const nameQuery = name.trim().toLowerCase();
-  const matchingSuggestions =
+  const suggestionMatches =
     suggestionsOpen && nameQuery.length > 0
       ? [...SUGGESTIONS]
           .filter(
             (suggestion) => suggestion.toLowerCase().includes(nameQuery) && suggestion.toLowerCase() !== nameQuery,
           )
           .sort((a, b) => a.localeCompare(b))
-          .slice(0, 8)
       : [];
+  // Whatever the user typed is always offered as the last option, so a
+  // behaviour that is not in the list can still be used verbatim.
+  const typedSuggestion = suggestionsOpen ? name.trim() : '';
+  const typedIsShown = suggestionMatches.some((suggestion) => suggestion.toLowerCase() === typedSuggestion.toLowerCase());
+  const matchingSuggestions = typedSuggestion && !typedIsShown
+    ? [...suggestionMatches.slice(0, 7), typedSuggestion]
+    : suggestionMatches.slice(0, 8);
   const whenLabel = useMemo(() => {
     const isToday = new Date(startedAt).toDateString() === new Date(app.now).toDateString();
     const time = fmt.time(startedAt);
@@ -540,8 +537,8 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const welcome = (
     <div className="onb-screen onb-welcome">
       <div className="onb-welcome-center">
-        <DeUrgeMark size={96} />
-        <Wordmark className="onb-welcome-wordmark" />
+        <DeUrgeAppIcon size={96} />
+        <DeUrgeWordmark height={44} className="onb-welcome-wordmark" />
         <p className="onb-muted onb-welcome-tagline">
           Track what you are leaving behind. Every moment counts, and it all stays on this device.
         </p>
@@ -731,8 +728,8 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
       <div className="onb-desktop">
         <div className="onb-desktop-card">
           <aside className="onb-desktop-side">
-            <DeUrgeMark size={44} />
-            <Wordmark className="onb-desktop-wordmark" />
+            <DeUrgeAppIcon size={44} />
+            <DeUrgeWordmark height={22} className="onb-desktop-wordmark" />
             {desktopSteps.map((item, index) => {
               const done = step > item.value;
               const active = step === item.value;
