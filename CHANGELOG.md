@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0: 2026-11-11
 
 ### Security
 
@@ -11,6 +11,12 @@
   no longer resets an attacker's attempts; only a correct PIN or a successful
   biometric unlock clears the lockout. The countdown is shown on both the mobile
   keypad and the desktop PIN screen, and the change-PIN flow uses the same gate.
+
+### Fixed
+
+- The committed brand wordmark/lockup SVGs and the OG/Twitter social card no
+  longer show the pre-rename wordmark; they are regenerated with the Tyag mark,
+  and repo/site copy no longer uses em dashes.
 
 ## 1.0.1: 2026-11-11
 
