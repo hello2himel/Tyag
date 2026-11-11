@@ -14,6 +14,7 @@ import { useApp } from '../../store/app';
 import { ConfirmDialog } from '../../ui/components';
 import { TyagMark } from '../../ui/logo';
 import { haptic } from '../../ui/motion';
+import { useBackLayer } from '../../platform/back';
 import { pickTextFile } from '../../platform/files';
 import {
   authenticateBiometrics,
@@ -211,6 +212,11 @@ function MobileCreateOrConfirm({
     },
     [],
   );
+
+  // "PIN options" is a custom `pn-sheet` overlay rather than the shared Sheet,
+  // so it registers its own back layer: back closes the sheet first and only
+  // the next press closes the PIN screen underneath it.
+  useBackLayer(optionsOpen, () => setOptionsOpen(false));
 
   const title =
     stage === 'current'
@@ -424,6 +430,14 @@ function ForgotSheet({
   const [confirmErase, setConfirmErase] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Custom bottom sheet (not the shared Sheet): back closes it like every
+  // other overlay. During a restore/erase the press is consumed without
+  // closing, matching the disabled buttons in the sheet. The nested erase
+  // ConfirmDialog registers above this layer, so it closes first.
+  useBackLayer(true, () => {
+    if (!busy) onClose();
+  });
 
   async function restore(): Promise<void> {
     setError(null);

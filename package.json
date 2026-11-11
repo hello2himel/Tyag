@@ -1,6 +1,6 @@
 {
   "name": "tyag",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Tyag \u2014 a local-first, offline addiction & habit recovery tracker.",
   "license": "AGPL-3.0-only",

@@ -59,6 +59,9 @@
   --u: #5856d6;
   --sel: #ffffff;
   --glass: rgba(249, 249, 249, 0.86);
+  /* Opaque counterpart of --glass for surfaces that must not be see-through
+     on touch devices (the mobile tab bar). */
+  --nav-solid: #f9f9f9;
   --side: rgba(236, 236, 240, 0.92);
   --selside: rgba(0, 0, 0, 0.08);
   --e1: #f2f2f7;
@@ -103,6 +106,7 @@
   --u: #7d7aff;
   --sel: #636366;
   --glass: rgba(22, 22, 24, 0.82);
+  --nav-solid: #161618;
   --side: rgba(28, 28, 30, 0.92);
   --selside: rgba(255, 255, 255, 0.12);
   --e1: #1c1c1e;
@@ -757,6 +761,20 @@ p {
 .tabbar svg {
   width: 26px;
   height: 26px;
+}
+
+/* Phone/tablet: the bottom navigation is a solid surface. A translucent
+   glass bar lets list rows and sheet content bleed through while scrolling on
+   real devices (and blur performance is unpredictable in mobile WebViews), so
+   below the desktop breakpoint it gets the opaque counterpart of the glass
+   token and no backdrop filter. Desktop (>= 980px) hides the tab bar entirely
+   and uses the sidebar instead. */
+@media (max-width: 979px) {
+  .tabbar {
+    background: var(--nav-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 /* -------------------------------- desktop -------------------------------- */

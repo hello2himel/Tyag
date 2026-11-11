@@ -124,11 +124,11 @@ Netlify-ready web zip attached. Details in [RELEASING.md](docs/RELEASING.md).
 
 ```bash
 # Android (sideload)
-adb install Tyag-1.0.0-release.apk
+adb install Tyag-1.0.1-release.apk
 # Linux
-flatpak install --user Tyag-1.0.0-x86_64.flatpak && flatpak run app.tyag.Tyag
+flatpak install --user Tyag-1.0.1-x86_64.flatpak && flatpak run app.tyag.Tyag
 # Web (any static host)
-unzip Tyag-1.0.0-web.zip -d tyag-site
+unzip Tyag-1.0.1-web.zip -d tyag-site
 ```
 
 ## Testing
@@ -147,6 +147,7 @@ privacy behaviour. See [ARCHITECTURE.md §9](docs/ARCHITECTURE.md#9-testing-stra
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Back navigation across platforms](docs/BACK_NAVIGATION.md)
 - [Data model & schema](docs/DATA_MODEL.md)
 - [Streak/statistics calculation rules](docs/CALCULATION_RULES.md)
 - [Privacy & local-only design](docs/PRIVACY.md)

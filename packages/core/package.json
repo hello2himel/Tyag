@@ -1,6 +1,6 @@
 {
   "name": "@tyag/core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Tyag domain, persistence, streak engine, analytics, insights and backup engines.",

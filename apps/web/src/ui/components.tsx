@@ -20,6 +20,7 @@ import {
   type TextareaHTMLAttributes,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { useBackLayer } from '../platform/back';
 import { curves, durations, haptic, project, reducedMotion, rubberBand } from './motion';
 import type { StreakInterval } from '@tyag/core';
 
@@ -432,9 +433,18 @@ export function Select({ className = '', children, ...rest }: SelectHTMLAttribut
 
 /* ------------------------------- overlays -------------------------------- */
 
+/**
+ * Shared sheet/modal behaviour: Escape closes, the page behind cannot scroll
+ * and back (hardware, browser or gesture) closes the topmost overlay. Back
+ * layers are registered through the platform dispatcher, so a sheet nested in
+ * a modal closes in visual order and browsers never navigate away from an open
+ * overlay. The close callback is read through a ref: it changes every render
+ * (it closes over screen state) and must not disturb the handler stack.
+ */
 function useOverlayBehaviour(open: boolean, onClose: () => void) {
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  useBackLayer(open, () => onCloseRef.current());
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {

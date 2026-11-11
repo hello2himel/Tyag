@@ -5,7 +5,16 @@
     <color name="colorPrimaryDark">#000000</color>
     <color name="colorAccent">#FF4B2B</color>
 
+    <!-- Branded black: the splash screen stays black in both modes. -->
     <color name="tyag_brand">#000000</color>
-    <color name="tyag_canvas">#000000</color>
+    <!-- App canvas behind the WebView; mirrors the web design tokens
+         (apps/web/src/ui/styles.css tokens: light bg #F2F2F7, dark bg #000000,
+         overridden in res/values-night/colors.xml).
+         This is the colour the padded status/navigation-bar area shows in the
+         Capacitor 8 SystemBars fallback path (WebView < 140 pads the decor view
+         rather than passing env(safe-area-inset-*) through). It must follow
+         day/night, otherwise those bars look like a separate black surface
+         around the light app. -->
+    <color name="tyag_canvas">#F2F2F7</color>
     <color name="tyag_ink">#FFFFFF</color>
 </resources>

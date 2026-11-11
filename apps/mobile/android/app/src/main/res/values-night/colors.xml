@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark-mode app canvas; mirrors the web design token
+         (apps/web/src/ui/styles.css token: dark bg #000000) and keeps the
+         Capacitor 8 SystemBars fallback path (WebView < 140, padded decor view)
+         blending in: the status/navigation-bar area shows this colour instead
+         of a separate surface. See res/values/colors.xml for the light value. -->
+    <color name="tyag_canvas">#000000</color>
+</resources>

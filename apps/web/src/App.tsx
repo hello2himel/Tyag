@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppProvider, useApp } from './store/app';
 import { navigate, useRoute, type RouteName } from './router';
+import { useBackHandler, useBackLayer, requestExit } from './platform/back';
 import { Icon, type IconName } from './ui/components';
 import { TyagLockup } from './ui/logo';
 import { TrackersScreen } from './features/trackers/TrackersScreen';
@@ -37,6 +38,19 @@ function Root() {
   const [unlocking, setUnlocking] = useState(false);
   const [justUnlocked, setJustUnlocked] = useState(false);
   const unlockTimer = useRef<number | null>(null);
+
+  // The lock screen is a logical back layer of its own. While it is up, back
+  // must never reach the app behind it: on Android the guard exits the app
+  // explicitly (a hardware back on the lock screen must not silently reveal the
+  // shell), and on web/PWA the press is consumed so browser back cannot mutate
+  // the route state hidden underneath the lock. The change-PIN overlay closes
+  // like any other layer.
+  const locked = app.settings.onboarded && hasPassword && !unlocked;
+  useBackHandler(() => {
+    requestExit();
+    return true;
+  }, locked);
+  useBackLayer(changePinOpen, () => setChangePinOpen(false));
 
   // Backgrounding shows the branded privacy shield immediately and arms the
   // lock; the app switcher never captures content. On return the lock screen is

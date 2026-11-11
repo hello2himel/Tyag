@@ -16,6 +16,7 @@ import { navigate } from '../../router';
 import { useApp } from '../../store/app';
 import { Button, Sheet, useToast } from '../../ui/components';
 import { useFormatters } from '../../ui/format';
+import { useBackHandler } from '../../platform/back';
 import { Keypad, PinDots } from '../lock/AppLock';
 import { TyagAppIcon, TyagMark, TyagWordmark } from '../../ui/logo';
 import { pickTextFile } from '../../platform/files';
@@ -261,6 +262,25 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [restoreError, setRestoreError] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // A hardware/browser back press walks the steps exactly like the on-screen
+  // Back buttons. Step 0 stays unhandled on purpose — on Android the native
+  // shell may then close the app, which is the expected behaviour on the very
+  // first screen. While a write is in flight, and on the final "ready" step,
+  // the press is consumed so the user cannot slip back into a half-finished
+  // flow (the tracker/PIN already exist by then).
+  useBackHandler(() => {
+    if (saving || pinSaving) return true;
+    if (step === 0) return false;
+    if (step === 5) return true;
+    if (step === 4) {
+      if (isDesktop) setStep(3);
+      else backFromPin();
+      return true;
+    }
+    setStep((current) => (current > 1 ? ((current - 1) as Step) : 0));
+    return true;
+  }, step > 0);
 
   const progressIndex = step === 1 ? 0 : step === 2 ? 1 : step === 3 ? 2 : step === 4 ? 3 : 0;
   useEffect(() => {

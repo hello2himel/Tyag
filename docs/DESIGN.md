@@ -23,12 +23,28 @@ rendered reference boards live in `docs/design/`:
 Light: --bg #F2F2F7  --card #FFFFFF  --fill rgba(120,120,128,.12)  --ink #000
        --mut #6C6C70 --sep rgba(60,60,67,.29) --b #0059B3 --bf #0071E3
        --g #248A3D  --a #C93400  --u #5856D6
-       --glass rgba(249,249,249,.86) --side rgba(236,236,240,.92)
+       --glass rgba(249,249,249,.86) --nav-solid #F9F9F9
+       --side rgba(236,236,240,.92)
 
 Dark:  --bg #000  --card #1C1C1E  --fill rgba(120,120,128,.32)  --ink #fff
        --mut #98989F --sep rgba(84,84,88,.65) --b #5AB0FF --bf #0071E3
        --g #30D158 --a #FF9F0A --u #7D7AFF
+       --glass rgba(22,22,24,.82) --nav-solid #161618
 ```
+
+- Surfaces: desktop uses the translucent `--glass`/`--side` treatments. On
+  phones/tablets the bottom tab bar is the **opaque** `--nav-solid` surface with
+  no backdrop blur, so scrolled content never shows through it in a mobile
+  WebView. The translation from `--glass` keeps the intended hue while making
+  the bar fully opaque.
+- Android system chrome is part of the canvas: the shell is edge-to-edge and
+  the status bar and navigation/gesture bar are transparent, so the app
+  background (light `#F2F2F7` / dark `#000000`) shows behind them with no
+  separate bar surface or gesture-pill scrim. Bar icons follow the resolved
+  in-app theme (dark icons on light, light icons on dark). The window
+  background mirrors the canvas day/night for the Capacitor fallback that pads
+  content on older WebViews (`res/values{,-night}/colors.xml`); the branded
+  launch splash stays black on purpose.
 
 - Type: system font stack (`-apple-system, BlinkMacSystemFont, "SF Pro Text",
   "Segoe UI", Inter, system-ui, "Noto Sans", sans-serif`), tabular numerals.

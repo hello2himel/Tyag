@@ -1,6 +1,6 @@
 {
   "name": "@tyag/desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Tyag desktop shell (Tauri 2 + system WebView) \u2014 offline, local-only recovery tracker.",

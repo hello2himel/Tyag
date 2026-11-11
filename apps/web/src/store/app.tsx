@@ -13,6 +13,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core';
 import { TyagCore, type AppSettings, type PersistenceAdapter } from '@tyag/core';
 import { openTyagCore } from '../platform/db';
 import { TyagAppIcon } from '../ui/logo';
@@ -62,12 +63,37 @@ function resolveTheme(settings: AppSettings): ResolvedTheme {
   return 'light';
 }
 
+/**
+ * Android only: keep the transparent system bars' icon appearance in step with
+ * the *resolved* in-app theme — dark icons over the light canvas (#F2F2F7),
+ * light icons over the dark canvas (#000000). The bars are made transparent /
+ * edge-to-edge natively in MainActivity; the Capacitor 8 SystemBars plugin owns
+ * the icon appearance. This lives in the module-level applyTheme (not a React
+ * effect) so it also runs on the first boot before React renders. It is
+ * best-effort: on web the plugin is an unavailable stub, so never let a
+ * rejection or a missing bridge break boot.
+ */
+function syncAndroidSystemBars(theme: ResolvedTheme): void {
+  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
+  try {
+    void SystemBars.setStyle({
+      // SystemBarsStyle.Dark means "light bar content on a dark background".
+      style: theme === 'dark' ? SystemBarsStyle.Dark : SystemBarsStyle.Light,
+    }).catch(() => {
+      /* cosmetic only — an unavailable SystemBars plugin must not break boot */
+    });
+  } catch {
+    /* cosmetic only */
+  }
+}
+
 function applyTheme(theme: ResolvedTheme): void {
   const root = document.documentElement;
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', theme === 'dark' ? '#000000' : '#F2F2F7');
+  syncAndroidSystemBars(theme);
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {

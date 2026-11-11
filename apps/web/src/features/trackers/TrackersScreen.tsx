@@ -69,18 +69,23 @@ export function TrackersScreen() {
     }
   }, [route.name, route.hash]);
 
+  // The `?new=1` query is a one-shot deep link: once the sheet is open or
+  // saved it must be *replaced* out of the URL. Pushing would leave the deep
+  // link as a back target, so a later back press would reopen the sheet the
+  // user just dismissed.
   function closeSheet(): void {
     setSheet(null);
-    if (route.name === 'trackers' && route.query.has('new')) navigate('/trackers');
+    if (route.name === 'trackers' && route.query.has('new')) navigate('/trackers', { replace: true });
   }
 
   function handleSaved(tracker: Tracker, created: boolean): void {
     setSheet(null);
-    if (created) {
-      navigate(`/tracker/${tracker.id}`);
-    } else if (route.query.has('new')) {
-      navigate('/trackers');
+    if (route.name === 'trackers' && route.query.has('new')) {
+      // Consume the deep link before leaving for the new tracker. Both
+      // navigations queue behind the sheet's history sentinel unwind.
+      navigate('/trackers', { replace: true });
     }
+    if (created) navigate(`/tracker/${tracker.id}`);
   }
 
   const countLabel = `${trackers.length} tracker${trackers.length === 1 ? '' : 's'}`;

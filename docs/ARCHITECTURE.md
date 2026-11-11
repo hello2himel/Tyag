@@ -157,7 +157,10 @@ See [CALCULATION_RULES.md](CALCULATION_RULES.md) for the exact definitions.
 - **Android/iOS** (`apps/mobile`): Capacitor 8 loads the same `dist/` from the
   app bundle over `https://localhost`; the database lives in app-private
   storage via `@capacitor/filesystem`; notifications use the local
-  notification plugin.
+  notification plugin. The Android shell is edge-to-edge: the status bar and
+  navigation/gesture bar are transparent over the app canvas, with icon tint
+  synced from the resolved in-app theme and a day/night window background for
+  the older-WebView inset fallback.
 - **Windows/macOS/Linux** (`apps/desktop`): a Tauri 2 application embeds the same
   `dist/` and renders it in the system WebView (WebKitGTK / WKWebView /
   WebView2). Three Rust commands are the only privileged surface: `db_read`,
@@ -167,6 +170,19 @@ See [CALCULATION_RULES.md](CALCULATION_RULES.md) for the exact definitions.
 - **Linux Flatpak**: the Tauri binary is packaged against an `org.gnome.Platform`
   runtime (WebKitGTK 4.1) with no network permission and no home-directory
   access.
+
+### Back navigation
+
+All four shells share one logical Back dispatcher (`apps/web/src/platform/back.ts`):
+open overlays/onboarding steps/the app lock close first, then the hash history
+moves one screen back, and only then does Android close the app. The Android
+shell exposes a locally registered `TyagBack` Capacitor plugin (Capacitor 8 core
+has no `onBackPressed` handling of its own) that forwards hardware/gesture Back
+into the web layer and provides the explicit `exitApp()` call; iOS enables the
+WKWebView edge-swipe gesture; web/PWA and iOS use a single history sentinel so a
+system/browser Back press cannot navigate away from an open overlay; the Tauri
+desktop shell uses Alt+Left / Cmd+[. Details in
+[BACK_NAVIGATION.md](BACK_NAVIGATION.md).
 
 ## 9. Testing strategy
 
@@ -190,3 +206,14 @@ See [CALCULATION_RULES.md](CALCULATION_RULES.md) for the exact definitions.
   service by design). Android/iOS use scheduled on-device notifications.
 - macOS/Windows/iOS installers are produced by CI on their native runners;
   Linux-hosted builds cannot cross-sign Apple/Windows artifacts.
+- Android system-bar chrome blends with the app canvas on all supported
+  versions. On devices whose Android System WebView is older than 140,
+  Capacitor pads content instead of drawing behind the bars, so the padded
+  strip uses the native day/night window background; an in-app theme override
+  that differs from the system theme therefore tints the bar icons from the app
+  theme while the strip keeps the system canvas colour until the WebView is
+  updated. Newer WebViews draw the app canvas behind the transparent bars and
+  are unaffected.
+- The iOS edge-swipe back gesture is enabled and API-checked against Capacitor
+  iOS 8.6.0, but could not be exercised in the Linux-hosted verification run;
+  the matching web/PWA `popstate` path is covered by automated tests.

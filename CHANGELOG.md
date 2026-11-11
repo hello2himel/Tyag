@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.0.1 — 2026-11-11
+
+### Fixed
+
+- **Back navigation on every platform.** Android hardware/gesture Back no
+  longer closes the app from anywhere: a new local `TyagBack` Capacitor plugin
+  forwards `onBackPressed` to the web layer, which closes the topmost
+  sheet/modal/PIN overlay or onboarding step first, then walks the route
+  history back, and only exits from the root screen. iOS gets the WKWebView
+  edge-swipe gesture, web/PWA gets correct browser-back and Alt+Left/Cmd+[
+  handling (a history sentinel keeps an open overlay from being navigated
+  away), and the Tauri desktop shell supports Alt+Left/Cmd+[. Consumed
+  `?new=1` deep links are now replaced out of the URL so Back never reopens a
+  dismissed sheet. See [docs/BACK_NAVIGATION.md](docs/BACK_NAVIGATION.md).
+- **Mobile bottom navigation is opaque.** On phones/tablets the tab bar uses
+  the new solid `--nav-solid` surface with no backdrop blur; desktop keeps its
+  translucent treatment (and hides the tab bar entirely).
+- **Android system bars blend with the app.** The Android shell is edge-to-edge
+  on every supported API: the transparent status bar and navigation/gesture bar
+  show the app canvas instead of a separate system surface (no scrim behind the
+  gesture pill), the window background follows day/night, and the bar icons are
+  re-tinted from the resolved in-app theme. The branded black splash is
+  unchanged.
+
 ## 1.0.0 — 2026-11-10
 
 First complete release of Tyag: a private, local-first, cross-platform

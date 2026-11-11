@@ -120,11 +120,13 @@ export function JournalScreen() {
   const [detailItem, setDetailItem] = useState<HistoryItem | null>(null);
 
   // Deep link from Insights/empty states: /journal?new=1 opens the editor once.
+  // Replace the URL so the consumed query is not left behind as a back target
+  // that would reopen the editor on the next back press.
   useEffect(() => {
     if (route.name === 'journal' && route.query.get('new') !== null) {
       setEditingEntry(null);
       setEditorOpen(true);
-      navigate('/journal');
+      navigate('/journal', { replace: true });
     }
   }, [route]);
 

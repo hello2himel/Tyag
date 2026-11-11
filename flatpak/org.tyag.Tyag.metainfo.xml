@@ -51,6 +51,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="1.0.1" date="2026-11-11">
+      <description>
+        <p>Cross-platform Back navigation, an opaque mobile tab bar, and Android status/navigation bars that blend with the app canvas.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-11-10">
       <description>
         <p>First release: offline tracking, streaks, journal, insights and local backup/export.</p>

@@ -1,6 +1,6 @@
 {
   "name": "@tyag/mobile",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Tyag mobile shell (Capacitor) for Android and iOS \u2014 offline, local-only.",
