@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { TyagError, isTyagError } from '../src/index';
+import { BASE_LOCKOUT_MS, MAX_LOCKOUT_MS, TyagError, isTyagError } from '../src/index';
 import { createTestCore, reopenTestCore, DAY, T0 } from './helpers';
 
 const PASSWORD = '4829';
+const WRONG_PIN = '0000';
 
 async function expectError(promise: Promise<unknown>, code: string): Promise<void> {
   try {
@@ -60,8 +61,7 @@ describe('app lock security', () => {
     expect(core.security.biometricsEnabled()).toBe(false);
   });
 
-  it('keeps the lock hash across a restart', async () => {
-    const test = await createTestCore();
+  it('keeps the lock hash across a restart', async () => {    const test = await createTestCore();
     await test.core.security.setPassword(PASSWORD, { biometricsEnabled: true });
     test.core.close();
     const reopened = await reopenTestCore(test);
@@ -99,5 +99,105 @@ describe('app lock security', () => {
     const dayTwo = core.trackers.create({ name: 'Fresh start' });
     await expect(dayTwo).resolves.toBeTruthy();
     void T0;
+  });
+});
+
+describe('PIN brute-force protection', () => {
+  it('locks after repeated failures and refuses even the correct PIN while locked', async () => {
+    const { core, clock } = await createTestCore();
+    await core.security.setPassword(PASSWORD);
+
+    for (let attempt = 1; attempt < 5; attempt += 1) {
+      expect(await core.security.verifyPassword(WRONG_PIN)).toBe(false);
+    }
+    let status = core.security.lockoutStatus();
+    expect(status.failedAttempts).toBe(4);
+    expect(status.remainingMs).toBe(0);
+    expect(status.attemptsLeft).toBe(1);
+
+    expect(await core.security.verifyPassword(WRONG_PIN)).toBe(false);
+    status = core.security.lockoutStatus();
+    expect(status.failedAttempts).toBe(5);
+    expect(status.remainingMs).toBe(BASE_LOCKOUT_MS);
+    expect(status.attemptsLeft).toBe(0);
+    expect(status.lockedUntil).toBe(T0 + BASE_LOCKOUT_MS);
+
+    // The correct PIN is refused while locked out and does not extend the wait.
+    expect(await core.security.verifyPassword(PASSWORD)).toBe(false);
+    expect(core.security.lockoutStatus().remainingMs).toBe(BASE_LOCKOUT_MS);
+
+    clock.advance(BASE_LOCKOUT_MS - 1);
+    expect(await core.security.verifyPassword(PASSWORD)).toBe(false);
+    clock.advance(1);
+    expect(await core.security.verifyPassword(PASSWORD)).toBe(true);
+    status = core.security.lockoutStatus();
+    expect(status.failedAttempts).toBe(0);
+    expect(status.lockedUntil).toBe(0);
+    expect(status.remainingMs).toBe(0);
+  });
+
+  it('persists the lockout across an app restart', async () => {
+    const test = await createTestCore();
+    await test.core.security.setPassword(PASSWORD);
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      expect(await test.core.security.verifyPassword(WRONG_PIN)).toBe(false);
+    }
+    expect(test.core.security.lockoutStatus().remainingMs).toBe(BASE_LOCKOUT_MS);
+
+    test.core.close();
+    const reopened = await reopenTestCore(test);
+    expect(reopened.core.security.lockoutStatus().remainingMs).toBe(BASE_LOCKOUT_MS);
+    expect(await reopened.core.security.verifyPassword(PASSWORD)).toBe(false);
+    reopened.clock.advance(BASE_LOCKOUT_MS);
+    expect(await reopened.core.security.verifyPassword(PASSWORD)).toBe(true);
+  });
+
+  it('escalates the lockout exponentially and caps it', async () => {
+    const { core, clock } = await createTestCore();
+    await core.security.setPassword(PASSWORD);
+    const durations: number[] = [];
+    for (let attempt = 1; attempt <= 11; attempt += 1) {
+      expect(await core.security.verifyPassword(WRONG_PIN)).toBe(false);
+      if (attempt >= 5) {
+        const status = core.security.lockoutStatus();
+        durations.push(status.remainingMs);
+        clock.advance(status.remainingMs);
+      }
+    }
+    expect(durations).toEqual([
+      BASE_LOCKOUT_MS,
+      BASE_LOCKOUT_MS * 2,
+      BASE_LOCKOUT_MS * 4,
+      BASE_LOCKOUT_MS * 8,
+      BASE_LOCKOUT_MS * 16,
+      MAX_LOCKOUT_MS,
+      MAX_LOCKOUT_MS,
+    ]);
+    clock.advance(MAX_LOCKOUT_MS);
+    expect(await core.security.verifyPassword(PASSWORD)).toBe(true);
+    expect(core.security.lockoutStatus().failedAttempts).toBe(0);
+  });
+
+  it('resets attempts on success and when the PIN or lock is replaced', async () => {
+    const { core } = await createTestCore();
+    await core.security.setPassword(PASSWORD);
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      expect(await core.security.verifyPassword(WRONG_PIN)).toBe(false);
+    }
+    expect(core.security.lockoutStatus().failedAttempts).toBe(3);
+    expect(await core.security.verifyPassword(PASSWORD)).toBe(true);
+    expect(core.security.lockoutStatus().failedAttempts).toBe(0);
+
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      expect(await core.security.verifyPassword(WRONG_PIN)).toBe(false);
+    }
+    expect(core.security.lockoutStatus().remainingMs).toBe(BASE_LOCKOUT_MS);
+    await core.security.setPassword('9021');
+    expect(core.security.lockoutStatus().remainingMs).toBe(0);
+    expect(await core.security.verifyPassword('9021')).toBe(true);
+
+    await core.security.clearPassword();
+    expect(core.security.hasPassword()).toBe(false);
+    expect(core.security.lockoutStatus().remainingMs).toBe(0);
   });
 });

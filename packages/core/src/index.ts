@@ -90,7 +90,15 @@ export { type JournalFilter } from './services/journal';
 export { AnalyticsService, type TrackerAnalyticsOptions, type CombinedAnalyticsOptions } from './analytics/service';
 export { InsightsService } from './insights/service';
 export { BackupService, type ImportOptions } from './backup/service';
-export { SecurityService, PASSWORD_ITERATIONS, type AppLockConfig } from './services/security';
+export {
+  SecurityService,
+  PASSWORD_ITERATIONS,
+  MAX_FAILED_ATTEMPTS,
+  BASE_LOCKOUT_MS,
+  MAX_LOCKOUT_MS,
+  type AppLockConfig,
+  type LockoutStatus,
+} from './services/security';
 export {
   type ExportCounts,
   type JsonExportResult,

@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 import { isTyagError, userMessage } from '@tyag/core';
 import { useApp } from '../../store/app';
 import { ConfirmDialog } from '../../ui/components';
-import { TyagMark } from '../../ui/logo';
+import { TyagMark, TyagWordmark } from '../../ui/logo';
 import { haptic } from '../../ui/motion';
 import { useBackLayer } from '../../platform/back';
 import { pickTextFile } from '../../platform/files';
@@ -24,8 +24,23 @@ import {
 import './lock.css';
 
 const PIN_LENGTH = 4;
-const MAX_ATTEMPTS = 5;
-const COOLDOWN_MS = 30_000;
+
+/** Human-friendly lockout clock ("30s", "1:05"). */
+function formatLockout(remainingMs: number): string {
+  const totalSeconds = Math.max(1, Math.ceil(remainingMs / 1000));
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function lockoutMessage(remainingMs: number): string {
+  return `Too many attempts. Try again in ${formatLockout(remainingMs)}.`;
+}
+
+function attemptsMessage(attemptsLeft: number): string {
+  return attemptsLeft === 1 ? 'Incorrect PIN. 1 attempt left.' : `Incorrect PIN. ${attemptsLeft} attempts left.`;
+}
 
 const DIGITS: { digit: string; letters: string }[] = [
   { digit: '1', letters: '' },
@@ -260,12 +275,18 @@ function MobileCreateOrConfirm({
   usePinKeyboard(addDigit, deleteDigit, stage !== 'biometrics');
 
   async function complete(entered: string): Promise<void> {
+    const lockout = app.core.security.lockoutStatus();
+    if (lockout.remainingMs > 0) {
+      fail(lockoutMessage(lockout.remainingMs));
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       if (stage === 'current') {
         if (!(await app.core.security.verifyPassword(entered))) {
-          fail('Incorrect PIN. Try again.');
+          const status = app.core.security.lockoutStatus();
+          fail(status.remainingMs > 0 ? lockoutMessage(status.remainingMs) : attemptsMessage(status.attemptsLeft));
           return;
         }
         setStage('new');
@@ -519,8 +540,9 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
   const [errorFlash, setErrorFlash] = useState(false);
   const [shake, setShake] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [cooldownUntil, setCooldownUntil] = useState(0);
+  // Lockout state lives in the core `meta` table, so hydrate it on mount: the
+  // countdown survives reloads, app restarts and re-locking.
+  const [cooldownUntil, setCooldownUntil] = useState(() => app.core.security.lockoutStatus().lockedUntil);
   const [now, setNow] = useState(() => Date.now());
   const [availability, setAvailability] = useState<BiometricAvailability | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -537,7 +559,10 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
         window.setTimeout(() => {
           void (async () => {
             const biometric = await authenticateBiometrics();
-            if (biometric.success) onUnlock();
+            if (biometric.success) {
+              await app.core.security.resetLockout();
+              onUnlock();
+            }
           })();
         }, 250);
       }
@@ -550,7 +575,14 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
 
   useEffect(() => {
     if (cooldownUntil <= Date.now()) return undefined;
-    const interval = window.setInterval(() => setNow(Date.now()), 500);
+    const interval = window.setInterval(() => {
+      const current = Date.now();
+      setNow(current);
+      if (current >= cooldownUntil) {
+        setCooldownUntil(0);
+        setError(null);
+      }
+    }, 500);
     return () => window.clearInterval(interval);
   }, [cooldownUntil]);
 
@@ -562,17 +594,25 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
   );
 
   const cooldown = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
+  const displayError = cooldown > 0 ? lockoutMessage(cooldown * 1000) : error;
 
   async function verify(entered: string): Promise<void> {
-    if (cooldown > 0 || busy) return;
+    if (busy) return;
+    const before = app.core.security.lockoutStatus();
+    if (before.remainingMs > 0) {
+      setCooldownUntil(before.lockedUntil);
+      setNow(Date.now());
+      return;
+    }
     setBusy(true);
     if (await app.core.security.verifyPassword(entered)) {
+      setCooldownUntil(0);
+      setError(null);
       window.setTimeout(onUnlock, 150);
       return;
     }
     haptic('error');
-    const nextAttempts = attempts + 1;
-    setAttempts(nextAttempts);
+    const status = app.core.security.lockoutStatus();
     setError(null);
     setErrorFlash(true);
     setShake((count) => count + 1);
@@ -580,12 +620,11 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
       setPin('');
       setErrorFlash(false);
       setBusy(false);
-      if (nextAttempts >= MAX_ATTEMPTS) {
-        setCooldownUntil(Date.now() + COOLDOWN_MS);
+      if (status.remainingMs > 0) {
+        setCooldownUntil(status.lockedUntil);
         setNow(Date.now());
-        setError('Too many attempts. Wait 30 seconds.');
       } else {
-        setError(`Incorrect PIN. ${MAX_ATTEMPTS - nextAttempts} attempts left.`);
+        setError(attemptsMessage(status.attemptsLeft));
       }
     }, 500);
   }
@@ -609,7 +648,10 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
 
   async function handleBiometrics(): Promise<void> {
     const result = await authenticateBiometrics();
-    if (result.success) onUnlock();
+    if (result.success) {
+      await app.core.security.resetLockout();
+      onUnlock();
+    }
   }
 
   return (
@@ -617,7 +659,7 @@ function MobileLock({ onUnlock }: { onUnlock: () => void }) {
       <div className="pn-lock-head">
         <TyagMark size={44} />
         <h1 className="pn-big pn-lock-title">Enter PIN</h1>
-        {error ? <p className="pn-error pn-lock-error">{error}</p> : <p className="pn-muted">Tyag is locked</p>}
+        {displayError ? <p className="pn-error pn-lock-error">{displayError}</p> : <p className="pn-muted">Tyag is locked</p>}
         <div className="pn-lock-dots">
           <PinDots length={pin.length} error={errorFlash} shake={shake} />
         </div>
@@ -676,11 +718,29 @@ function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [shake, setShake] = useState(0);
   const [busy, setBusy] = useState(false);
+  // Persistent brute-force lockout (survives reloads and app restarts).
+  const [cooldownUntil, setCooldownUntil] = useState(() => app.core.security.lockoutStatus().lockedUntil);
+  const [now, setNow] = useState(() => Date.now());
   const [forgotOpen, setForgotOpen] = useState(false);
   const [availability, setAvailability] = useState<BiometricAvailability | null>(null);
   const [focused, setFocused] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const autoPrompted = useRef(false);
+
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return undefined;
+    const interval = window.setInterval(() => {
+      const current = Date.now();
+      setNow(current);
+      if (current >= cooldownUntil) {
+        setCooldownUntil(0);
+        setError(null);
+        setFocused(true);
+        inputRef.current?.focus();
+      }
+    }, 500);
+    return () => window.clearInterval(interval);
+  }, [cooldownUntil]);
 
   useEffect(() => {
     let cancelled = false;
@@ -692,7 +752,10 @@ function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
         window.setTimeout(() => {
           void (async () => {
             const biometric = await authenticateBiometrics();
-            if (biometric.success) onUnlock();
+            if (biometric.success) {
+              await app.core.security.resetLockout();
+              onUnlock();
+            }
           })();
         }, 250);
       }
@@ -707,27 +770,52 @@ function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
     inputRef.current?.focus();
   }, []);
 
+  const cooldown = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
+  const locked = cooldown > 0;
+  const displayError = locked ? lockoutMessage(cooldown * 1000) : error;
+
   async function unlock(): Promise<void> {
-    if (busy || pin.length < PIN_LENGTH) return;
+    if (busy) return;
+    const before = app.core.security.lockoutStatus();
+    if (before.remainingMs > 0) {
+      setCooldownUntil(before.lockedUntil);
+      setNow(Date.now());
+      setPin('');
+      return;
+    }
+    if (pin.length < PIN_LENGTH) return;
     setBusy(true);
     if (await app.core.security.verifyPassword(pin)) {
+      setCooldownUntil(0);
+      setError(null);
       window.setTimeout(onUnlock, 150);
       return;
     }
     haptic('error');
+    const status = app.core.security.lockoutStatus();
     setShake((count) => count + 1);
     window.setTimeout(() => {
       setPin('');
-      setError('Incorrect PIN. Try again.');
       setBusy(false);
-      inputRef.current?.focus();
+      if (status.remainingMs > 0) {
+        setCooldownUntil(status.lockedUntil);
+        setNow(Date.now());
+        setError(null);
+      } else {
+        setError(attemptsMessage(status.attemptsLeft));
+        inputRef.current?.focus();
+      }
     }, 500);
   }
 
   async function biometrics(): Promise<void> {
     const result = await authenticateBiometrics();
-    if (result.success) onUnlock();
-    else setError(result.error ?? 'Biometric authentication failed.');
+    if (result.success) {
+      await app.core.security.resetLockout();
+      onUnlock();
+    } else {
+      setError(result.error ?? 'Biometric authentication failed.');
+    }
   }
 
   return (
@@ -746,18 +834,25 @@ function DesktopLock({ onUnlock }: { onUnlock: () => void }) {
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onChange={(event) => {
+            if (locked) return;
             setError(null);
             setPin(event.target.value.replace(/\D/g, '').slice(0, PIN_LENGTH));
           }}
           onKeyDown={(event) => {
             if (event.key === 'Enter') void unlock();
           }}
+          disabled={locked}
           aria-label="Enter PIN"
           autoComplete="off"
         />
-        {error ? <p className="pn-error pn-desktop-error">{error}</p> : null}
-        <button type="button" className="pn-btn pn-btn-primary pn-desktop-btn" onClick={() => void unlock()}>
-          Unlock
+        {displayError ? <p className="pn-error pn-desktop-error">{displayError}</p> : null}
+        <button
+          type="button"
+          className="pn-btn pn-btn-primary pn-desktop-btn"
+          onClick={() => void unlock()}
+          disabled={busy || locked}
+        >
+          {locked ? `Try again in ${formatLockout(cooldown * 1000)}` : 'Unlock'}
         </button>
         {availability?.available && config.biometricsEnabled ? (
           <button type="button" className="pn-btn pn-btn-secondary pn-desktop-btn" onClick={() => void biometrics()}>
@@ -859,8 +954,7 @@ function DesktopSetPin({
         <aside className="pn-desktop-side">
           <TyagMark size={44} />
           <div className="pn-desktop-wordmark">
-            <span>de</span>
-            <b>Urge</b>
+            <TyagWordmark height={26} />
           </div>
           <div className="pn-side-text">
             <b>Why a PIN?</b>

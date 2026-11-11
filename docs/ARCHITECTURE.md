@@ -87,6 +87,9 @@ Tyag/
   4-digit PIN gate rendered by the React root before any records; PBKDF2-SHA-256
   hash in the local `meta` table, Android biometric unlock through a small local
   Capacitor plugin, and an immediate privacy-shield lock when the app is backgrounded.
+  Wrong PINs are rate-limited by a persistent, escalating lockout (30 s doubling
+  to a 15 min cap, stored in `meta`, reset only by a correct PIN or a successful
+  biometric unlock), so killing/reloading the app does not reset the clock.
 - **Business logic** (`services/`): validation, lifecycle rules (pause/resume/
   archive/restore/delete), history recording, transactions + snapshot persist.
 - **Streak engine** (`engine/streak.ts`): pure deterministic calculation from

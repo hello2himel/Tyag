@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Security
+
+- **PIN brute-force protection.** After five consecutive wrong PINs, PIN
+  verification is refused for 30 seconds and the wait doubles on every further
+  failure up to a 15 minute cap. The attempt counter and lockout deadline are
+  persisted in the local `meta` table, so closing, reloading or killing the app
+  no longer resets an attacker's attempts; only a correct PIN or a successful
+  biometric unlock clears the lockout. The countdown is shown on both the mobile
+  keypad and the desktop PIN screen, and the change-PIN flow uses the same gate.
+
 ## 1.0.1: 2026-11-11
 
 ### Fixed

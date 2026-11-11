@@ -74,6 +74,11 @@ Protected:
   authenticated encryption; a wrong password fails loudly).
 - The app's CSP and Tauri/Capacitor hardening reduce remote-code injection
   risk.
+- Wrong PINs are rate-limited: after five consecutive failures the app refuses
+  further PIN verification for 30 seconds, doubling the wait on every further
+  failure up to a 15 minute cap. The counters live in the local `meta` table, so
+  reloading or restarting the app does not reset the lockout; only a correct PIN
+  or a successful biometric unlock clears it.
 
 Not protected by Tyag itself:
 
@@ -83,6 +88,10 @@ Not protected by Tyag itself:
   access to the app, not to the SQLite file. Rely on OS full-disk encryption and
   app-private storage (and do not root/jailbreak the device or share app
   backups). Encrypt exported backups if you store them elsewhere.
+- The PIN lockout is an application-level speed bump, not a hardware boundary:
+  someone who can modify the SQLite file or the device clock can reset the
+  counters. It exists to make casual guessing impractical, not to resist an
+  attacker with write access to the app's private files.
 - Browser/PWA storage can be cleared by the user or by "clear site data"
   actions; keep exported backups.
 
