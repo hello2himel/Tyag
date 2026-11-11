@@ -1,11 +1,17 @@
 # Tyag
 
-**Progress, not perfection.** A private, local-first tracker for abstinence,
-lapses, urges and the progress that continues through all of it.
+**Progress, not perfection.** Tyag is a private, offline, local-first
+**addiction recovery and habit tracker** for abstinence, lapses, urges and the
+progress that continues through all of it.
 
-Tyag is a complete cross-platform application: web/PWA, Android, iOS,
-Windows, macOS and Linux. It runs entirely on your device — no account, no
-cloud, no tracking, no internet required.
+Tyag is a complete cross-platform app — web/PWA, Android, iOS, Windows, macOS
+and Linux — that runs entirely on your device: no account, no cloud, no
+tracking, no internet required. Everything is stored in a local SQLite
+database and can be exported at any time.
+
+**[Open the web app](https://tyag.netlify.app)** ·
+**[Download the latest release](https://github.com/hello2himel/Tyag/releases/latest)** ·
+**[Read the docs](docs/ARCHITECTURE.md)**
 
 <p align="center">
   <img src="docs/screenshots/onboarding-welcome.png" width="240" alt="Tyag onboarding (mobile, light)" />
@@ -165,7 +171,7 @@ create. There is no hidden copy anywhere else. Export a backup regularly from
 
 ## License
 
-**GNU Affero General Public License v3.0** (`AGPL-3.0-only`) — see [LICENSE](LICENSE).
+**GNU Affero General Public License v3.0** (`AGPL-3.0-only`) — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 Tyag is free software: you can use, study, share and improve it. If you modify
 it and distribute it or make it available over a network, the AGPL requires the

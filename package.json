@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/hello2himel/Tyag.git"
   },
-  "homepage": "https://github.com/hello2himel/Tyag",
+  "homepage": "https://tyag.netlify.app",
   "engines": {
     "node": ">=20.19"
   },
