@@ -1,5 +1,5 @@
 /**
- * Record sheet — the one place a lapse or an urge is written.
+ * Record sheet, the one place a lapse or an urge is written.
  *
  * It is intentionally a standalone, reusable component: the tracker detail
  * screen opens it for "Log urge"/"Record lapse" and for editing an existing
@@ -292,7 +292,7 @@ function RecordSheetDialog({
     return (
       <Sheet open onClose={onClose} title={title} left={headerLeft}>
         <div className="notice" role="status">
-          You need a tracker before you can record a lapse or an urge. Create one from the Trackers screen — it only
+          You need a tracker before you can record a lapse or an urge. Create one from the Trackers screen: it only
           takes a name and a start time.
         </div>
       </Sheet>
@@ -510,7 +510,7 @@ function RecordSheetDialog({
       <ConfirmDialog
         open={confirmDelete}
         title={`Delete this ${kindLabel.toLowerCase()}?`}
-        body={`This permanently removes the record from your history. Streaks and statistics are recalculated from your remaining records — nothing else is changed.`}
+        body={`This permanently removes the record from your history. Streaks and statistics are recalculated from your remaining records: nothing else is changed.`}
         confirmLabel={`Delete ${kindLabel.toLowerCase()}`}
         tone="danger"
         onConfirm={() => void handleDelete()}

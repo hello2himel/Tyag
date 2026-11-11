@@ -5,7 +5,7 @@
  * milliseconds (`number`) so that they are timezone independent; the local
  * context that produced them (IANA zone + UTC offset) is stored alongside for
  * display and grouping. Derived values (streaks, statistics, insights) are
- * never stored — they are always recomputed from these records.
+ * never stored, they are always recomputed from these records.
  */
 
 export type Id = string;

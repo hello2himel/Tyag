@@ -1,5 +1,5 @@
 /**
- * Settings screen — grouped iOS-style preference lists.
+ * Settings screen, grouped iOS-style preference lists.
  *
  * Every change persists immediately through `app.updateSettings` (or the core
  * trigger/reason category service) and re-renders without a reload. Errors are reported with
@@ -87,7 +87,7 @@ const STORAGE_INFO: Record<string, { label: string; note: string }> = {
     note: 'The desktop app keeps the database snapshot in its own app-data folder.',
   },
   memory: {
-    label: 'Memory only — not saved',
+    label: 'Memory only, not saved',
     note: 'This environment blocks persistent storage. Your data will be lost when the app closes; export a backup now.',
   },
 };

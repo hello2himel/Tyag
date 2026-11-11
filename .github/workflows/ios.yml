@@ -1,8 +1,8 @@
 name: iOS
 
 # Builds the Capacitor iOS project unsigned on a macOS runner:
-#   * simulator build  — proves the Xcode project + Swift packages compile
-#   * device archive   — unsigned .xcarchive, to be signed/exported with the
+#   * simulator build : proves the Xcode project + Swift packages compile
+#   * device archive  : unsigned .xcarchive, to be signed/exported with the
 #                        team's Apple Developer account (never in this repo)
 #
 # Capacitor 8 uses Swift Package Manager (CapApp-SPM); CocoaPods is only used

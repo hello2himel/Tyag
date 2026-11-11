@@ -11,7 +11,7 @@
  *  - `currentStreakMs` is the active time inside the current interval.
  *  - `longestStreakMs` is the largest active time of any interval.
  *  - `accumulatedAbstinenceMs` is the sum of active time over all intervals,
- *    which equals all non-paused time since `startedAt` — every previous
+ *    which equals all non-paused time since `startedAt`, every previous
  *    streak stays counted after a lapse.
  *  - `elapsedSinceStartMs` is wall-clock time and is *not* abstinence.
  *

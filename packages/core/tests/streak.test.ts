@@ -71,7 +71,7 @@ function compute(options: {
   });
 }
 
-describe('streak engine — core definitions', () => {
+describe('streak engine, core definitions', () => {
   it('uses real elapsed time, not calendar-day differences', () => {
     const start = Date.UTC(2026, 10, 9, 20, 30); // 8:30 PM
     const now = Date.UTC(2026, 10, 10, 20, 0); // 8:00 PM next day

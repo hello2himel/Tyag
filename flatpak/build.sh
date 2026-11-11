@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Tyag — build the Flatpak bundle.
+# Tyag: build the Flatpak bundle.
 #
 # Pipeline:
 #   1. build the web app          (pnpm --filter @tyag/web build)
@@ -68,7 +68,7 @@ if [[ "${SKIP_APP_BUILD:-0}" != "1" ]]; then
   (cd "$ROOT" && pnpm --filter @tyag/desktop build)
 fi
 
-[[ -x "$BINARY" ]] || die "missing $BINARY — run without SKIP_APP_BUILD=1"
+[[ -x "$BINARY" ]] || die "missing $BINARY, run without SKIP_APP_BUILD=1"
 
 say "Staging Flatpak payload (v$VERSION, $ARCH)"
 rm -rf "$STAGE"
@@ -187,14 +187,14 @@ direct_build() {
   if builder_runtime_available; then
     say "Using the installed org.gnome.Platform/org.gnome.Sdk //$RUNTIME_VERSION"
   else
-    say "org.gnome.Platform/org.gnome.Sdk //$RUNTIME_VERSION missing — installing from flathub"
+    say "org.gnome.Platform/org.gnome.Sdk //$RUNTIME_VERSION missing, installing from flathub"
     ensure_builder_app_flathub
     deps_args=(--install-deps-from=flathub)
   fi
   if ! run_flatpak_builder "${BUILDER_CMD[@]}" --user --force-clean --disable-rofiles-fuse \
     --default-branch=stable --repo="$REPO" "${deps_args[@]}" --arch="$ARCH" \
     "$BUILD_DIR" "$MANIFEST"; then
-    die "flatpak-builder failed — see $BUILD_ROOT/flatpak-builder.log"
+    die "flatpak-builder failed, see $BUILD_ROOT/flatpak-builder.log"
   fi
 
   rm -f "$BUNDLE"
@@ -236,7 +236,7 @@ case "$MODE" in
     elif command -v docker >/dev/null; then
       docker_build
     else
-      die "no flatpak-builder and no docker — install one of them (docs/BUILDING.md)"
+      die "no flatpak-builder and no docker, install one of them (docs/BUILDING.md)"
     fi
     ;;
   *)

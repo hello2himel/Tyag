@@ -92,7 +92,7 @@ jobs:
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "No ANDROID_KEYSTORE_BASE64 secret — building a debug APK only."
+            echo "No ANDROID_KEYSTORE_BASE64 secret, building a debug APK only."
           fi
 
       - name: Build debug APK

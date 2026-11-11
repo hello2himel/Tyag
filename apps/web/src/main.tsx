@@ -14,8 +14,8 @@ const isDesktopShell =
 if (!isDesktopShell) registerSW({ immediate: true });
 
 // Hash routes are the only routing mechanism (no server rewrites), so give the
-// first entry a real path before React mounts. Doing it here — rather than
-// from a `useRoute` effect — means no screen or back layer can observe, or
+// first entry a real path before React mounts. Doing it here, rather than
+// from a `useRoute` effect, means no screen or back layer can observe, or
 // race against, the empty-hash transient during boot or unlock.
 if (typeof window !== 'undefined' && !window.location.hash) {
   window.location.replace('#/trackers');

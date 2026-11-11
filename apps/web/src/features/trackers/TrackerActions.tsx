@@ -2,7 +2,7 @@
  * Lifecycle actions for one tracker: pause/resume, archive/restore, delete.
  * Rendered on tracker cards (in edit mode) and in the tracker detail header.
  *
- * Status transitions are delegated entirely to the core services — the UI only
+ * Status transitions are delegated entirely to the core services, the UI only
  * decides which action is offered for the current status. Dates/times in the
  * confirmations are intentionally explained in terms of the calculation rules
  * (paused time is never counted; archived history is kept).

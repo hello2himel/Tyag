@@ -1,4 +1,4 @@
-# Tyag — UI/UX implementation notes
+# Tyag: UI/UX implementation notes
 
 The interface is implemented from the supplied **Tyag UI/UX skeleton**
 (light and dark, 390×844 mobile boards and a 1440×900 desktop board). The

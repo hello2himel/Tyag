@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * collect-tauri-artifacts.mjs — normalise and checksum Tauri 2 bundle output.
+ * collect-tauri-artifacts.mjs, normalise and checksum Tauri 2 bundle output.
  *
  * `tauri build` writes platform bundles into
  * `apps/desktop/src-tauri/target/release/bundle/<target>/…` with names such as
@@ -98,7 +98,7 @@ for (const { subdir, name } of TARGETS[platform]) {
 
 if (collected.length === 0) {
   console.error(
-    `collect-tauri-artifacts: no ${platform} bundles under ${BUNDLE_ROOT} — build the desktop app first.`,
+    `collect-tauri-artifacts: no ${platform} bundles under ${BUNDLE_ROOT}, build the desktop app first.`,
   );
   process.exit(1);
 }

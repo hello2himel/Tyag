@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Tyag — Android build (web build -> Capacitor sync -> Gradle APK/AAB).
+# Tyag: Android build (web build -> Capacitor sync -> Gradle APK/AAB).
 #
 # Usage:
 #   scripts/build-android.sh [auto|debug|release]
@@ -15,7 +15,7 @@
 #              TYAG_KEY_ALIAS          key alias
 #              TYAG_KEY_PASSWORD       key password
 #
-# Environment (never hardcoded — see docs/BUILDING.md):
+# Environment (never hardcoded: see docs/BUILDING.md):
 #   JAVA_HOME      JDK 21 (Capacitor 8 / AGP 8.13 needs 21)
 #   ANDROID_HOME   Android SDK (android-36 + build-tools 36). Falls back to
 #                  android/local.properties (machine-local, git-ignored).
@@ -35,7 +35,7 @@ DIST_DIR="$MOBILE_DIR/dist"
 say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 die() { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
 
-[[ -d "$ANDROID_DIR" ]] || die "apps/mobile/android is missing — run 'pnpm --filter @tyag/mobile exec cap add android' first"
+[[ -d "$ANDROID_DIR" ]] || die "apps/mobile/android is missing, run 'pnpm --filter @tyag/mobile exec cap add android' first"
 
 # ---------------------------------------------------------------- environment
 [[ -n "${JAVA_HOME:-}" ]] || die "JAVA_HOME is not set. Point it at a JDK 21 (e.g. Temurin 21), see docs/BUILDING.md"
@@ -64,7 +64,7 @@ case "$MODE" in
   *) die "unknown mode '$MODE' (use auto|debug|release)" ;;
 esac
 
-say "Tyag android ($MODE) — version $VERSION"
+say "Tyag android ($MODE), version $VERSION"
 echo "    JAVA_HOME=$JAVA_HOME (JDK $JAVA_MAJOR)"
 echo "    ANDROID_HOME=$ANDROID_HOME"
 
@@ -112,7 +112,7 @@ BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* 2>/dev/null | sort -V | tail 
 if [[ -n "$BUILD_TOOLS" && -x "$BUILD_TOOLS/apksigner" ]]; then
   "$BUILD_TOOLS/apksigner" verify "$APK_OUT" >/dev/null 2>&1 \
     && echo "    apksigner: signature OK" \
-    || echo "    apksigner: WARNING — APK signature could not be verified"
+    || echo "    apksigner: WARNING, APK signature could not be verified"
 fi
 
 (

@@ -1,4 +1,4 @@
-# Tyag — Data model and database schema
+# Tyag: Data model and database schema
 
 Storage: **SQLite** (via sql.js WebAssembly) with foreign keys enabled,
 CHECK constraints, a migration table and one open session per tracker enforced
@@ -19,10 +19,10 @@ trackers ──< tracker_sessions
 custom_categories (kind = trigger | reason)
         └── referenced by lapse/urge `trigger_category_id`
 
-history_events — append-only timeline referencing trackers and record ids
-application_settings — key/value JSON settings
-meta — internal key/value metadata
-schema_migrations — applied migration versions
+history_events, append-only timeline referencing trackers and record ids
+application_settings, key/value JSON settings
+meta, internal key/value metadata
+schema_migrations, applied migration versions
 ```
 
 ## Tables
@@ -62,7 +62,7 @@ Separate from lapses and never affects streak math: `intensity` 1–10,
 
 ### `journal_entries`
 Free writing. `tracker_id` is nullable (global journal) and becomes NULL if the
-tracker is permanently deleted — the writing survives. `title` optional,
+tracker is permanently deleted, the writing survives. `title` optional,
 `body` required.
 
 ### `check_ins`
@@ -138,7 +138,7 @@ gets a fresh password.
 
 Future versions append new entries; shipped migrations are never edited.
 
-### Migration 2 — remove the tracker-category feature
+### Migration 2: remove the tracker-category feature
 
 - Rebuilds `trackers` without `category_id` (new table, copy every other
   column, drop old table, rename, recreate `idx_trackers_status`).

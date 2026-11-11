@@ -1,4 +1,4 @@
-# Tyag — Backup, export, import and recovery
+# Tyag: Backup, export, import and recovery
 
 Your data belongs to you. Tyag provides plain JSON, encrypted JSON, and CSV
 exports, plus a transactional import pipeline with duplicate detection and
@@ -70,15 +70,15 @@ a `tyag-backup-<timestamp>.tyag-backup` file:
 Available datasets (RFC 4180, UTF-8, CRLF line endings, ISO-8601 UTC
 timestamps plus local-time columns):
 
-- `trackers` — id, name, status, timestamps, notes/reasons.
-- `lapses` — id, tracker, occurred UTC/local, trigger, reason, context, notes,
+- `trackers`: id, name, status, timestamps, notes/reasons.
+- `lapses`: id, tracker, occurred UTC/local, trigger, reason, context, notes,
   retrospective.
-- `urges` — id, tracker, occurred UTC/local, intensity, duration, trigger,
+- `urges`: id, tracker, occurred UTC/local, intensity, duration, trigger,
   outcome, notes.
-- `journal` — id, tracker, occurred UTC/local, title, body.
-- `daily-summary` — per local day: active time, abstinent time, lapses, urges,
+- `journal`: id, tracker, occurred UTC/local, title, body.
+- `daily-summary`: per local day: active time, abstinent time, lapses, urges,
   journal entries.
-- `statistics` — per tracker metric snapshot (current/longest/accumulated/
+- `statistics`: per tracker metric snapshot (current/longest/accumulated/
   elapsed/lapses/urges/average/median/shares) with explicit column names.
 
 CSV is intended for spreadsheets/analysis; JSON is the backup format.
@@ -94,14 +94,14 @@ CSV is intended for spreadsheets/analysis; JSON is the backup format.
    when present, against the original (pre-migration) data.
 3. A preview shows format, app version, export time, timezone and counts.
 4. Choose a mode:
-   - **Merge** — inserts new records, keeps existing ones. Duplicate IDs that
+   - **Merge**: inserts new records, keeps existing ones. Duplicate IDs that
      are identical are skipped. IDs that exist with *different* content are
      reported as conflicts:
      - default: **Skip** conflicting incoming records (never overwrite).
-     - optional: **Keep both** — the conflicting incoming records get new IDs
+     - optional: **Keep both**, the conflicting incoming records get new IDs
        and all child references/references are remapped so relationships stay
        intact.
-   - **Replace** — replaces all local data with the imported data. Requires
+   - **Replace**: replaces all local data with the imported data. Requires
      explicit typed confirmation. A pre-import snapshot is written through the
      platform persistence adapter (and the UI recommends exporting a backup
      first). The wipe+insert runs in a single SQLite transaction; any failure
@@ -115,8 +115,8 @@ CSV is intended for spreadsheets/analysis; JSON is the backup format.
 Schema v1 was written by releases that still had the tracker-category feature.
 Import upconverts it in memory before validation: `categoryId` is removed from
 every tracker and `custom_categories` rows of kind `tracker_category` are
-discarded. Everything else — ids, timestamps, sessions, lapses, urges, journal
-entries, check-ins, history and trigger/reason lists — is preserved exactly. The
+discarded. Everything else, ids, timestamps, sessions, lapses, urges, journal
+entries, check-ins, history and trigger/reason lists, is preserved exactly. The
 import report includes a warning that the backup was upgraded and that tracker
 categories were removed; the integrity hash (when present) is verified against
 the original v1 data. Merge/replace semantics and rollback behaviour are the

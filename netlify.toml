@@ -1,8 +1,8 @@
-# Tyag — Netlify configuration
+# Tyag: Netlify configuration
 #
 # The whole product is a static, local-first PWA: the build produces a folder
 # of files that can be hosted anywhere. Nothing on this site talks to a
-# backend — all data lives in the visitor's browser (SQLite-WASM snapshot in
+# backend: all data lives in the visitor's browser (SQLite-WASM snapshot in
 # IndexedDB).
 #
 # Netlify build image: Node 22 + pnpm discovered from pnpm-lock.yaml.

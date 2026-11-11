@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.1 — 2026-11-11
+## 1.0.1: 2026-11-11
 
 ### Fixed
 
@@ -24,7 +24,7 @@
   re-tinted from the resolved in-app theme. The branded black splash is
   unchanged.
 
-## 1.0.0 — 2026-11-10
+## 1.0.0: 2026-11-10
 
 First complete release of Tyag: a private, local-first, cross-platform
 abstinence and habit recovery tracker. Licensed under **AGPL-3.0-only**.
@@ -43,7 +43,7 @@ abstinence and habit recovery tracker. Licensed under **AGPL-3.0-only**.
   never resets a streak.
 - Journal entries, check-ins and a complete searchable activity log with
   filters.
-- Continuous progress recognition generated from real elapsed time — no
+- Continuous progress recognition generated from real elapsed time, no
   milestones, badges, levels or completion targets.
 - Local analytics: day/week/month/quarter/year buckets, distributions,
   combined multi-tracker view, sample sizes and honest insufficient-data

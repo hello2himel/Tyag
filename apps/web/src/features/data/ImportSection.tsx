@@ -124,7 +124,7 @@ function ImportReportCard({ report, filename }: { report: ImportReport; filename
       {report.conflicts.length > 0 ? (
         <details className="import-details">
           <summary>
-            Conflicts ({report.conflicts.length}) — records that already existed with different content
+            Conflicts ({report.conflicts.length}): records that already existed with different content
           </summary>
           <ul className="import-conflicts">
             {report.conflicts.slice(0, 50).map((conflict, index) => (

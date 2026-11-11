@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * audit-privacy.mjs — fail the build if the shipped web bundle could talk to
+ * audit-privacy.mjs, fail the build if the shipped web bundle could talk to
  * the network or pull in third-party resources.
  *
  * Tyag is a local-first, offline app: the built bundle must be fully
@@ -275,13 +275,13 @@ function main() {
   }
 
   if (problems.length > 0) {
-    console.error(`\naudit-privacy: FAILED — ${problems.length} violation(s):`);
+    console.error(`\naudit-privacy: FAILED, ${problems.length} violation(s):`);
     for (const { file, message } of problems) console.error(`  ✗ ${file}: ${message}`);
     console.error('\nThe shipped bundle must be fully offline. Remove the offending asset/call.');
     process.exit(1);
   }
 
-  console.log('audit-privacy: PASS — bundle is self-contained and offline-only');
+  console.log('audit-privacy: PASS, bundle is self-contained and offline-only');
 }
 
 main();

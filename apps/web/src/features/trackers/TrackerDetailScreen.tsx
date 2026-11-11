@@ -1,5 +1,5 @@
 /**
- * Tracker detail — the current streak, recognition, honest statistics and a
+ * Tracker detail, the current streak, recognition, honest statistics and a
  * full activity timeline. Wide screens use the desktop layout from the design
  * boards: main column + Activity column on the right (>= 1200px).
  *
@@ -158,7 +158,7 @@ export function TrackerDetailScreen({ trackerId }: { trackerId: string }) {
   const recognition = buildRecognition(tracker, metrics);
   const share =
     metrics.abstinenceShareOfElapsed === null
-      ? '—'
+      ? '–'
       : `${Math.round(metrics.abstinenceShareOfElapsed * 100)}%`;
   const periodData = analytics?.periods ?? [];
   const lapseChart = periodData.map((period) => {
@@ -246,19 +246,19 @@ export function TrackerDetailScreen({ trackerId }: { trackerId: string }) {
             <StatTile label="Since start" value={fmt.duration(metrics.elapsedSinceStartMs)} hint="Wall-clock time" />
             <StatTile
               label="Avg between lapses"
-              value={metrics.averageBetweenLapsesMs === null ? '—' : fmt.duration(metrics.averageBetweenLapsesMs)}
+              value={metrics.averageBetweenLapsesMs === null ? '–' : fmt.duration(metrics.averageBetweenLapsesMs)}
               hint={metrics.averageBetweenLapsesMs === null ? 'Needs two lapses' : 'Between lapses'}
             />
             <StatTile
               label="Median between"
-              value={metrics.medianBetweenLapsesMs === null ? '—' : fmt.duration(metrics.medianBetweenLapsesMs)}
+              value={metrics.medianBetweenLapsesMs === null ? '–' : fmt.duration(metrics.medianBetweenLapsesMs)}
               hint={metrics.medianBetweenLapsesMs === null ? 'Needs two lapses' : 'Between lapses'}
             />
             <StatTile label="Urges recorded" value={metrics.urgeCount} hint="Logged" />
             <StatTile label="Abstinent share" value={share} hint="Active ÷ elapsed" />
           </section>
           <p className="tiny detail-note">
-            Accumulated counts uninterrupted, non-paused time only — it is not the same as elapsed time since you
+            Accumulated counts uninterrupted, non-paused time only: it is not the same as elapsed time since you
             started. Paused time is never counted.
           </p>
 

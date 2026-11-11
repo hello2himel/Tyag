@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tyag — Flatpak launcher.
+# Tyag: Flatpak launcher.
 #
 # Tauri renders the embedded React/Vite bundle with the GNOME runtime's
 # WebKitGTK 4.1; there is no Electron/Chromium here, so no zypak wrapper and no

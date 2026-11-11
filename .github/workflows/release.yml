@@ -117,7 +117,7 @@ jobs:
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::ANDROID_KEYSTORE_BASE64 is not configured — release build will be debug-signed."
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is not configured, release build will be debug-signed."
           fi
       - name: Build signed release
         if: steps.signing.outputs.available == 'true'
@@ -365,10 +365,10 @@ jobs:
           # CI-built, unsigned variants.
           if gh release view "$TAG" --json isDraft --jq '.isDraft' >/tmp/release-state 2>/dev/null; then
             if [ "$(cat /tmp/release-state)" = "true" ]; then
-              echo "Draft release $TAG exists — uploading rebuilt artifacts."
+              echo "Draft release $TAG exists, uploading rebuilt artifacts."
               gh release upload "$TAG" dist/* --clobber
             else
-              echo "Published release $TAG already exists — leaving its assets untouched."
+              echo "Published release $TAG already exists, leaving its assets untouched."
               echo "The rebuilt artifacts are available as this workflow's artifacts."
             fi
           else

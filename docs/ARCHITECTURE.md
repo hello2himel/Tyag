@@ -1,4 +1,4 @@
-# Tyag — Architecture
+# Tyag: Architecture
 
 Tyag is a local-first abstinence and recovery tracker. The same TypeScript
 application runs as a PWA, an Android app, an iOS app and a desktop app. There
@@ -52,7 +52,7 @@ Tyag/
 │   ├── mobile/         Capacitor config + committed android/ (ios/ via CI)
 │   └── desktop/        Tauri 2 shell (Rust commands + system WebView)
 ├── packages/
-│   └── core/           @tyag/core — domain, SQLite, services, engines, backups
+│   └── core/           @tyag/core, domain, SQLite, services, engines, backups
 ├── flatpak/            Flatpak manifest, AppStream metadata, build script
 ├── docs/               architecture/data model/calculation rules/privacy/backup
 ├── scripts/            privacy audit, release helpers

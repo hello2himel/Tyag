@@ -51,4 +51,4 @@ if (failures.length) {
   for (const failure of failures) console.error(' -', failure);
   process.exit(1);
 }
-console.log('MOTION CHECK PASS — tokens, curves, spring settle <600ms, projection/rubber-band formulas');
+console.log('MOTION CHECK PASS, tokens, curves, spring settle <600ms, projection/rubber-band formulas');

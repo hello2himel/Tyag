@@ -1,4 +1,4 @@
-# Tyag — Back navigation across platforms
+# Tyag: Back navigation across platforms
 
 Tyag ships one React bundle to four shells, and each shell has a different
 "back" affordance. All of them are funnelled through a single logical
@@ -9,15 +9,15 @@ the app lock and the hash router agree on what Back means.
 
 A back press is processed in this order:
 
-1. **Topmost logical layer** — an open sheet, modal, confirm dialog, PIN sheet,
+1. **Topmost logical layer**: an open sheet, modal, confirm dialog, PIN sheet,
    onboarding step, the app lock, or the change-PIN overlay consumes the press
    (LIFO: the last registered layer closes first).
-2. **Route history** — on Android/iOS/web the WebView's own history moves back
+2. **Route history**: on Android/iOS/web the WebView's own history moves back
    one app screen (tracker detail → trackers, Data & Backups → settings,
    previously visited tab → that tab). Popups and deep links are *replaced* out
    of the URL rather than pushed, so Back never reopens something already
    dismissed.
-3. **Exit or nothing** — on Android the native shell closes the app when there
+3. **Exit or nothing**: on Android the native shell closes the app when there
    is nothing left to go back to. On web, iOS and the desktop shells a press at
    the root is consumed / leaves the page (no app exit: neither platform allows
    an app to close itself).
@@ -38,7 +38,7 @@ or `true` means consumed.
 ### Android specifics
 
 Capacitor 8 core registers **no** `onBackPressed` handling, so without a plugin
-the Activity finished from anywhere — mid-onboarding, mid-sheet, mid-record.
+the Activity finished from anywhere, mid-onboarding, mid-sheet, mid-record.
 `apps/mobile/android/app/src/main/java/app/tyag/Tyag/BackHandlerPlugin.java`
 fixes this with a locally registered plugin (no npm dependency, registered
 before the bridge is created, like the existing `BiometricsPlugin`):
@@ -59,7 +59,7 @@ There is no hardware back button. The only native affordance is the WKWebView
 edge-swipe gesture, which is off by default; `SceneDelegate.swift` enables
 `allowsBackForwardNavigationGestures`. The web bundle keeps one history sentinel
 entry (see §3) so the first swipe closes an open overlay and only the next one
-moves to the previous screen — matching Android.
+moves to the previous screen, matching Android.
 
 ## 3. History sentinels (web/PWA and iOS only)
 
@@ -151,9 +151,9 @@ requestExit(): void;                     // Android-only app exit
 ## 8. Verifying Back behaviour
 
 - Web/PWA: complete onboarding + PIN, open a sheet, press the browser Back
-  button and **Alt+Left** — the sheet closes and the URL/route does not change;
+  button and **Alt+Left**, the sheet closes and the URL/route does not change;
   a second press performs a normal route back. Close a sheet with Cancel and
-  press Back — the previous route must be reached and the sheet must not
+  press Back, the previous route must be reached and the sheet must not
   reopen. `?new=1` deep links must not survive a close.
 - Android: `adb install` the debug APK, then `adb shell input keyevent
   KEYCODE_BACK` in the middle of onboarding (returns a step, app stays alive),

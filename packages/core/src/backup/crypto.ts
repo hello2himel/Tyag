@@ -1,7 +1,7 @@
 /**
  * WebCrypto primitives for encrypted backups.
  *
- * Only platform-primitive cryptography is used — never a home-grown cipher:
+ * Only platform-primitive cryptography is used, never a home-grown cipher:
  *  - SHA-256 (`crypto.subtle.digest`) for export integrity hashes.
  *  - PBKDF2-HMAC-SHA-256 with 310 000 iterations and a 16-byte random salt for
  *    key derivation (OWASP-recommended PBKDF2-SHA256 work factor at the time

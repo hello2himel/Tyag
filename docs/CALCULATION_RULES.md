@@ -1,4 +1,4 @@
-# Tyag — Streak and statistics calculation rules
+# Tyag: Streak and statistics calculation rules
 
 All calculations are deterministic functions of the stored records and the
 current timestamp. Nothing is cached as a source of truth, and no calculation
@@ -6,13 +6,13 @@ depends on timers, device uptime or the order in which events were entered.
 
 ## 1. Stored data used by the engine
 
-- `tracker.startedAt` — the original commitment start, in UTC epoch ms.
-- `tracker_sessions` — half-open active intervals `[startedAt, endedAt)`.
+- `tracker.startedAt`: the original commitment start, in UTC epoch ms.
+- `tracker_sessions`: half-open active intervals `[startedAt, endedAt)`.
   A `null` end means the tracker is running. A tracker has at most one open
   session (enforced by a partial unique index).
-- `lapse_events` — `occurred_at` timestamps only; they are instantaneous
+- `lapse_events`: `occurred_at` timestamps only; they are instantaneous
   events, not intervals.
-- `urge_events`, `journal_entries`, `check_ins` — informational; urges never
+- `urge_events`, `journal_entries`, `check_ins`: informational; urges never
   affect streak math.
 
 Pausing closes the current session at the pause instant. Resuming opens a new
@@ -36,7 +36,7 @@ activeTrackedMs = Σ (end - start) over activeIntervals
 
 ## 3. Uninterrupted intervals
 
-Lapses are sorted by `occurredAt` (ties broken by id) — never by entry order.
+Lapses are sorted by `occurredAt` (ties broken by id), never by entry order.
 Lapses before `startedAt` are invalid (the service rejects new ones and the
 engine ignores any that arrive through a hand-edited import).
 
@@ -72,7 +72,7 @@ while the tracker is paused.
 A period of abstinence is not invalidated by a lapse: earlier intervals remain
 in accumulated abstinence, longest streak, averages and analytics.
 
-## 4. Pauses — precise effects
+## 4. Pauses: precise effects
 
 - Paused wall time is never counted in current streak, longest streak,
   accumulated abstinence, streak durations or lapse spacing.
@@ -141,7 +141,7 @@ abstinent share of elapsed time = accumulatedAbstinenceMs ÷ elapsedSinceStartMs
 
 ## 8. Continuous progress recognition
 
-Recognition messages are generated from the metrics above — there are no
+Recognition messages are generated from the metrics above; there are no
 milestones, badges, levels, trophies, completion targets or finite progression
 systems anywhere in the application.
 

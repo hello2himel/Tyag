@@ -1,4 +1,4 @@
-# Tyag — Flatpak manifest (Tauri 2 + WebKitGTK).
+# Tyag: Flatpak manifest (Tauri 2 + WebKitGTK).
 #
 # This packages the *prebuilt* Tauri binary (built outside the sandbox by
 # flatpak/build.sh, because the web + Rust toolchain is not available inside
@@ -9,7 +9,7 @@
 #   sdk     : org.gnome.Sdk      //48   (build sandbox only; never shipped)
 #   command : tyag-wrapper -> /app/bin/tyag (the Tauri binary)
 #
-# Sandbox policy (deliberately minimal — Tyag is fully offline):
+# Sandbox policy (deliberately minimal: Tyag is fully offline):
 #   * no --share=network: the app can never reach the network
 #   * no --filesystem=home: the database stays inside the app sandbox
 #   * xdg-download is the only filesystem grant, so user-initiated JSON/CSV

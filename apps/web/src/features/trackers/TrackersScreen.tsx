@@ -1,5 +1,5 @@
 /**
- * Trackers — the home screen. One card per tracker with the current streak,
+ * Trackers, the home screen. One card per tracker with the current streak,
  * how the tracker is running, and its streak history bar. The header's Edit
  * button reveals lifecycle actions on every card; the + button (and the
  * sidebar's "New tracker") opens the create sheet via `#/trackers?new=1`.
@@ -110,7 +110,7 @@ export function TrackersScreen() {
       {trackers.length === 0 ? (
         <EmptyState
           title="Start tracking"
-          body="New tracker for something you want to stay away from. Progress starts the moment you do — and earlier progress is never lost."
+          body="New tracker for something you want to stay away from. Progress starts the moment you do, and earlier progress is never lost."
           action={
             <Button variant="primary" onClick={() => setSheet({ tracker: null })}>
               New tracker
@@ -127,7 +127,7 @@ export function TrackersScreen() {
                   type="button"
                   className="tracker-card-main clickable"
                   onClick={() => navigate(`/tracker/${tracker.id}`)}
-                  title={`Open ${tracker.name} — started ${fmt.dateTime(tracker.startedAt)}`}
+                  title={`Open ${tracker.name}: started ${fmt.dateTime(tracker.startedAt)}`}
                 >
                   <span className="tracker-card-head">
                     <span className="tracker-name">{tracker.name}</span>

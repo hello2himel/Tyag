@@ -1,7 +1,7 @@
 /**
  * Tyag brand components from the official November 2026 brand kit
  * (`assets/brand/`): the black/white peak symbol tiles and glyph, with the
- * wordmark set in Inter — per the product decision to use Inter for type
+ * wordmark set in Inter, per the product decision to use Inter for type
  * instead of the kit's proposed Poppins wordmark.
  */
 

@@ -1,7 +1,7 @@
 /**
  * Deterministic duration formatting.
  *
- * The format is derived only from the duration in milliseconds — there are no
+ * The format is derived only from the duration in milliseconds, there are no
  * milestones or thresholds in the calculation (the same string rules apply at
  * 59 minutes and at 10 years).
  */
@@ -39,7 +39,7 @@ export function formatDurationShort(ms: number): string {
   return parts.join(' ');
 }
 
-/** Compact label, e.g. "12d", "7h", "34m" — the single largest unit. */
+/** Compact label, e.g. "12d", "7h", "34m", the single largest unit. */
 export function formatDurationCompact(ms: number): string {
   const { days, hours, minutes, seconds } = splitDuration(ms);
   if (days > 0) return `${days}d`;
@@ -81,7 +81,7 @@ export function formatDurationLong(ms: number, options: LongDurationOptions = {}
   return `${shown.slice(0, -1).join(', ')}${conjunction}${shown[shown.length - 1]!}`;
 }
 
-/** "12 days, 7 hours and 34 minutes" — up to three units, for analytics. */
+/** "12 days, 7 hours and 34 minutes", up to three units, for analytics. */
 export function formatDurationFine(ms: number): string {
   const { days, hours, minutes } = splitDuration(ms);
   const units: string[] = [];

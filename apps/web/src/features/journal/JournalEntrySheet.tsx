@@ -2,7 +2,7 @@
  * Journal entry editor sheet.
  *
  * Create or edit one journal entry: when it happened (backdating is allowed),
- * which tracker it belongs to (optional — the global journal is fine), a
+ * which tracker it belongs to (optional, the global journal is fine), a
  * title and the body. Writes go through the core journal service, so history
  * records and validation are the same as everywhere else in the app.
  */

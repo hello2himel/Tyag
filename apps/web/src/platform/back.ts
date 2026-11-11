@@ -195,7 +195,7 @@ function armSentinel(): void {
   try {
     // The URL argument is omitted on purpose: the sentinel entry keeps the very
     // same URL as the current one (so popping it restores the same route, and
-    // the dispatcher — not the router — owns the press), and relative-only
+    // the dispatcher, not the router, owns the press), and relative-only
     // history writes stay valid on the Capacitor/Tauri custom schemes.
     window.history.pushState({ __tyagBack: id }, '');
   } catch {
@@ -248,7 +248,7 @@ export function queueAfterSentinelPop(action: BackAction): void {
 /**
  * Invoke the topmost logical back handler.
  *
- * Returns `true` when the press was consumed (also when a handler threw — a
+ * Returns `true` when the press was consumed (also when a handler threw, a
  * broken handler must never drop the user out of the app) and `false` when
  * nothing is registered or the topmost handler explicitly declined it.
  */

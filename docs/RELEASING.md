@@ -102,11 +102,11 @@ keytool -genkeypair -v -keystore "$HOME/tyag-release.jks" -alias tyag \
 
 Play Console upload uses the `.aab`; `versionCode` must increase monotonically.
 Never delete or rotate the upload keystore without using Play App Signing key
-rotation — losing it means losing update rights.
+rotation, losing it means losing update rights.
 
 ### Windows (NSIS installer + MSI)
 
-Tauri builds unsigned by default — CI needs no secrets. For signed releases,
+Tauri builds unsigned by default; CI needs no secrets. For signed releases,
 configure Tauri's Windows signing options (certificate thumbprint or `.pfx`
 path plus timestamp URL, see the Tauri bundler docs) and provide the
 certificate material/password as CI secrets only; never commit it. Signing can
@@ -163,7 +163,7 @@ mirror a Flatpak repository, use a GPG key stored only in CI secrets.
    GitHub release named `Tyag vX.Y.Z` with generated notes.
 5. **Verify the draft**:
    * every expected artifact from §2 is attached (a missing `ios`/`macos`
-     artifact means a runner failure — inspect logs before publishing);
+     artifact means a runner failure, inspect logs before publishing);
    * `SHA256SUMS.txt` is attached and matches the files;
    * release notes look right (edit them in the GitHub UI).
 6. **Publish** the draft when the artifacts are verified.
@@ -214,7 +214,7 @@ Platform checks:
   ./Tyag-*.rpm`; then launch `Tyag` from the application menu.
 * **Windows MSI**: `msiexec /i Tyag-*.msi`; NSIS installer is unsigned
   (SmartScreen warning expected).
-* **macOS DMG**: unsigned — right-click → Open the first time on other Macs.
+* **macOS DMG**: unsigned, right-click → Open the first time on other Macs.
 * **Flatpak**: `flatpak install --user --bundle Tyag-*.flatpak` then
   `flatpak run org.tyag.Tyag`; `flatpak info --user --show-permissions
   org.tyag.Tyag` must show no network and no home access; the database
@@ -241,13 +241,13 @@ Platform checks:
 
 Actions caches: pnpm store (`setup-node cache: pnpm`), Rust `target/`
 (`Swatinem/rust-cache`), Tauri bundler tools (`~/.cache/tauri`,
-`~/AppData/Local/tauri` — linuxdeploy/AppImage runtime, NSIS/WiX), Gradle
+`~/AppData/Local/tauri`, linuxdeploy/AppImage runtime, NSIS/WiX), Gradle
 (`gradle/actions/setup-gradle`).
 
 Tauri notes for release engineers:
 * the Linux jobs install the WebKitGTK 4.1 development packages before building;
 * `rpm` packages need `rpmbuild` (installed in the Linux CI job; not present on
-  every developer machine — `dist:linux` will then fail at the rpm step, so use
+  every developer machine, `dist:linux` will then fail at the rpm step, so use
   the CI artifact or install `rpm`);
 * no signing secrets are referenced by any desktop job; all desktop artifacts
   are unsigned unless a maintainer signs them explicitly.

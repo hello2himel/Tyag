@@ -3,7 +3,7 @@ name: Desktop Windows (Tauri)
 # Tauri 2 Windows installers: NSIS (.exe) + MSI, using the system WebView2
 # runtime. Builds are unsigned: no code-signing secrets are required. To sign a
 # real release, provide the standard Tauri variables in CI (see
-# docs/RELEASING.md) — they are never committed.
+# docs/RELEASING.md): they are never committed.
 #
 # Output (normalised by scripts/collect-tauri-artifacts.mjs):
 #   apps/desktop/release/Tyag-Setup-<version>-x64.exe

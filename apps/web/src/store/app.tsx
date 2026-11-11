@@ -65,7 +65,7 @@ function resolveTheme(settings: AppSettings): ResolvedTheme {
 
 /**
  * Android only: keep the transparent system bars' icon appearance in step with
- * the *resolved* in-app theme — dark icons over the light canvas (#F2F2F7),
+ * the *resolved* in-app theme, dark icons over the light canvas (#F2F2F7),
  * light icons over the dark canvas (#000000). The bars are made transparent /
  * edge-to-edge natively in MainActivity; the Capacitor 8 SystemBars plugin owns
  * the icon appearance. This lives in the module-level applyTheme (not a React
@@ -80,7 +80,7 @@ function syncAndroidSystemBars(theme: ResolvedTheme): void {
       // SystemBarsStyle.Dark means "light bar content on a dark background".
       style: theme === 'dark' ? SystemBarsStyle.Dark : SystemBarsStyle.Light,
     }).catch(() => {
-      /* cosmetic only — an unavailable SystemBars plugin must not break boot */
+      /* cosmetic only, an unavailable SystemBars plugin must not break boot */
     });
   } catch {
     /* cosmetic only */

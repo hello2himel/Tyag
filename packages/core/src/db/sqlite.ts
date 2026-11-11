@@ -112,7 +112,7 @@ export class SqlDatabase {
     }
   }
 
-  /** Raw database bytes — the exact snapshot a persistence adapter stores. */
+  /** Raw database bytes, the exact snapshot a persistence adapter stores. */
   export(): Uint8Array {
     return this.db.export();
   }
@@ -123,7 +123,7 @@ export class SqlDatabase {
   }
 
   /**
-   * `PRAGMA foreign_key_check` — one entry per row that violates a foreign key.
+   * `PRAGMA foreign_key_check`: one entry per row that violates a foreign key.
    * Used after migrations because table rebuilds run with enforcement disabled.
    */
   foreignKeyViolations(): { table: string; rowid: number | null; parent: string }[] {

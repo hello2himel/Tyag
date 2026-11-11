@@ -59,7 +59,7 @@ describe('crypto: SHA-256 integrity hashing', () => {
   });
 
   it('hashes bytes the same way as their UTF-8 text', async () => {
-    const text = 'Tyag — private by design ✓';
+    const text = 'Tyag, private by design ✓';
     expect(await sha256Hex(new TextEncoder().encode(text))).toBe(await sha256Hex(text));
   });
 });

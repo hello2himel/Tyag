@@ -218,7 +218,7 @@ function Shell() {
           type="button"
           className="sidebar-brand"
           onClick={() => navigate('/trackers')}
-          aria-label="Tyag — Trackers"
+          aria-label="Tyag: Trackers"
         >
           <TyagLockup height={26} />
         </button>

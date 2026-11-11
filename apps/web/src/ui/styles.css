@@ -1,4 +1,4 @@
-/* Inter (SIL Open Font License) is bundled locally — the onboarding kit's
+/* Inter (SIL Open Font License) is bundled locally, the onboarding kit's
    fallback for platforms without Apple's SF fonts. No remote fonts are loaded. */
 @font-face {
   font-family: 'Inter';
@@ -1253,7 +1253,7 @@ p {
    Motion augmentations (tokens in :root above; spec: docs/MOTION.md)
    ========================================================================== */
 
-/* Press feedback — no scale, no ripple. */
+/* Press feedback, no scale, no ripple. */
 .btn { transition: opacity var(--motion-duration-fast) var(--motion-curve-ease-out), background var(--motion-duration-standard) var(--motion-curve-ease-out); }
 .btn:active { opacity: 0.4; transition-duration: var(--motion-duration-fast); }
 .btn-primary:active { opacity: 0.8; }

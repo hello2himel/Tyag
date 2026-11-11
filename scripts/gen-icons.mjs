@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gen-icons.mjs — every Tyag icon, generated from the official brand kit.
+ * gen-icons.mjs, every Tyag icon, generated from the official brand kit.
  *
  * Source of truth (committed):
  *   assets/brand/app-icons/{web,android,ios}/   prebuilt brand-kit exports
@@ -140,7 +140,7 @@ if (targets.has('web')) {
 /* --------------------------------------------------------------- android */
 if (targets.has('android')) {
   if (!existsSync(ANDROID_RES)) {
-    console.warn('gen-icons: apps/mobile/android missing — skipped.');
+    console.warn('gen-icons: apps/mobile/android missing, skipped.');
   } else {
     const densities = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 };
     const layer = (name) => join(KIT_ICONS, 'android', name);
@@ -195,7 +195,7 @@ if (targets.has('android')) {
 /* ------------------------------------------------------------------- ios */
 if (targets.has('ios')) {
   if (!existsSync(IOS_ASSETS)) {
-    console.warn('gen-icons: apps/mobile/ios missing — skipped.');
+    console.warn('gen-icons: apps/mobile/ios missing, skipped.');
   } else {
     copy(join(KIT_ICONS, 'ios', 'AppIcon-1024.png'), join(IOS_ASSETS, 'AppIcon.appiconset/AppIcon-512@2x.png'));
     const white = join(TMP, 'white-2732.png');
@@ -227,7 +227,7 @@ if (targets.has('desktop')) {
       join(TAURI_ICONS, 'icon.ico'),
     ]);
   } catch {
-    console.warn('gen-icons: ImageMagick missing — skipped Tauri icon.ico');
+    console.warn('gen-icons: ImageMagick missing, skipped Tauri icon.ico');
   }
   const entries = [];
   for (const [type, size] of ICNS_TYPES) {

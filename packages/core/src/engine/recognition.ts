@@ -48,7 +48,7 @@ export function buildRecognition(
       headline: `Congratulations! You've stayed away from ${name} for ${duration}.`,
       accumulated: options.short
         ? null
-        : `Every moment of it counts — this is ${duration} of uninterrupted progress.`,
+        : `Every moment of it counts: this is ${duration} of uninterrupted progress.`,
       currentStreakMs: current,
       accumulatedMs: accumulated,
     };

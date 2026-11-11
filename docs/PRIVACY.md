@@ -1,4 +1,4 @@
-# Tyag — Privacy and local-only architecture
+# Tyag: Privacy and local-only architecture
 
 Tyag is local-first by design. There is no account, no server, no cloud
 service, no advertising, no telemetry, no crash reporting, no third-party

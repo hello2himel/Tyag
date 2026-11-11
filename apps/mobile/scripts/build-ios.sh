@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# Tyag — iOS build (web build -> Capacitor sync -> xcodebuild).
+# Tyag: iOS build (web build -> Capacitor sync -> xcodebuild).
 # Runs only on macOS with Xcode command line tools installed (see
 # docs/BUILDING.md); CI uses the same entry point from .github/workflows/ios.yml.
 #
 # Usage: scripts/build-ios.sh [simulator|archive]
-#   simulator  (default) unsigned simulator build — proves the project compiles
+#   simulator  (default) unsigned simulator build: proves the project compiles
 #   archive    unsigned device archive (.xcarchive) for later signing/export
 #
 # Environment:
@@ -23,8 +23,8 @@ say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 die() { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
 
 [[ "$(uname -s)" == "Darwin" ]] || die "iOS builds require macOS with Xcode"
-command -v xcodebuild >/dev/null || die "xcodebuild not found — install Xcode"
-[[ -d "$IOS_APP_DIR" ]] || die "apps/mobile/ios is missing — run 'pnpm --filter @tyag/mobile exec cap add ios' on macOS"
+command -v xcodebuild >/dev/null || die "xcodebuild not found, install Xcode"
+[[ -d "$IOS_APP_DIR" ]] || die "apps/mobile/ios is missing, run 'pnpm --filter @tyag/mobile exec cap add ios' on macOS"
 
 say "Building web assets"
 (cd "$REPO_ROOT" && pnpm --filter @tyag/web build)

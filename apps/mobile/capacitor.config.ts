@@ -5,7 +5,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *
  * The mobile apps ship the exact same static PWA bundle as the web build
  * (`apps/web/dist`), served from the local app bundle (`https://` scheme on
- * Android, `capacitor://` on iOS) — never from a network origin. All
+ * Android, `capacitor://` on iOS), never from a network origin. All
  * persistence is local (SQLite-WASM snapshot via
  * @capacitor/filesystem Directory.Data). The Android app does not even request
  * the INTERNET permission.

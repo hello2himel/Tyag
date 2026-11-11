@@ -4,7 +4,7 @@
 //!   - the React/Vite bundle is embedded in the binary at compile time
 //!     (`frontendDist = ../../web/dist`) and served from the app's own origin;
 //!   - no Tauri plugin that could reach the network, the shell or arbitrary
-//!     files is registered — the only privileged surface is the three database
+//!     files is registered, the only privileged surface is the three database
 //!     commands below;
 //!   - top-level navigation is restricted to the bundled app origin, new
 //!     windows (remote URLs) are denied, all web permissions are denied except
@@ -59,7 +59,7 @@ const BACKUPS_DIR: &str = "backups";
 /// The only privileged I/O in the process: a single SQLite snapshot inside the
 /// per-user application data directory (never a caller-provided path).
 struct Store {
-    /// `app_data_dir()` — e.g. `~/.local/share/app.tyag.Tyag` on Linux.
+    /// `app_data_dir()`, e.g. `~/.local/share/app.tyag.Tyag` on Linux.
     dir: PathBuf,
     /// Serializes concurrent writes so temp-file + rename sequences never race.
     write_lock: Mutex<()>,

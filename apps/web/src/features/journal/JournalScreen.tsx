@@ -373,7 +373,7 @@ export function JournalScreen() {
 
       {!error && total >= 500 && shown >= 500 ? (
         <div className="tiny" style={{ textAlign: 'center', marginTop: 16 }}>
-          Showing the most recent 500 matching events. Narrow the filters — for example by tracker or date range — to reach
+          Showing the most recent 500 matching events. Narrow the filters, for example by tracker or date range, to reach
           older records.
         </div>
       ) : !error && total > 0 && shown >= total && total > 25 ? (

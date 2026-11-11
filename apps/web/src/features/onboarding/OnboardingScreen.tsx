@@ -1,5 +1,5 @@
 /**
- * Tyag onboarding — implemented 1:1 from the supplied onboarding kit
+ * Tyag onboarding, implemented 1:1 from the supplied onboarding kit
  * (`tyag-onboarding/light|dark/01-welcome … 05-ready` and `06-desktop`):
  * same copy, hierarchy, chips, grouped rows, dots and desktop step shell.
  * Behaviour is wired to the real core services (create tracker, local
@@ -30,7 +30,7 @@ type Step = 0 | 1 | 2 | 3 | 4 | 5; // welcome, privacy, tracker, reminders, PIN,
 
 /**
  * A broad, plain-language list of addictions and compulsive behaviours. Every
- * entry is a distinct behaviour or substance — no synonyms, no narrower
+ * entry is a distinct behaviour or substance, no synonyms, no narrower
  * duplicates of another entry. They only appear as search suggestions
  * while the person is typing (the onboarding board has no default pill row).
  */
@@ -264,7 +264,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   // A hardware/browser back press walks the steps exactly like the on-screen
-  // Back buttons. Step 0 stays unhandled on purpose — on Android the native
+  // Back buttons. Step 0 stays unhandled on purpose, on Android the native
   // shell may then close the app, which is the expected behaviour on the very
   // first screen. While a write is in flight, and on the final "ready" step,
   // the press is consumed so the user cannot slip back into a half-finished

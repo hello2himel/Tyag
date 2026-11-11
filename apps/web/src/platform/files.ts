@@ -24,7 +24,7 @@ export async function saveTextFile(
 ): Promise<SavedFile> {
   if (isTauriDesktop()) {
     // The desktop shell writes through a Rust command into the user's
-    // Downloads folder — no remote handling, no dialogs blocking the renderer.
+    // Downloads folder, no remote handling, no dialogs blocking the renderer.
     try {
       const location = await invoke<string>('save_text_file', { filename, content });
       return { filename, location };

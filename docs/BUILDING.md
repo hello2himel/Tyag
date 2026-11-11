@@ -88,7 +88,7 @@ worker, `manifest.webmanifest`, icons, `assets/sql-wasm-*.wasm`).
   build `pnpm --filter @tyag/web build`, publish `apps/web/dist`, SPA hash
   routing fallback, and hardened security headers (CSP etc.). No environment
   variables or secrets are required.
-* Any static host works (GitHub Pages, S3, nginx) — copy `apps/web/dist` and
+* Any static host works (GitHub Pages, S3, nginx), copy `apps/web/dist` and
   set a 200-fallback to `index.html`. `pnpm build` then `pnpm preview` for a
   local check.
 
@@ -121,29 +121,29 @@ apps/desktop/
 compiled into the binary and served from the app's own origin:
 `tauri://localhost` on Linux/macOS and `http://tauri.localhost` on Windows.
 WebKitGTK/WKWebView/WebView2 render it, so `fetch()`, SQLite-WASM, IndexedDB and
-the service worker behave exactly as on the web — with no network access.
+the service worker behave exactly as on the web, with no network access.
 
 The window is created in Rust (`WebviewWindowBuilder`) so the hardening lives in
 code rather than in the web bundle:
 
-* **navigation** — only the embedded bundle origin is allowed; remote URLs are
+* **navigation**: only the embedded bundle origin is allowed; remote URLs are
   cancelled (`on_navigation`), and in debug builds the Vite dev server at
   `http://localhost:5173` is the only extra origin;
-* **new windows** — `window.open`/`target=_blank` is denied outright
+* **new windows**: `window.open`/`target=_blank` is denied outright
   (`on_new_window` → `Deny`), so nothing can hand a URL to the system browser;
-* **permissions** — camera, microphone, geolocation, clipboard, etc. are denied;
+* **permissions**: camera, microphone, geolocation, clipboard, etc. are denied;
   only `Notifications` is granted (local reminders);
-* **CSP** — mirrors `netlify.toml`, including `script-src 'self'
+* **CSP**: mirrors `netlify.toml`, including `script-src 'self'
   'wasm-unsafe-eval'` for SQLite-WASM, with `connect-src 'self' ipc:
   http://ipc.localhost` for Tauri's local IPC (the IPC is a custom protocol
   inside the webview, never a network socket);
-* **capabilities** — `capabilities/default.json` grants no plugin permissions at
+* **capabilities**: `capabilities/default.json` grants no plugin permissions at
   all: no fs, shell, http, opener, process or updater plugin is linked or
   exposed. The only privileged API is the four commands below;
-* **downloads** — WebView downloads (JSON/CSV export) are redirected to the
+* **downloads**: WebView downloads (JSON/CSV export) are redirected to the
   user's Downloads folder (`on_download`), avoiding a WebKitGTK blob-download
   limitation;
-* **devtools** — available in debug builds only; release builds are compiled
+* **devtools**: available in debug builds only; release builds are compiled
   without the `devtools` feature.
 
 ### Local persistence contract (must stay in sync with the web adapter)
@@ -184,7 +184,7 @@ Typical locations: `~/.local/share/app.tyag.Tyag` (Linux),
 
 Errors returned to the UI are short, stable strings such as
 `invalid_payload: …`, `db_too_large: …`, `db_write_failed: …`,
-`export_failed: …` — they never contain paths or user data.
+`export_failed: …`; they never contain paths or user data.
 
 ### Develop
 
@@ -259,7 +259,7 @@ keys are stored in the repository.
 ## 4. Android (Capacitor)
 
 The committed `apps/mobile/android/` project wraps the same web bundle. It
-requests **no INTERNET permission** — the WebView serves assets from the local
+requests **no INTERNET permission**, the WebView serves assets from the local
 `https://localhost` asset loader via Capacitor. Cleartext traffic and backups are
 disabled; data is app-private.
 
@@ -326,7 +326,7 @@ pnpm build:android:release
 ```
 
 CI stores the same keystore base64-encoded as `ANDROID_KEYSTORE_BASE64`
-(plus the three other secrets) — see [RELEASING.md](RELEASING.md).
+(plus the three other secrets), see [RELEASING.md](RELEASING.md).
 
 ### Gradle / Capacitor notes
 
@@ -350,7 +350,7 @@ CI stores the same keystore base64-encoded as `ANDROID_KEYSTORE_BASE64`
 ## 5. iOS (Capacitor)
 
 The committed `apps/mobile/ios/` Xcode project wraps the same web bundle.
-Capacitor 8 uses **Swift Package Manager** (generated `ios/App/CapApp-SPM`) —
+Capacitor 8 uses **Swift Package Manager** (generated `ios/App/CapApp-SPM`) -
 CocoaPods is only used if a `Podfile` exists. Building requires macOS + Xcode.
 
 ```bash
@@ -366,11 +366,11 @@ bash apps/mobile/scripts/build-ios.sh archive  # unsigned .xcarchive for signing
 * App icon and launch-screen splash images are committed under
   `ios/App/App/Assets.xcassets/` and generated from the same mark (§7).
 * Signing is configured in Xcode/CI with an Apple Developer account
-  (`DEVELOPMENT_TEAM`, provisioning profile) — never committed. Unsigned CI
+  (`DEVELOPMENT_TEAM`, provisioning profile), never committed. Unsigned CI
   builds prove compilation only; a store build requires the signing secrets
   described in [RELEASING.md](RELEASING.md).
 * **Linux limits**: on Linux you can scaffold/sync the iOS project and edit its
-  files, but you cannot compile it — Xcode is macOS-only. The `ios.yml` CI job
+  files, but you cannot compile it; Xcode is macOS-only. The `ios.yml` CI job
   therefore runs on a macOS runner and produces **unsigned** artifacts: a
   simulator `.app` and an unsigned `.xcarchive`. Signed `.ipa`/App Store
   uploads are a manual (or separately-secured signing job) step.
@@ -545,7 +545,7 @@ time. It complements the design rule: no network calls in product code.
 | `tauri: command not found` | Run `pnpm install` (the CLI is a devDependency of `apps/desktop`) and use the pnpm scripts, not a global `tauri`. |
 | `error: failed to run custom build command for …` (webkit2gtk-sys / glib-sys) | Install the Tauri Linux libraries from §1 (pkg-config must find `webkit2gtk-4.1`, `gtk+-3.0`, `libsoup-3.0`). |
 | `icon … is not RGBA` at `generate_context!` | Regenerate the Tauri icon set (all PNGs must have an alpha channel), see §7. |
-| Blank/white Tauri window | Build the web app first (`pnpm --filter @tyag/web build`) — `frontendDist` embeds it at compile time; after changing the web bundle re-run `tauri build`. Check the WebView inspector (debug builds) for CSP errors. |
+| Blank/white Tauri window | Build the web app first (`pnpm --filter @tyag/web build`), `frontendDist` embeds it at compile time; after changing the web bundle re-run `tauri build`. Check the WebView inspector (debug builds) for CSP errors. |
 | Rust release build is slow the first time | Normal: ~2–5 min for the Tauri/Wry dependency graph with LTO. CI caches `target/` via `Swatinem/rust-cache`. |
 | `cargo build` fails with `Unsupported class file` / linker errors | The Tauri Linux prerequisites (build-essential, pkg-config, webkit2gtk-4.1-dev) are missing; the macOS/Windows runners build natively in CI. |
 | `flatpak` runs the old Electron build | Uninstall the previous bundle first: `flatpak uninstall --user org.tyag.Tyag`, then install the new `.flatpak`. |

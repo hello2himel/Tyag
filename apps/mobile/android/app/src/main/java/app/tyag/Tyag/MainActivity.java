@@ -21,7 +21,7 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
 
         // Edge-to-edge: let the app draw underneath the status bar and the
-        // navigation/gesture bar so the web canvas — not a system surface — is
+        // navigation/gesture bar so the web canvas, not a system surface, is
         // what shows behind them.
         //
         // This runs AFTER super.onCreate() on purpose. BridgeActivity applies

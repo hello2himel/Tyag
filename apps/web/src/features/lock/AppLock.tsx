@@ -1,5 +1,5 @@
 /**
- * App lock — implemented 1:1 from the supplied Tyag PIN screen kit
+ * App lock, implemented 1:1 from the supplied Tyag PIN screen kit
  * (`tyag-pin-screens`): mobile create/confirm/lock/forgot sheets, a
  * biometrics opt-in, and the desktop lock/set-PIN cards.
  *

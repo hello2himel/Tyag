@@ -4,8 +4,8 @@
 **addiction recovery and habit tracker** for abstinence, lapses, urges and the
 progress that continues through all of it.
 
-Tyag is a complete cross-platform app — web/PWA, Android, iOS, Windows, macOS
-and Linux — that runs entirely on your device: no account, no cloud, no
+Tyag is a complete cross-platform app for web/PWA, Android, iOS, Windows,
+macOS and Linux, and runs entirely on your device: no account, no cloud, no
 tracking, no internet required. Everything is stored in a local SQLite
 database and can be exported at any time.
 
@@ -42,7 +42,7 @@ database and can be exported at any time.
   history with search and filters.
 - **Analytics and insights** computed locally from your actual records, with
   sample sizes and honest “not enough data” states.
-- **Continuous progress recognition** derived from real elapsed time — no
+- **Continuous progress recognition** derived from real elapsed time, with no
   milestones, badges, levels or completion targets anywhere.
 - **App lock**: a 4-digit PIN is required every time Tyag opens (it
   locks immediately when you leave the app), entered with four centred dots
@@ -59,12 +59,12 @@ database and can be exported at any time.
 
 | | |
 | --- | --- |
-| Account | Not required — there is none |
+| Account | Not required: there is none |
 | Internet | Not required, and never used for your data |
 | Servers | None |
 | Telemetry / analytics / ads | None |
 | Cloud sync | Not implemented, by design |
-| AI services | None — insights are deterministic local rules |
+| AI services | None: insights are deterministic local rules |
 | Data | Your device, your files |
 
 See [PRIVACY.md](docs/PRIVACY.md) for the full architecture and threat model.
@@ -74,15 +74,15 @@ See [PRIVACY.md](docs/PRIVACY.md) for the full architecture and threat model.
 **React 19 + TypeScript + Vite 8 PWA** with **SQLite (WASM via `sql.js`)**,
 packaged as:
 
-- **Web/PWA** — Netlify-ready static build, installable, offline after first load.
-- **Android/iOS** — Capacitor 8 shell around the same bundle; APK **and** AAB.
-- **Windows/macOS/Linux** — **Tauri 2** (Rust + the OS WebView) desktop app + **Flatpak** for Linux.
+- **Web/PWA**: Netlify-ready static build, installable, offline after first load.
+- **Android/iOS**: Capacitor 8 shell around the same bundle; APK **and** AAB.
+- **Windows/macOS/Linux**: **Tauri 2** (Rust + the OS WebView) desktop app + **Flatpak** for Linux.
 
 The supplied UI/UX design is HTML-based, so a TypeScript/React stack implements
 it faithfully while sharing one tested core across all five platforms, and the
 desktop shell is Tauri (Rust + the system WebView) rather than a bundled browser. The
 domain, streak engine, analytics, insights, import/export and SQLite layer have
-zero platform imports and run under Node in the test suite — the tests exercise
+zero platform imports and run under Node in the test suite; the tests exercise
 the same code that ships. See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the
 full rationale and trade-offs.
 
@@ -171,7 +171,7 @@ create. There is no hidden copy anywhere else. Export a backup regularly from
 
 ## License
 
-**GNU Affero General Public License v3.0** (`AGPL-3.0-only`) — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+**GNU Affero General Public License v3.0** (`AGPL-3.0-only`). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 Tyag is free software: you can use, study, share and improve it. If you modify
 it and distribute it or make it available over a network, the AGPL requires the

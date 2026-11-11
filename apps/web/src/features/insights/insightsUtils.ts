@@ -1,7 +1,7 @@
 /**
  * Insights screen calculations.
  *
- * Everything here is derived from the analytics engine response — the screen
+ * Everything here is derived from the analytics engine response, the screen
  * never estimates or fabricates a number. Windows are aligned to local calendar
  * periods in the user's effective timezone so week/month/quarter/year charts
  * match the statistics and exports.
@@ -103,7 +103,7 @@ export interface StatSpec {
 }
 
 export function formatPercent(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return '—';
+  if (value === null || !Number.isFinite(value)) return '–';
   return `${Math.round(value * 100)}%`;
 }
 
@@ -137,7 +137,7 @@ function intervalHint(count: number, unit: string): string {
 }
 
 function durationOrDash(value: number | null, fmt: Formatters): string {
-  return value === null ? '—' : fmt.duration(value);
+  return value === null ? '–' : fmt.duration(value);
 }
 
 /** All-time statistics for one tracker. */
@@ -179,17 +179,17 @@ export function trackerStats(metrics: TrackerMetrics, fmt: Formatters): StatSpec
       value:
         metrics.lapseCount > 0
           ? formatAverage(ratioPerWeek(metrics.lapseCount, metrics.activeTrackedMs))
-          : '—',
+          : '–',
       hint: rateHint(metrics.activeTrackedMs, activeWeekLabel),
     },
     {
       label: 'Urges per active week',
-      value: metrics.urgeCount > 0 ? formatAverage(ratioPerWeek(metrics.urgeCount, metrics.activeTrackedMs)) : '—',
+      value: metrics.urgeCount > 0 ? formatAverage(ratioPerWeek(metrics.urgeCount, metrics.activeTrackedMs)) : '–',
       hint: rateHint(metrics.activeTrackedMs, activeWeekLabel),
     },
     {
       label: 'Avg urge intensity',
-      value: metrics.averageUrgeIntensity === null ? '—' : `${metrics.averageUrgeIntensity.toFixed(1)}/10`,
+      value: metrics.averageUrgeIntensity === null ? '–' : `${metrics.averageUrgeIntensity.toFixed(1)}/10`,
       hint: metrics.urgeCount > 0 ? `n = ${metrics.urgeCount} urges` : 'No urges recorded',
     },
     {
@@ -266,17 +266,17 @@ export function combinedStats(data: CombinedAnalytics, fmt: Formatters): StatSpe
       value:
         data.totalLapseCount > 0
           ? formatAverage(ratioPerWeek(data.totalLapseCount, data.totalAccumulatedAbstinenceMs))
-          : '—',
+          : '–',
       hint: rateHint(data.totalAccumulatedAbstinenceMs, 'Tracker-time; paused time excluded'),
     },
     {
       label: 'Urges per active week',
-      value: data.totalUrgeCount > 0 ? formatAverage(ratioPerWeek(data.totalUrgeCount, data.totalAccumulatedAbstinenceMs)) : '—',
+      value: data.totalUrgeCount > 0 ? formatAverage(ratioPerWeek(data.totalUrgeCount, data.totalAccumulatedAbstinenceMs)) : '–',
       hint: rateHint(data.totalAccumulatedAbstinenceMs, 'Tracker-time; paused time excluded'),
     },
     {
       label: 'Avg urge intensity',
-      value: data.averageUrgeIntensity === null ? '—' : `${data.averageUrgeIntensity.toFixed(1)}/10`,
+      value: data.averageUrgeIntensity === null ? '–' : `${data.averageUrgeIntensity.toFixed(1)}/10`,
       hint: data.totalUrgeCount > 0 ? `n = ${data.totalUrgeCount} urges` : 'No urges recorded',
     },
     {
@@ -288,6 +288,6 @@ export function combinedStats(data: CombinedAnalytics, fmt: Formatters): StatSpe
 }
 
 export function formatAverage(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return '—';
+  if (value === null || !Number.isFinite(value)) return '–';
   return value < 10 ? value.toFixed(1) : String(Math.round(value));
 }

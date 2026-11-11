@@ -1,4 +1,4 @@
-# Tyag — Dependencies
+# Tyag: Dependencies
 
 Tyag itself is licensed under **AGPL-3.0-only** (see `LICENSE`). Its dependency surface is intentionally small. Each direct dependency
 has a technical justification; none includes telemetry, advertising or cloud
@@ -10,7 +10,7 @@ synchronisation. Versions are pinned in `pnpm-lock.yaml`.
 
 | Package | Version | Why |
 | --- | --- | --- |
-| `sql.js` | 1.15.x | SQLite compiled to WebAssembly — real SQL, constraints, transactions and migrations with one driver across browser, WebView, Tauri's WebView and Node tests. |
+| `sql.js` | 1.15.x | SQLite compiled to WebAssembly, real SQL, constraints, transactions and migrations with one driver across browser, WebView, Tauri's WebView and Node tests. |
 | `@js-temporal/polyfill` | 0.5.x | Correct timezone/DST/leap-year calendar boundaries for local periods. |
 
 ### `apps/web`

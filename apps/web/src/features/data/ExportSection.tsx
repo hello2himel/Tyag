@@ -104,7 +104,7 @@ export function ExportSection() {
       setConfirmPassword('');
       return {
         filename: file.filename,
-        detail: `Saved ${file.filename} (encrypted backup) to ${file.location}. You will need this password to import it — there is no recovery.`,
+        detail: `Saved ${file.filename} (encrypted backup) to ${file.location}. You will need this password to import it: there is no recovery.`,
         remember: 'backup' as const,
       };
     });
@@ -133,7 +133,7 @@ export function ExportSection() {
       </h2>
       <Card className="card-pad data-card">
         <p className="sub">
-          Create a copy of everything you have recorded. Exports are written locally by your browser or device — Tyag never
+          Create a copy of everything you have recorded. Exports are written locally by your browser or device: Tyag never
           uploads them.
         </p>
 
